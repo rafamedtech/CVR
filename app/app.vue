@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { es } from '@nuxt/ui/locale'
+
 const colorMode = useColorMode()
 
-const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
+const color = computed(() => colorMode.value === 'dark' ? '#0f172a' : '#ffffff')
 
 useHead({
   meta: [
@@ -13,25 +15,23 @@ useHead({
     { rel: 'icon', href: '/favicon.ico' }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: 'es-MX'
   }
 })
 
-const title = 'Nuxt Dashboard Template'
-const description = 'A professional dashboard template built with Nuxt UI, featuring multiple pages, data visualization, and comprehensive management capabilities for creating powerful admin interfaces.'
+const title = 'Control de Talleres'
+const description = 'CRM operativo y financiero para talleres automotrices.'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
-  ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
-  twitterCard: 'summary_large_image'
+  ogDescription: description
 })
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="es">
     <NuxtLoadingIndicator />
 
     <NuxtLayout>

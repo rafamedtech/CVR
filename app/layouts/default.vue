@@ -1,135 +1,102 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui'
+import type { CommandPaletteGroup, NavigationMenuItem } from '@nuxt/ui'
+import type { CrmSession } from '~/types/crm'
 
-const route = useRoute()
-const toast = useToast()
+const open = shallowRef(false)
+const { setSession } = useCrmSession()
 
-const open = ref(false)
+const { data: sessionData } = await useFetch<CrmSession>('/api/session', {
+  key: 'crm-session-data'
+})
 
-const links = [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
-  to: '/',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Inbox',
-  icon: 'i-lucide-inbox',
-  to: '/inbox',
-  badge: '4',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Customers',
-  icon: 'i-lucide-users',
-  to: '/customers',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Settings',
-  to: '/settings',
-  icon: 'i-lucide-settings',
-  defaultOpen: true,
-  type: 'trigger',
-  children: [{
-    label: 'General',
-    to: '/settings',
+watch(sessionData, value => setSession(value ?? null), { immediate: true })
+
+const selectedRole = computed(() => sessionData.value?.workshops.find(workshop => (
+  workshop.id === sessionData.value?.selectedWorkshopId
+))?.role)
+const canViewExpenses = computed(() => (
+  sessionData.value?.profile.isSuperAdmin
+  || selectedRole.value === 'MANAGER'
+  || selectedRole.value === 'CASHIER'
+))
+
+const links = computed<NavigationMenuItem[][]>(() => [[
+  {
+    label: 'Resumen',
+    icon: 'i-lucide-layout-dashboard',
+    to: '/',
     exact: true,
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Members',
-    to: '/settings/members',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Notifications',
-    to: '/settings/notifications',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Security',
-    to: '/settings/security',
-    onSelect: () => {
-      open.value = false
-    }
-  }]
-}], [{
-  label: 'Feedback',
-  icon: 'i-lucide-message-circle',
-  to: 'https://github.com/nuxt-ui-templates/dashboard',
-  target: '_blank'
-}, {
-  label: 'Help & Support',
-  icon: 'i-lucide-info',
-  to: 'https://github.com/nuxt-ui-templates/dashboard',
-  target: '_blank'
-}]] satisfies NavigationMenuItem[][]
+    onSelect: () => { open.value = false }
+  },
+  {
+    label: 'Órdenes',
+    icon: 'i-lucide-clipboard-list',
+    to: '/orders',
+    onSelect: () => { open.value = false }
+  },
+  {
+    label: 'Clientes',
+    icon: 'i-lucide-users',
+    to: '/customers',
+    onSelect: () => { open.value = false }
+  },
+  {
+    label: 'Vehículos',
+    icon: 'i-lucide-car-front',
+    to: '/vehicles',
+    onSelect: () => { open.value = false }
+  },
+  ...(canViewExpenses.value
+    ? [{
+        label: 'Gastos',
+        icon: 'i-lucide-receipt-text',
+        to: '/expenses',
+        onSelect: () => { open.value = false }
+      }]
+    : []),
+  {
+    label: 'Configuración',
+    icon: 'i-lucide-settings',
+    to: '/settings',
+    onSelect: () => { open.value = false }
+  }
+]])
 
-const groups = computed(() => [{
-  id: 'links',
-  label: 'Go to',
-  items: links.flat()
-}, {
-  id: 'code',
-  label: 'Code',
-  items: [{
-    id: 'source',
-    label: 'View page source',
-    icon: 'i-simple-icons-github',
-    to: `https://github.com/nuxt-ui-templates/dashboard/blob/main/app/pages${route.path === '/' ? '/index' : route.path}.vue`,
-    target: '_blank'
-  }]
+const groups = computed<CommandPaletteGroup[]>(() => [{
+  id: 'navigation',
+  label: 'Ir a',
+  items: links.value.flat().map(item => ({
+    label: String(item.label ?? ''),
+    icon: typeof item.icon === 'string' ? item.icon : undefined,
+    to: typeof item.to === 'string' ? item.to : undefined
+  }))
 }])
 
-onMounted(async () => {
-  const cookie = useCookie('cookie-consent')
-  if (cookie.value === 'accepted') {
-    return
-  }
-
-  toast.add({
-    title: 'We use first-party cookies to enhance your experience on our website.',
-    duration: 0,
-    close: false,
-    actions: [{
-      label: 'Accept',
-      color: 'neutral',
-      variant: 'outline',
-      onClick: () => {
-        cookie.value = 'accepted'
-      }
-    }, {
-      label: 'Opt out',
-      color: 'neutral',
-      variant: 'ghost'
-    }]
-  })
+useHead({
+  titleTemplate: title => title ? `${title} · Control de Talleres` : 'Control de Talleres'
 })
 </script>
 
 <template>
   <UDashboardGroup unit="rem">
     <UDashboardSidebar
-      id="default"
+      id="crm"
       v-model:open="open"
       collapsible
       resizable
-      class="bg-elevated/25"
+      class="bg-elevated/40"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
+        <AppBrand :collapsed="collapsed" />
       </template>
 
       <template #default="{ collapsed }">
-        <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
+        <UDashboardSearchButton
+          :collapsed="collapsed"
+          label="Buscar"
+          class="bg-transparent ring-default"
+        />
 
         <UNavigationMenu
           :collapsed="collapsed"
@@ -139,13 +106,11 @@ onMounted(async () => {
           popover
         />
 
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[1]"
-          orientation="vertical"
-          tooltip
-          class="mt-auto"
-        />
+        <div v-if="!collapsed" class="mt-auto px-3 pb-2">
+          <p class="text-xs text-muted">
+            {{ sessionData?.selectedWorkshop?.name ?? 'Vista consolidada' }}
+          </p>
+        </div>
       </template>
 
       <template #footer="{ collapsed }">
@@ -154,9 +119,6 @@ onMounted(async () => {
     </UDashboardSidebar>
 
     <UDashboardSearch :groups="groups" />
-
     <slot />
-
-    <NotificationsSlideover />
   </UDashboardGroup>
 </template>

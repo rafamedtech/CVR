@@ -1,0 +1,126 @@
+<script setup lang="ts">
+import type {
+  CustomerListItem,
+  OrderListItem,
+  OrderStatus,
+  VehicleListItem
+} from '~/types/crm'
+
+useHead({ title: 'Órdenes' })
+
+const search = shallowRef('')
+const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
+const createOpen = shallowRef(false)
+const { canCreateInWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
+
+const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
+  default: () => [],
+  key: 'crm-orders'
+})
+const { data: customers } = await useFetch<CustomerListItem[]>('/api/customers', {
+  default: () => [],
+  key: 'crm-customers-for-orders'
+})
+const { data: vehicles } = await useFetch<VehicleListItem[]>('/api/vehicles', {
+  default: () => [],
+  key: 'crm-vehicles-for-orders'
+})
+const { data: members } = await useFetch<Array<{ id: string, fullName: string, role: string }>>('/api/workshop-members', {
+  default: () => [],
+  key: 'crm-members-for-orders',
+  immediate: canCreateInWorkshop.value
+})
+
+const statusOptions = [
+  { label: 'Todos los estados', value: 'ALL' },
+  ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
+]
+
+const filteredOrders = computed(() => {
+  const term = search.value.trim().toLocaleLowerCase('es-MX')
+
+  return orders.value.filter((order) => {
+    if (statusFilter.value !== 'ALL' && order.status !== statusFilter.value) return false
+    if (!term) return true
+    return [
+      order.orderNumber,
+      order.customerName,
+      order.licensePlate,
+      order.vehicleLabel
+    ].some(value => value.toLocaleLowerCase('es-MX').includes(term))
+  })
+})
+</script>
+
+<template>
+  <UDashboardPanel id="orders">
+    <template #header>
+      <UDashboardNavbar title="Órdenes de trabajo">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
+        <template #right>
+          <UButton
+            label="Nueva orden"
+            icon="i-lucide-file-plus-2"
+            :disabled="!canManageOrders || !customers.length || !vehicles.length"
+            @click="createOpen = true"
+          />
+          <WorkshopSwitcher />
+        </template>
+      </UDashboardNavbar>
+
+      <UDashboardToolbar>
+        <template #left>
+          <UInput
+            v-model="search"
+            icon="i-lucide-search"
+            placeholder="Buscar orden, cliente, placas o vehículo…"
+            class="w-full sm:w-96"
+          />
+          <USelect
+            v-model="statusFilter"
+            :items="statusOptions"
+            value-key="value"
+            class="w-48"
+          />
+        </template>
+      </UDashboardToolbar>
+    </template>
+
+    <template #body>
+      <UAlert
+        v-if="isAllWorkshops"
+        class="mb-4"
+        title="Vista consolidada"
+        description="Selecciona un taller para crear una orden nueva."
+        icon="i-lucide-info"
+        color="info"
+        variant="subtle"
+      />
+      <UAlert
+        v-else-if="!customers.length || !vehicles.length"
+        class="mb-4"
+        title="Faltan datos para crear una orden"
+        description="Necesitas por lo menos un cliente y un vehículo registrado."
+        icon="i-lucide-circle-alert"
+        color="warning"
+        variant="subtle"
+        :actions="[{ label: 'Registrar cliente', to: '/customers' }, { label: 'Registrar vehículo', to: '/vehicles' }]"
+      />
+
+      <OrdersTable
+        :orders="filteredOrders"
+        :loading="status === 'pending'"
+        :show-workshop="isAllWorkshops"
+      />
+      <OrdersOrderFormModal
+        v-model:open="createOpen"
+        :customers="customers"
+        :vehicles="vehicles"
+        :members="members"
+        @created="refresh"
+      />
+    </template>
+  </UDashboardPanel>
+</template>

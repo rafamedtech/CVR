@@ -1,69 +1,80 @@
 <script setup lang="ts">
-import { sub } from 'date-fns'
-import type { DropdownMenuItem } from '@nuxt/ui'
-import type { Period, Range } from '~/types'
+import type { DashboardData } from '~/types/crm'
 
-const { isNotificationsSlideoverOpen } = useDashboard()
+useHead({ title: 'Resumen' })
 
-const items = [[{
-  label: 'New mail',
-  icon: 'i-lucide-send',
-  to: '/inbox'
-}, {
-  label: 'New customer',
-  icon: 'i-lucide-user-plus',
-  to: '/customers'
-}]] satisfies DropdownMenuItem[][]
+const now = new Date()
+const from = shallowRef(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10))
+const to = shallowRef(now.toISOString().slice(0, 10))
+const { isAllWorkshops, activeWorkshop } = useCrmSession()
 
-const range = shallowRef<Range>({
-  start: sub(new Date(), { days: 14 }),
-  end: new Date()
+const { data, status, refresh } = await useFetch<DashboardData>('/api/dashboard', {
+  query: { from, to },
+  key: 'crm-dashboard',
+  watch: false
 })
-const period = ref<Period>('daily')
+
+async function applyRange() {
+  await refresh()
+}
 </script>
 
 <template>
-  <UDashboardPanel id="home">
+  <UDashboardPanel id="dashboard">
     <template #header>
-      <UDashboardNavbar title="Home" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar :title="isAllWorkshops ? 'Resumen consolidado' : activeWorkshop?.name ?? 'Resumen'">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UTooltip text="Notifications" :shortcuts="['N']">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              @click="isNotificationsSlideoverOpen = true"
-            >
-              <UChip color="error" inset>
-                <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
-              </UChip>
-            </UButton>
-          </UTooltip>
-
-          <UDropdownMenu :items="items">
-            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-          </UDropdownMenu>
+          <UButton
+            to="/orders"
+            label="Ver órdenes"
+            icon="i-lucide-clipboard-list"
+            color="neutral"
+            variant="outline"
+          />
+          <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>
 
       <UDashboardToolbar>
         <template #left>
-          <!-- NOTE: The `-ms-1` class is used to align with the `DashboardSidebarCollapse` button here. -->
-          <HomeDateRangePicker v-model="range" class="-ms-1" />
-
-          <HomePeriodSelect v-model="period" :range="range" />
+          <div class="flex flex-wrap items-end gap-2">
+            <UFormField label="Desde">
+              <UInput v-model="from" type="date" />
+            </UFormField>
+            <UFormField label="Hasta">
+              <UInput v-model="to" type="date" />
+            </UFormField>
+            <UButton label="Aplicar" icon="i-lucide-filter" @click="applyRange" />
+          </div>
         </template>
       </UDashboardToolbar>
     </template>
 
     <template #body>
-      <HomeStats :period="period" :range="range" />
-      <HomeChart :period="period" :range="range" />
-      <HomeSales :period="period" :range="range" />
+      <div v-if="status === 'pending'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <USkeleton v-for="index in 8" :key="index" class="h-32 rounded-xl" />
+      </div>
+
+      <div v-else-if="data" class="space-y-6">
+        <DashboardKpiGrid
+          :kpis="data.kpis"
+          :can-view-financials="data.canViewFinancials"
+        />
+
+        <div class="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+          <DashboardRecentOrders :orders="data.recentOrders" />
+          <DashboardStatusBreakdown :items="data.statusCounts" />
+        </div>
+
+        <DashboardWorkshopPerformance
+          v-if="isAllWorkshops && data.canViewFinancials"
+          :workshops="data.workshops"
+        />
+      </div>
     </template>
   </UDashboardPanel>
 </template>

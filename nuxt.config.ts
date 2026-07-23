@@ -1,10 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  modules: [
-    '@nuxt/eslint',
-    '@nuxt/ui',
-    '@vueuse/nuxt'
-  ],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase', '@vueuse/nuxt'],
 
   devtools: {
     enabled: true
@@ -14,11 +10,19 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/api/**': {
-      cors: true
+      cors: false,
+      headers: {
+        'cache-control': 'private, no-store'
+      }
     }
   },
 
   compatibilityDate: '2026-06-30',
+  vite: {
+    optimizeDeps: {
+      include: ['zod']
+    }
+  },
 
   eslint: {
     config: {
@@ -27,5 +31,21 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  supabase: {
+    redirect: true,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/login', '/forgot-password', '/confirm']
+    },
+    useSsrCookies: true,
+    cookieOptions: {
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 30
+    },
+    types: false
   }
 })
