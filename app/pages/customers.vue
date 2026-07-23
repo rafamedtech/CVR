@@ -36,12 +36,16 @@ async function handleCreated() {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UButton
-            label="Nuevo cliente"
-            icon="i-lucide-user-plus"
-            :disabled="!canManageCustomers"
-            @click="createOpen = true"
-          />
+          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+            <span class="inline-flex">
+              <UButton
+                label="Nuevo cliente"
+                icon="i-lucide-user-plus"
+                :disabled="!canManageCustomers"
+                @click="createOpen = true"
+              />
+            </span>
+          </UTooltip>
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>

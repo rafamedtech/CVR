@@ -42,12 +42,16 @@ const filteredVehicles = computed(() => {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UButton
-            label="Nuevo vehículo"
-            icon="i-lucide-circle-plus"
-            :disabled="!canManageCustomers || !customers.length"
-            @click="createOpen = true"
-          />
+          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+            <span class="inline-flex">
+              <UButton
+                label="Nuevo vehículo"
+                icon="i-lucide-circle-plus"
+                :disabled="!canManageCustomers || !customers.length"
+                @click="createOpen = true"
+              />
+            </span>
+          </UTooltip>
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>

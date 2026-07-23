@@ -1,15 +1,38 @@
 <script setup lang="ts">
+import { parseDate, type CalendarDate } from '@internationalized/date'
 import type { DashboardData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
 
 const now = new Date()
-const from = shallowRef(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10))
-const to = shallowRef(now.toISOString().slice(0, 10))
+
+function toDateString(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function formatDateInput(date: CalendarDate) {
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date.toDate('UTC'))
+}
+
+const from = shallowRef<CalendarDate>(parseDate(toDateString(new Date(now.getFullYear(), now.getMonth(), 1))))
+const to = shallowRef<CalendarDate>(parseDate(toDateString(now)))
+const fromOpen = ref(false)
+const toOpen = ref(false)
 const { isAllWorkshops, activeWorkshop } = useCrmSession()
 
 const { data, status, refresh } = await useFetch<DashboardData>('/api/dashboard', {
-  query: { from, to },
+  query: computed(() => ({
+    from: from.value.toString(),
+    to: to.value.toString()
+  })),
   key: 'crm-dashboard',
   watch: false
 })
@@ -39,14 +62,38 @@ async function applyRange() {
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar>
+      <UDashboardToolbar class="py-4">
         <template #left>
           <div class="flex flex-wrap items-end gap-2">
             <UFormField label="Desde">
-              <UInput v-model="from" type="date" />
+              <UPopover v-model:open="fromOpen">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-calendar-days"
+                  :label="formatDateInput(from)"
+                  class="w-40 justify-start font-normal"
+                />
+
+                <template #content>
+                  <UCalendar v-model="from" locale="es-MX" @update:model-value="fromOpen = false" />
+                </template>
+              </UPopover>
             </UFormField>
             <UFormField label="Hasta">
-              <UInput v-model="to" type="date" />
+              <UPopover v-model:open="toOpen">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-calendar-days"
+                  :label="formatDateInput(to)"
+                  class="w-40 justify-start font-normal"
+                />
+
+                <template #content>
+                  <UCalendar v-model="to" locale="es-MX" @update:model-value="toOpen = false" />
+                </template>
+              </UPopover>
             </UFormField>
             <UButton label="Aplicar" icon="i-lucide-filter" @click="applyRange" />
           </div>

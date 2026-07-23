@@ -60,12 +60,16 @@ const filteredOrders = computed(() => {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UButton
-            label="Nueva orden"
-            icon="i-lucide-file-plus-2"
-            :disabled="!canManageOrders || !customers.length || !vehicles.length"
-            @click="createOpen = true"
-          />
+          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+            <span class="inline-flex">
+              <UButton
+                label="Nueva orden"
+                icon="i-lucide-file-plus-2"
+                :disabled="!canManageOrders || !customers.length || !vehicles.length"
+                @click="createOpen = true"
+              />
+            </span>
+          </UTooltip>
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>

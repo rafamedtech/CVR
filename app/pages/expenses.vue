@@ -34,12 +34,16 @@ const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UButton
-            label="Registrar gasto"
-            icon="i-lucide-receipt-text"
-            :disabled="!canCreateInWorkshop"
-            @click="createOpen = true"
-          />
+          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+            <span class="inline-flex">
+              <UButton
+                label="Registrar gasto"
+                icon="i-lucide-receipt-text"
+                :disabled="!canCreateInWorkshop"
+                @click="createOpen = true"
+              />
+            </span>
+          </UTooltip>
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>

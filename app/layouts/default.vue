@@ -85,7 +85,10 @@ useHead({
       collapsible
       resizable
       class="bg-elevated/40"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
+      :ui="{
+        header: 'h-auto py-2',
+        footer: 'lg:border-t lg:border-default'
+      }"
     >
       <template #header="{ collapsed }">
         <AppBrand :collapsed="collapsed" />
