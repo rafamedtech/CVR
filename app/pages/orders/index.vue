@@ -110,7 +110,7 @@ const filteredOrders = computed(() => {
         icon="i-lucide-circle-alert"
         color="warning"
         variant="subtle"
-        :actions="[{ label: 'Registrar cliente', to: '/customers' }, { label: 'Registrar vehículo', to: '/vehicles' }]"
+        :actions="[{ label: 'Registrar cliente', to: '/clientes' }, { label: 'Registrar vehículo', to: '/vehicles' }]"
       />
 
       <OrdersTable

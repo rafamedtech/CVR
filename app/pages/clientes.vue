@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CustomerListItem } from '~/types/crm'
+import { formatPhone } from '~/utils/crm'
 
 useHead({ title: 'Clientes' })
 
@@ -18,6 +19,7 @@ const filteredCustomers = computed(() => {
   return customers.value.filter(customer => [
     customer.fullName,
     customer.phone,
+    formatPhone(customer.phone),
     customer.email,
     customer.taxId
   ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))

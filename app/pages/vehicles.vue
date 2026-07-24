@@ -92,7 +92,7 @@ const filteredVehicles = computed(() => {
         icon="i-lucide-user-plus"
         color="warning"
         variant="subtle"
-        :actions="[{ label: 'Ir a clientes', to: '/customers' }]"
+        :actions="[{ label: 'Ir a clientes', to: '/clientes' }]"
       />
 
       <VehiclesTable

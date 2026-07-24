@@ -11,8 +11,8 @@ const toast = useToast()
 const loading = shallowRef(false)
 const schema = z.object({
   fullName: z.string().min(2, 'Escribe el nombre del cliente.'),
-  phone: z.string().min(7, 'Escribe un teléfono válido.'),
-  alternatePhone: z.string().optional(),
+  phone: z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'),
+  alternatePhone: z.union([z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'), z.literal('')]),
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]),
   taxId: z.string().optional(),
   address: z.string().optional(),
@@ -89,10 +89,10 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
           <UInput v-model="state.fullName" class="w-full" autofocus />
         </UFormField>
         <UFormField name="phone" label="Teléfono" required>
-          <UInput v-model="state.phone" class="w-full" />
+          <PhoneInput v-model="state.phone" />
         </UFormField>
         <UFormField name="alternatePhone" label="Teléfono alterno">
-          <UInput v-model="state.alternatePhone" class="w-full" />
+          <PhoneInput v-model="state.alternatePhone" />
         </UFormField>
         <UFormField name="email" label="Correo">
           <UInput v-model="state.email" type="email" class="w-full" />

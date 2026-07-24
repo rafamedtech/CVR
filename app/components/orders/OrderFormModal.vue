@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CustomerListItem, OrderItemDraft, TaxRate, VehicleListItem } from '~/types/crm'
-import { taxRateValues } from '~/utils/crm'
+import { formatPhone, taxRateValues } from '~/utils/crm'
 
 const props = defineProps<{
   customers: CustomerListItem[]
@@ -70,7 +70,7 @@ const state = reactive<{
 })
 
 const customerOptions = computed(() => props.customers.map(customer => ({
-  label: `${customer.fullName} · ${customer.phone}`,
+  label: `${customer.fullName} · ${formatPhone(customer.phone)}`,
   value: customer.id
 })))
 const vehicleOptions = computed(() => props.vehicles

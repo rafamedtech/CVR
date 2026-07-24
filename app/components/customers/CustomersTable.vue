@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { CustomerListItem } from '~/types/crm'
+import { formatPhone } from '~/utils/crm'
 
 defineProps<{
   customers: CustomerListItem[]
@@ -36,8 +37,8 @@ const columns: TableColumn<CustomerListItem>[] = [{
           <p class="font-medium text-highlighted">
             {{ row.original.fullName }}
           </p>
-          <p class="text-xs text-muted">
-            {{ row.original.email || 'Sin correo registrado' }}
+          <p v-if="row.original.taxId" class="text-xs text-muted">
+            RFC: {{ row.original.taxId }}
           </p>
         </div>
       </template>
@@ -45,10 +46,10 @@ const columns: TableColumn<CustomerListItem>[] = [{
       <template #phone-cell="{ row }">
         <div>
           <p class="text-default">
-            {{ row.original.phone }}
+            {{ formatPhone(row.original.phone) }}
           </p>
-          <p v-if="row.original.taxId" class="text-xs text-muted">
-            RFC: {{ row.original.taxId }}
+          <p class="text-xs text-muted">
+            {{ row.original.email || 'Sin correo registrado' }}
           </p>
         </div>
       </template>

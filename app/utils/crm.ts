@@ -17,6 +17,17 @@ export const taxRateOptions: Array<{ label: string, value: TaxRate }> = [
   { label: '16%', value: 16 }
 ]
 
+export function normalizePhone(value: string) {
+  return value.replace(/\D/g, '').slice(0, 10)
+}
+
+export function formatPhone(value: string | null | undefined) {
+  const digits = normalizePhone(value ?? '')
+  if (digits.length <= 3) return digits ? `(${digits}${digits.length === 3 ? ')' : ''}` : ''
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
 export const orderStatusLabels: Record<OrderStatus, string> = {
   ESTIMATE: 'Cotización',
   AWAITING_APPROVAL: 'Por aprobar',

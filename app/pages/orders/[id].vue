@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OrderDetail, OrderStatus } from '~/types/crm'
+import { formatPhone } from '~/utils/crm'
 
 const route = useRoute()
 const toast = useToast()
@@ -98,7 +99,7 @@ async function updateStatus(value: OrderStatus) {
               {{ order.customerName }}
             </p>
             <p class="text-sm text-muted">
-              {{ order.customerPhone }}
+              {{ formatPhone(order.customerPhone) }}
             </p>
           </UCard>
           <UCard>

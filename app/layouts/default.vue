@@ -37,7 +37,7 @@ const links = computed<NavigationMenuItem[][]>(() => [[
   {
     label: 'Clientes',
     icon: 'i-lucide-users',
-    to: '/customers',
+    to: '/clientes',
     onSelect: () => { open.value = false }
   },
   {
