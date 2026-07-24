@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
       slug: workshop.slug,
       name: workshop.name,
       type: workshop.type,
+      taxRate: Number(workshop.taxRate),
       role: 'role' in workshop ? workshop.role : undefined
     })),
     selectedWorkshopId: context.workshopId,
@@ -34,7 +35,8 @@ export default defineEventHandler(async (event) => {
           id: context.selectedWorkshop.id,
           slug: context.selectedWorkshop.slug,
           name: context.selectedWorkshop.name,
-          type: context.selectedWorkshop.type
+          type: context.selectedWorkshop.type,
+          taxRate: Number(context.selectedWorkshop.taxRate)
         }
       : null,
     canViewAll: context.isSuperAdmin

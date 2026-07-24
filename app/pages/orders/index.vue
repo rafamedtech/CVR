@@ -11,7 +11,7 @@ useHead({ title: 'Órdenes' })
 const search = shallowRef('')
 const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
 const createOpen = shallowRef(false)
-const { canCreateInWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
+const { activeWorkshop, canCreateInWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
 
 const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
   default: () => [],
@@ -123,6 +123,7 @@ const filteredOrders = computed(() => {
         :customers="customers"
         :vehicles="vehicles"
         :members="members"
+        :default-tax-rate="activeWorkshop?.taxRate ?? 16"
         @created="refresh"
       />
     </template>

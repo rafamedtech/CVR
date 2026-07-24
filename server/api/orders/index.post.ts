@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { taxRateSchema } from '../../utils/tax'
 
 const lineItemSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -7,7 +8,7 @@ const lineItemSchema = z.object({
   unitCost: z.coerce.number().nonnegative().default(0),
   unitPrice: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative().default(0),
-  taxRate: z.coerce.number().min(0).max(100).default(16)
+  taxRate: taxRateSchema.optional()
 })
 
 const orderSchema = z.object({
@@ -74,7 +75,11 @@ export default defineEventHandler(async (event) => {
     }
   })
   const orderNumber = `OT-${year}-${String(count + 1).padStart(4, '0')}`
-  const calculatedItems = body.items.map(calculateLineItem)
+  const defaultTaxRate = Number(context.selectedWorkshop?.taxRate ?? 16)
+  const calculatedItems = body.items.map(item => calculateLineItem({
+    ...item,
+    taxRate: item.taxRate ?? defaultTaxRate
+  }))
   const totals = calculatedItems.reduce((result, item) => ({
     subtotal: result.subtotal + item.subtotal,
     discountTotal: result.discountTotal + item.discount,

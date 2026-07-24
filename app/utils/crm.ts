@@ -4,9 +4,18 @@ import type {
   OrderPriority,
   OrderStatus,
   PaymentMethod,
+  TaxRate,
   WorkshopRole,
   WorkshopType
 } from '~/types/crm'
+
+export const taxRateValues: readonly TaxRate[] = [0, 8, 16]
+
+export const taxRateOptions: Array<{ label: string, value: TaxRate }> = [
+  { label: 'NO APLICA', value: 0 },
+  { label: '8%', value: 8 },
+  { label: '16%', value: 16 }
+]
 
 export const orderStatusLabels: Record<OrderStatus, string> = {
   ESTIMATE: 'Cotización',

@@ -1,5 +1,6 @@
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'
+export type TaxRate = 0 | 8 | 16
 export type OrderStatus = 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'CANCELLED'
 export type OrderPriority = 'NORMAL' | 'HIGH' | 'URGENT'
 export type LineItemType = 'SERVICE' | 'PART' | 'LABOR' | 'OTHER'
@@ -11,6 +12,7 @@ export interface WorkshopSummary {
   slug: string
   name: string
   type: WorkshopType
+  taxRate: TaxRate
   role?: WorkshopRole
 }
 
@@ -82,7 +84,7 @@ export interface OrderItemDraft {
   unitCost: number
   unitPrice: number
   discount: number
-  taxRate: number
+  taxRate: TaxRate
 }
 
 export interface OrderPayment {
@@ -130,6 +132,7 @@ export interface OrderDetail extends OrderListItem {
   subtotal: number
   discountTotal: number
   taxTotal: number
+  workshopTaxRate: TaxRate
   items: OrderLineItem[]
   payments: OrderPayment[]
 }

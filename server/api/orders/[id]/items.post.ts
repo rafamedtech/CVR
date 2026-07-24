@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { taxRateSchema } from '../../../utils/tax'
 
 const itemSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -7,7 +8,7 @@ const itemSchema = z.object({
   unitCost: z.coerce.number().nonnegative().default(0),
   unitPrice: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative().default(0),
-  taxRate: z.coerce.number().min(0).max(100).default(16)
+  taxRate: taxRateSchema.optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -27,10 +28,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró la orden.' })
   }
 
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: order.workshopId },
+    select: { taxRate: true }
+  })
+  const defaultTaxRate = Number(workshop?.taxRate ?? 16)
+
   const item = await prisma.orderItem.create({
     data: {
       orderId: order.id,
-      ...calculateLineItem(body)
+      ...calculateLineItem({
+        ...body,
+        taxRate: body.taxRate ?? defaultTaxRate
+      })
     }
   })
   await recalculateOrder(order.id)

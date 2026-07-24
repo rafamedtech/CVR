@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
     taxTotal: Number(order.taxTotal),
+    workshopTaxRate: Number(order.workshop.taxRate),
     items: order.items.map(item => ({
       id: item.id,
       type: item.type,

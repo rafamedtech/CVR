@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { OrderLineItem } from '~/types/crm'
+import type { OrderLineItem, TaxRate } from '~/types/crm'
+import { taxRateOptions, taxRateValues } from '~/utils/crm'
 
 const props = defineProps<{
   orderId: string
@@ -9,6 +10,7 @@ const props = defineProps<{
   subtotal: number
   taxTotal: number
   total: number
+  defaultTaxRate: TaxRate
   canEdit?: boolean
 }>()
 const emit = defineEmits<{ updated: [] }>()
@@ -25,17 +27,18 @@ const schema = z.object({
   unitCost: z.coerce.number().nonnegative(),
   unitPrice: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative(),
-  taxRate: z.coerce.number().min(0).max(100)
+  taxRate: z.coerce.number().refine(value => taxRateValues.includes(value as TaxRate), 'Selecciona una tasa de IVA válida.')
 })
 type ItemSchema = z.output<typeof schema>
-const state = reactive<ItemSchema>({
+type ItemFormState = Omit<ItemSchema, 'taxRate'> & { taxRate: TaxRate }
+const state = reactive<ItemFormState>({
   type: 'SERVICE',
   description: '',
   quantity: 1,
   unitCost: 0,
   unitPrice: 0,
   discount: 0,
-  taxRate: 16
+  taxRate: props.defaultTaxRate
 })
 
 async function onSubmit(event: FormSubmitEvent<ItemSchema>) {
@@ -115,7 +118,7 @@ async function removeItem(itemId: string) {
           <p class="text-xs text-muted">
             {{ item.quantity }} × {{ formatCurrency(item.unitPrice) }}
             <span v-if="item.discount"> · Descuento {{ formatCurrency(item.discount) }}</span>
-            · IVA {{ item.taxRate }}%
+            · IVA {{ item.taxRate === 0 ? 'NO APLICA' : `${item.taxRate}%` }}
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
@@ -217,11 +220,10 @@ async function removeItem(itemId: string) {
             />
           </UFormField>
           <UFormField name="taxRate" label="IVA (%)">
-            <UInput
+            <USelect
               v-model="state.taxRate"
-              type="number"
-              min="0"
-              max="100"
+              :items="taxRateOptions"
+              value-key="value"
               class="w-full"
             />
           </UFormField>

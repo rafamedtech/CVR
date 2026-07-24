@@ -186,6 +186,7 @@ async function updateStatus(value: OrderStatus) {
             :subtotal="order.subtotal"
             :tax-total="order.taxTotal"
             :total="order.total"
+            :default-tax-rate="order.workshopTaxRate"
             :can-edit="canManageOrders"
             @updated="refresh"
           />

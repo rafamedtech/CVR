@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { CustomerListItem, OrderItemDraft, VehicleListItem } from '~/types/crm'
+import type { CustomerListItem, OrderItemDraft, TaxRate, VehicleListItem } from '~/types/crm'
+import { taxRateValues } from '~/utils/crm'
 
 const props = defineProps<{
   customers: CustomerListItem[]
   vehicles: VehicleListItem[]
   members: Array<{ id: string, fullName: string, role: string }>
+  defaultTaxRate: TaxRate
 }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
+const unassignedMemberValue = '__unassigned__'
 
 const lineSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -20,7 +23,7 @@ const lineSchema = z.object({
   unitCost: z.coerce.number().nonnegative(),
   unitPrice: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative(),
-  taxRate: z.coerce.number().min(0).max(100)
+  taxRate: z.coerce.number().refine(value => taxRateValues.includes(value as TaxRate), 'Selecciona una tasa de IVA válida.')
 })
 const schema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente.'),
@@ -62,7 +65,7 @@ const state = reactive<{
   mileageIn: undefined,
   fuelLevelIn: undefined,
   promisedAt: '',
-  assignedToId: '',
+  assignedToId: unassignedMemberValue,
   items: []
 })
 
@@ -77,7 +80,7 @@ const vehicleOptions = computed(() => props.vehicles
     value: vehicle.id
   })))
 const memberOptions = computed(() => [
-  { label: 'Sin asignar', value: '' },
+  { label: 'Sin asignar', value: unassignedMemberValue },
   ...props.members.map(member => ({
     label: `${member.fullName} · ${member.role === 'TECHNICIAN' ? 'Técnico' : workshopRoleLabels[member.role as keyof typeof workshopRoleLabels] ?? member.role}`,
     value: member.id
@@ -96,7 +99,10 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
   try {
     const result = await $fetch<{ id: string }>('/api/orders', {
       method: 'POST',
-      body: event.data
+      body: {
+        ...event.data,
+        assignedToId: event.data.assignedToId === unassignedMemberValue ? '' : event.data.assignedToId
+      }
     })
     toast.add({ title: 'Orden creada', color: 'success', icon: 'i-lucide-check' })
     open.value = false
@@ -213,7 +219,10 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
         </div>
 
         <USeparator />
-        <OrdersOrderItemsEditor v-model="state.items" />
+        <OrdersOrderItemsEditor
+          v-model="state.items"
+          :default-tax-rate="defaultTaxRate"
+        />
 
         <UFormField name="internalNotes" label="Notas internas">
           <UTextarea

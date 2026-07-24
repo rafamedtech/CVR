@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { OrderItemDraft } from '~/types/crm'
+import type { OrderItemDraft, TaxRate } from '~/types/crm'
+import { taxRateOptions } from '~/utils/crm'
+
+const props = defineProps<{
+  defaultTaxRate: TaxRate
+}>()
 
 const items = defineModel<OrderItemDraft[]>({ required: true })
 
@@ -13,7 +18,7 @@ function addItem() {
     unitCost: 0,
     unitPrice: 0,
     discount: 0,
-    taxRate: 16
+    taxRate: props.defaultTaxRate
   })
 }
 
@@ -105,11 +110,10 @@ function lineTotal(item: OrderItemDraft) {
             />
           </UFormField>
           <UFormField :name="`items.${index}.taxRate`" label="IVA (%)">
-            <UInput
+            <USelect
               v-model="item.taxRate"
-              type="number"
-              min="0"
-              max="100"
+              :items="taxRateOptions"
+              value-key="value"
               class="w-full"
             />
           </UFormField>
