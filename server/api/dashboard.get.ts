@@ -92,8 +92,68 @@ export default defineEventHandler(async (event) => {
     .filter(order => order.deliveredAt)
     .map(order => (order.deliveredAt!.getTime() - order.createdAt.getTime()) / 86_400_000)
   const statusMap = new Map<string, number>()
+  const trendMap = new Map<string, {
+    date: string
+    sales: number
+    collected: number
+    expenses: number
+    orders: number
+    delivered: number
+  }>()
+
+  const trendKey = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+  const trendEntry = (date: Date) => {
+    const key = trendKey(date)
+    const current = trendMap.get(key)
+
+    if (current) return current
+
+    const entry = {
+      date: `${key}T12:00:00.000Z`,
+      sales: 0,
+      collected: 0,
+      expenses: 0,
+      orders: 0,
+      delivered: 0
+    }
+    trendMap.set(key, entry)
+
+    return entry
+  }
+
+  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
+  const lastDay = new Date(to.getFullYear(), to.getMonth(), to.getDate())
+  while (cursor <= lastDay) {
+    trendEntry(cursor)
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
   for (const order of periodOrders) {
     statusMap.set(order.status, (statusMap.get(order.status) ?? 0) + 1)
+    const orderEntry = trendEntry(order.createdAt)
+    orderEntry.sales += canViewFinancials ? Number(order.total) : 0
+    orderEntry.orders += 1
+    orderEntry.delivered += order.status === 'DELIVERED' ? 1 : 0
+
+    if (canViewFinancials) {
+      for (const payment of order.payments) {
+        if (payment.paidAt >= from && payment.paidAt <= to) {
+          trendEntry(payment.paidAt).collected += Number(payment.amount)
+        }
+      }
+    }
+  }
+
+  if (canViewFinancials) {
+    for (const expense of expenses) {
+      trendEntry(expense.expenseDate).expenses += Number(expense.amount)
+    }
   }
 
   return {
@@ -102,6 +162,7 @@ export default defineEventHandler(async (event) => {
       from: from.toISOString(),
       to: to.toISOString()
     },
+    trend: [...trendMap.values()].sort((a, b) => a.date.localeCompare(b.date)),
     kpis: {
       sales: canViewFinancials ? sales : 0,
       collected: canViewFinancials ? collected : 0,

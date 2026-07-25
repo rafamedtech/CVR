@@ -112,10 +112,19 @@ async function applyRange() {
           :can-view-financials="data.canViewFinancials"
         />
 
-        <div class="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-          <DashboardRecentOrders :orders="data.recentOrders" />
-          <DashboardStatusBreakdown :items="data.statusCounts" />
+        <div class="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+          <DashboardTrend
+            class="h-full"
+            :items="data.trend"
+            :can-view-financials="data.canViewFinancials"
+          />
+          <DashboardStatusBreakdown
+            class="h-full"
+            :items="data.statusCounts"
+          />
         </div>
+
+        <DashboardRecentOrders :orders="data.recentOrders" />
 
         <DashboardWorkshopPerformance
           v-if="isAllWorkshops && data.canViewFinancials"

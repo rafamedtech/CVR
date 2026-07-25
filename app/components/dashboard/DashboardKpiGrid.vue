@@ -56,12 +56,6 @@ const operationalCards = computed(() => [{
   description: 'Entregadas en el periodo',
   icon: 'i-lucide-circle-check-big',
   color: 'text-success'
-}, {
-  label: 'Tiempo de entrega',
-  value: `${props.kpis.averageDays.toFixed(1)} días`,
-  description: `${props.kpis.completedOrders} órdenes entregadas`,
-  icon: 'i-lucide-clock-3',
-  color: 'text-secondary'
 }])
 
 const cards = computed(() => props.canViewFinancials

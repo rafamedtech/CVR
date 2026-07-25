@@ -71,6 +71,7 @@ export function serializeOrderListItem(order: OrderForList) {
     id: order.id,
     workshopId: order.workshopId,
     workshopName: order.workshop.name,
+    customerId: order.customerId,
     orderNumber: order.orderNumber,
     status: order.status,
     priority: order.priority,

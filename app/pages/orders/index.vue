@@ -8,6 +8,7 @@ import type {
 
 useHead({ title: 'Órdenes' })
 
+const route = useRoute()
 const search = shallowRef('')
 const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
 const createOpen = shallowRef(false)
@@ -37,9 +38,11 @@ const statusOptions = [
 ]
 
 const filteredOrders = computed(() => {
+  const customerId = typeof route.query.customer === 'string' ? route.query.customer : null
   const term = search.value.trim().toLocaleLowerCase('es-MX')
 
   return orders.value.filter((order) => {
+    if (customerId && order.customerId !== customerId) return false
     if (statusFilter.value !== 'ALL' && order.status !== statusFilter.value) return false
     if (!term) return true
     return [
@@ -81,6 +84,14 @@ const filteredOrders = computed(() => {
             icon="i-lucide-search"
             placeholder="Buscar orden, cliente, placas o vehículo…"
             class="w-full sm:w-96"
+          />
+          <UButton
+            v-if="route.query.customer"
+            label="Quitar filtro de cliente"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-x"
+            to="/orders"
           />
           <USelect
             v-model="statusFilter"

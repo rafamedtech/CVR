@@ -45,6 +45,12 @@ export interface CustomerListItem {
   createdAt: string
 }
 
+export interface CustomerDetail extends CustomerListItem {
+  workshopTypes: WorkshopType[]
+  vehicles: VehicleListItem[]
+  orders: OrderListItem[]
+}
+
 export interface VehicleListItem {
   id: string
   workshopId: string
@@ -101,6 +107,7 @@ export interface OrderListItem {
   id: string
   workshopId: string
   workshopName: string
+  customerId: string
   orderNumber: string
   status: OrderStatus
   priority: OrderPriority
@@ -170,6 +177,14 @@ export interface DashboardData {
     from: string
     to: string
   }
+  trend: Array<{
+    date: string
+    sales: number
+    collected: number
+    expenses: number
+    orders: number
+    delivered: number
+  }>
   kpis: {
     sales: number
     collected: number

@@ -3,30 +3,44 @@ import type { TableColumn } from '@nuxt/ui'
 import type { CustomerListItem } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
-defineProps<{
+const props = defineProps<{
   customers: CustomerListItem[]
   loading?: boolean
   showWorkshop?: boolean
+  canEdit?: boolean
+}>()
+const emit = defineEmits<{
+  edit: [customer: CustomerListItem]
 }>()
 
-const columns: TableColumn<CustomerListItem>[] = [{
-  accessorKey: 'fullName',
-  header: 'Cliente'
-}, {
-  accessorKey: 'phone',
-  header: 'Contacto'
-}, {
-  accessorKey: 'vehiclesCount',
-  header: 'Vehículos'
-}, {
-  accessorKey: 'ordersCount',
-  header: 'Órdenes'
-}, {
-  accessorKey: 'workshopName',
-  header: 'Taller'
-}, {
-  id: 'actions'
-}]
+const columns = computed<TableColumn<CustomerListItem>[]>(() => {
+  const baseColumns: TableColumn<CustomerListItem>[] = [{
+    accessorKey: 'fullName',
+    header: 'Cliente'
+  }, {
+    accessorKey: 'phone',
+    header: 'Contacto'
+  }, {
+    accessorKey: 'vehiclesCount',
+    header: 'Vehículos'
+  }, {
+    accessorKey: 'ordersCount',
+    header: 'Órdenes'
+  }, {
+    id: 'actions'
+  }]
+
+  if (!props.showWorkshop) return baseColumns
+
+  return [
+    ...baseColumns.slice(0, -1),
+    {
+      accessorKey: 'workshopName',
+      header: 'Taller'
+    },
+    baseColumns.at(-1)!
+  ]
+})
 </script>
 
 <template>
@@ -34,9 +48,12 @@ const columns: TableColumn<CustomerListItem>[] = [{
     <UTable :data="customers" :columns="columns" :loading="loading">
       <template #fullName-cell="{ row }">
         <div>
-          <p class="font-medium text-highlighted">
+          <NuxtLink
+            :to="`/clientes/${row.original.id}`"
+            class="font-medium text-primary hover:underline"
+          >
             {{ row.original.fullName }}
-          </p>
+          </NuxtLink>
           <p v-if="row.original.taxId" class="text-xs text-muted">
             RFC: {{ row.original.taxId }}
           </p>
@@ -55,27 +72,49 @@ const columns: TableColumn<CustomerListItem>[] = [{
       </template>
 
       <template #vehiclesCount-cell="{ row }">
-        <UBadge :label="String(row.original.vehiclesCount)" color="neutral" variant="subtle" />
+        <NuxtLink
+          :to="{ path: '/vehicles', query: { customer: row.original.id } }"
+          :aria-label="`Ver vehículos de ${row.original.fullName}`"
+          class="inline-flex rounded-md"
+        >
+          <UBadge
+            :label="String(row.original.vehiclesCount)"
+            color="neutral"
+            variant="subtle"
+            class="cursor-pointer transition-opacity hover:opacity-80"
+          />
+        </NuxtLink>
       </template>
 
       <template #ordersCount-cell="{ row }">
-        <UBadge :label="String(row.original.ordersCount)" color="primary" variant="subtle" />
+        <NuxtLink
+          :to="{ path: '/orders', query: { customer: row.original.id } }"
+          :aria-label="`Ver órdenes de ${row.original.fullName}`"
+          class="inline-flex rounded-md"
+        >
+          <UBadge
+            :label="String(row.original.ordersCount)"
+            color="primary"
+            variant="subtle"
+            class="cursor-pointer transition-opacity hover:opacity-80"
+          />
+        </NuxtLink>
       </template>
 
       <template #workshopName-cell="{ row }">
-        <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
-        <span v-else>—</span>
+        <span class="text-sm text-muted">{{ row.original.workshopName }}</span>
       </template>
 
       <template #actions-cell="{ row }">
         <div class="flex justify-end">
           <UButton
-            :to="{ path: '/vehicles', query: { customer: row.original.id } }"
-            label="Ver vehículos"
-            icon="i-lucide-car-front"
+            label="Editar"
+            icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
             size="sm"
+            :disabled="!canEdit"
+            @click="emit('edit', row.original)"
           />
         </div>
       </template>

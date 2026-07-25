@@ -6,6 +6,8 @@ useHead({ title: 'Clientes' })
 
 const search = shallowRef('')
 const createOpen = shallowRef(false)
+const editOpen = shallowRef(false)
+const selectedCustomer = shallowRef<CustomerListItem | null>(null)
 const { canManageCustomers, isAllWorkshops } = useCrmSession()
 const { data: customers, status, refresh } = await useFetch<CustomerListItem[]>('/api/customers', {
   default: () => [],
@@ -26,6 +28,15 @@ const filteredCustomers = computed(() => {
 })
 
 async function handleCreated() {
+  await refresh()
+}
+
+function handleEdit(customer: CustomerListItem) {
+  selectedCustomer.value = customer
+  editOpen.value = true
+}
+
+async function handleUpdated() {
   await refresh()
 }
 </script>
@@ -79,11 +90,18 @@ async function handleCreated() {
         :customers="filteredCustomers"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
+        :can-edit="canManageCustomers"
+        @edit="handleEdit"
       />
 
       <CustomersCustomerFormModal
         v-model:open="createOpen"
         @created="handleCreated"
+      />
+      <CustomersCustomerEditModal
+        v-model:open="editOpen"
+        :customer="selectedCustomer"
+        @updated="handleUpdated"
       />
     </template>
   </UDashboardPanel>
