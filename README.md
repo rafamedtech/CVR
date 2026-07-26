@@ -112,10 +112,11 @@ Después de iniciar sesión una vez con el administrador general:
 pnpm db:seed
 ```
 
-El seed agrega una muestra identificable y repetible para los dos talleres: colaboradores con
-todos los roles, clientes, vehículos, órdenes en todos los estados y prioridades, servicios,
-partes, mano de obra, otros conceptos, todos los métodos de pago y todas las categorías de
-gasto. También incluye órdenes entregadas del mes anterior para probar el filtro de fechas.
+El seed agrega una muestra identificable y repetible para los dos talleres: clientes, vehículos,
+órdenes en todos los estados y prioridades, servicios, partes, mano de obra, otros conceptos,
+todos los métodos de pago y todas las categorías de gasto. El historial se registra a nombre
+del administrador general y el seed no crea usuarios adicionales. También incluye órdenes
+entregadas del mes anterior para probar el filtro de fechas.
 
 Volver a ejecutarlo actualiza únicamente los registros `DEMO`; no duplica la muestra ni elimina
 los datos capturados manualmente.

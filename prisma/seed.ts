@@ -7,7 +7,6 @@ import {
   OrderStatus,
   PaymentMethod,
   PrismaClient,
-  WorkshopRole,
   WorkshopType
 } from '../generated/prisma/client'
 
@@ -22,16 +21,6 @@ const prisma = new PrismaClient({
 })
 
 const ids = {
-  staff: {
-    bodyManager: '10000000-0000-4000-8000-000000000001',
-    bodyAdvisor: '10000000-0000-4000-8000-000000000002',
-    bodyTechnician: '10000000-0000-4000-8000-000000000003',
-    bodyCashier: '10000000-0000-4000-8000-000000000004',
-    mechanicalManager: '10000000-0000-4000-8000-000000000005',
-    mechanicalAdvisor: '10000000-0000-4000-8000-000000000006',
-    mechanicalTechnician: '10000000-0000-4000-8000-000000000007',
-    mechanicalCashier: '10000000-0000-4000-8000-000000000008'
-  },
   customers: {
     bodyOne: '20000000-0000-4000-8000-000000000001',
     bodyTwo: '20000000-0000-4000-8000-000000000002',
@@ -276,105 +265,6 @@ async function main() {
     })
   ])
 
-  const staff = [
-    {
-      id: ids.staff.bodyManager,
-      email: 'mariana.lopez@demo.cvr.local',
-      fullName: 'Mariana López · Muestra',
-      phone: '(664) 555-1101',
-      workshopId: bodyWorkshop.id,
-      role: WorkshopRole.MANAGER
-    },
-    {
-      id: ids.staff.bodyAdvisor,
-      email: 'jorge.ibarra@demo.cvr.local',
-      fullName: 'Jorge Ibarra · Muestra',
-      phone: '(664) 555-1102',
-      workshopId: bodyWorkshop.id,
-      role: WorkshopRole.ADVISOR
-    },
-    {
-      id: ids.staff.bodyTechnician,
-      email: 'luis.mendoza@demo.cvr.local',
-      fullName: 'Luis Mendoza · Muestra',
-      phone: '(664) 555-1103',
-      workshopId: bodyWorkshop.id,
-      role: WorkshopRole.TECHNICIAN
-    },
-    {
-      id: ids.staff.bodyCashier,
-      email: 'ana.torres@demo.cvr.local',
-      fullName: 'Ana Torres · Muestra',
-      phone: '(664) 555-1104',
-      workshopId: bodyWorkshop.id,
-      role: WorkshopRole.CASHIER
-    },
-    {
-      id: ids.staff.mechanicalManager,
-      email: 'carlos.ramirez@demo.cvr.local',
-      fullName: 'Carlos Ramírez · Muestra',
-      phone: '(664) 555-1201',
-      workshopId: mechanicalWorkshop.id,
-      role: WorkshopRole.MANAGER
-    },
-    {
-      id: ids.staff.mechanicalAdvisor,
-      email: 'sofia.castillo@demo.cvr.local',
-      fullName: 'Sofía Castillo · Muestra',
-      phone: '(664) 555-1202',
-      workshopId: mechanicalWorkshop.id,
-      role: WorkshopRole.ADVISOR
-    },
-    {
-      id: ids.staff.mechanicalTechnician,
-      email: 'miguel.ortega@demo.cvr.local',
-      fullName: 'Miguel Ortega · Muestra',
-      phone: '(664) 555-1203',
-      workshopId: mechanicalWorkshop.id,
-      role: WorkshopRole.TECHNICIAN
-    },
-    {
-      id: ids.staff.mechanicalCashier,
-      email: 'elena.ruiz@demo.cvr.local',
-      fullName: 'Elena Ruiz · Muestra',
-      phone: '(664) 555-1204',
-      workshopId: mechanicalWorkshop.id,
-      role: WorkshopRole.CASHIER
-    }
-  ]
-
-  for (const member of staff) {
-    await prisma.profile.upsert({
-      where: { id: member.id },
-      update: {
-        email: member.email,
-        fullName: member.fullName,
-        phone: member.phone,
-        active: true
-      },
-      create: {
-        id: member.id,
-        email: member.email,
-        fullName: member.fullName,
-        phone: member.phone
-      }
-    })
-    await prisma.workshopMember.upsert({
-      where: {
-        profileId_workshopId: {
-          profileId: member.id,
-          workshopId: member.workshopId
-        }
-      },
-      update: { role: member.role },
-      create: {
-        profileId: member.id,
-        workshopId: member.workshopId,
-        role: member.role
-      }
-    })
-  }
-
   const customers = [
     {
       id: ids.customers.bodyOne,
@@ -614,8 +504,7 @@ async function main() {
       fuelLevelIn: 55,
       promisedAt: futureDate(5),
       createdAt: thisMonth(3, 9),
-      createdById: ids.staff.bodyAdvisor,
-      assignedToId: ids.staff.bodyTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.SERVICE,
@@ -664,8 +553,7 @@ async function main() {
       fuelLevelIn: 30,
       promisedAt: futureDate(8),
       createdAt: thisMonth(6, 11),
-      createdById: ids.staff.bodyAdvisor,
-      assignedToId: ids.staff.bodyTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -709,8 +597,7 @@ async function main() {
       startedAt: thisMonth(7, 8),
       completedAt: thisMonth(16, 16),
       createdAt: thisMonth(4, 10),
-      createdById: ids.staff.bodyAdvisor,
-      assignedToId: ids.staff.bodyTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -742,7 +629,7 @@ async function main() {
           reference: 'SPEI-DEMO-3841',
           notes: 'Anticipo del deducible',
           paidAt: thisMonth(8, 13),
-          recordedById: ids.staff.bodyCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -761,7 +648,7 @@ async function main() {
       mileageIn: 102300,
       fuelLevelIn: 45,
       createdAt: thisMonth(10, 15),
-      createdById: ids.staff.bodyAdvisor,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.SERVICE,
@@ -791,8 +678,7 @@ async function main() {
       completedAt: previousMonth(11, 16),
       deliveredAt: previousMonth(12, 12),
       createdAt: previousMonth(7, 10),
-      createdById: ids.staff.bodyAdvisor,
-      assignedToId: ids.staff.bodyTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.SERVICE,
@@ -808,7 +694,7 @@ async function main() {
           ratio: 1,
           reference: 'TPV-DEMO-H01',
           paidAt: previousMonth(12, 12),
-          recordedById: ids.staff.bodyCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -829,8 +715,7 @@ async function main() {
       promisedAt: futureDate(2),
       approvedAt: thisMonth(9, 14),
       createdAt: thisMonth(8, 9),
-      createdById: ids.staff.mechanicalAdvisor,
-      assignedToId: ids.staff.mechanicalTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.SERVICE,
@@ -868,7 +753,7 @@ async function main() {
           reference: 'CREDITO-DEMO-15D',
           notes: 'Saldo autorizado a crédito',
           paidAt: thisMonth(9, 15),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -890,8 +775,7 @@ async function main() {
       approvedAt: thisMonth(11, 11),
       startedAt: thisMonth(11, 13),
       createdAt: thisMonth(11, 8),
-      createdById: ids.staff.mechanicalAdvisor,
-      assignedToId: ids.staff.mechanicalTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -922,7 +806,7 @@ async function main() {
           reference: 'RECIBO-DEMO-2204',
           notes: 'Anticipo en efectivo',
           paidAt: thisMonth(11, 12),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -945,8 +829,7 @@ async function main() {
       startedAt: thisMonth(7, 8),
       completedAt: thisMonth(13, 16),
       createdAt: thisMonth(6, 9),
-      createdById: ids.staff.mechanicalAdvisor,
-      assignedToId: ids.staff.mechanicalTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -984,7 +867,7 @@ async function main() {
           ratio: 0.55,
           reference: 'TPV-DEMO-7782',
           paidAt: thisMonth(13, 17),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -1008,8 +891,7 @@ async function main() {
       completedAt: thisMonth(16, 14),
       deliveredAt: thisMonth(16, 15),
       createdAt: thisMonth(16, 8),
-      createdById: ids.staff.mechanicalAdvisor,
-      assignedToId: ids.staff.mechanicalTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -1047,7 +929,7 @@ async function main() {
           ratio: 0.5,
           reference: 'CHEQUE-DEMO-1048',
           paidAt: thisMonth(16, 15),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         },
         {
           method: PaymentMethod.OTHER,
@@ -1055,7 +937,7 @@ async function main() {
           reference: 'VALE-DEMO-294',
           notes: 'Vale corporativo de muestra',
           paidAt: thisMonth(16, 15),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         }
       ]
     },
@@ -1078,8 +960,7 @@ async function main() {
       completedAt: previousMonth(18, 13),
       deliveredAt: previousMonth(18, 14),
       createdAt: previousMonth(18, 9),
-      createdById: ids.staff.mechanicalAdvisor,
-      assignedToId: ids.staff.mechanicalTechnician,
+      createdById: superAdmin.id,
       items: [
         {
           type: LineItemType.PART,
@@ -1102,7 +983,7 @@ async function main() {
           ratio: 1,
           reference: 'SPEI-DEMO-H02',
           paidAt: previousMonth(18, 14),
-          recordedById: ids.staff.mechanicalCashier
+          recordedById: superAdmin.id
         }
       ]
     }
@@ -1122,7 +1003,7 @@ async function main() {
       amount: 28500,
       expenseDate: thisMonth(1, 9),
       notes: 'Transferencia mensual · muestra',
-      recordedById: ids.staff.bodyCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000002',
@@ -1133,7 +1014,7 @@ async function main() {
       amount: 36400,
       expenseDate: thisMonth(15, 12),
       notes: 'Registro agregado para revisar resultados financieros',
-      recordedById: ids.staff.bodyCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000003',
@@ -1144,7 +1025,7 @@ async function main() {
       amount: 6840,
       expenseDate: thisMonth(8, 11),
       notes: 'Compra de consumibles sin control de inventario',
-      recordedById: ids.staff.bodyCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000004',
@@ -1155,7 +1036,7 @@ async function main() {
       amount: 3200,
       expenseDate: thisMonth(12, 10),
       notes: 'Promoción de reparación de golpes menores',
-      recordedById: ids.staff.bodyCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000005',
@@ -1166,7 +1047,7 @@ async function main() {
       amount: 7450,
       expenseDate: thisMonth(5, 10),
       notes: 'Pago mensual de muestra',
-      recordedById: ids.staff.mechanicalCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000006',
@@ -1177,7 +1058,7 @@ async function main() {
       amount: 4950,
       expenseDate: thisMonth(9, 13),
       notes: 'Mantenimiento programado',
-      recordedById: ids.staff.mechanicalCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000007',
@@ -1188,7 +1069,7 @@ async function main() {
       amount: 11800,
       expenseDate: thisMonth(17, 9),
       notes: 'Importe demostrativo; sin integración contable',
-      recordedById: ids.staff.mechanicalCashier
+      recordedById: superAdmin.id
     },
     {
       id: '60000000-0000-4000-8000-000000000008',
@@ -1199,7 +1080,7 @@ async function main() {
       amount: 3850,
       expenseDate: thisMonth(13, 14),
       notes: 'Gasto operativo diverso',
-      recordedById: ids.staff.mechanicalCashier
+      recordedById: superAdmin.id
     }
   ]
 
