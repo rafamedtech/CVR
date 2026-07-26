@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { MemberListItem } from '~/types/crm'
+import type { MemberAccessPreset, MemberListItem } from '~/types/crm'
 
 const search = shallowRef('')
 const createOpen = shallowRef(false)
+const activePreset = shallowRef<MemberAccessPreset | null>(null)
 const { session, isAllWorkshops } = useCrmSession()
 const { data: members, status, refresh } = await useFetch<MemberListItem[]>('/api/members', {
   default: () => [],
@@ -17,6 +18,11 @@ const filteredMembers = computed(() => {
     || member.email.toLocaleLowerCase('es-MX').includes(term)
   ))
 })
+
+function openMemberForm(preset: MemberAccessPreset | null = null) {
+  activePreset.value = preset
+  createOpen.value = true
+}
 </script>
 
 <template>
@@ -27,11 +33,19 @@ const filteredMembers = computed(() => {
           Usuarios y permisos
         </h1>
         <p class="mt-1 text-sm text-muted">
-          Invita usuarios y asígnalos al negocio que les corresponde.
+          Vincula cuentas existentes de Supabase y asigna sus permisos.
         </p>
       </div>
-      <UButton label="Invitar usuario" icon="i-lucide-user-plus" @click="createOpen = true" />
+      <UButton label="Vincular usuario" icon="i-lucide-user-plus" @click="openMemberForm()" />
     </div>
+
+    <SettingsAccessPlan
+      v-if="session?.profile.isSuperAdmin"
+      :members="members"
+      :workshops="session.workshops"
+      :current-user-id="session.profile.id"
+      @configure="openMemberForm"
+    />
 
     <UInput
       v-model="search"
@@ -84,6 +98,8 @@ const filteredMembers = computed(() => {
       :workshops="session?.workshops ?? []"
       :selected-workshop-id="session?.selectedWorkshopId ?? null"
       :allow-workshop-selection="isAllWorkshops || Boolean(session?.profile.isSuperAdmin)"
+      :allow-super-admin="Boolean(session?.profile.isSuperAdmin)"
+      :preset="activePreset"
       @created="refresh"
     />
   </div>

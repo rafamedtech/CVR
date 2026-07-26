@@ -10,6 +10,9 @@ generated
 # Node dependencies
 node_modules
 
+# Vercel project linkage and local build output
+.vercel
+
 # Logs
 logs
 *.log

@@ -4,8 +4,19 @@ export default defineEventHandler(async (event) => {
   const prisma = usePrisma()
 
   const profiles = await prisma.profile.findMany({
-    where: context.isSuperAdmin && !context.workshopId
-      ? {}
+    where: context.isSuperAdmin
+      ? context.workshopId
+        ? {
+            OR: [
+              { isSuperAdmin: true },
+              {
+                memberships: {
+                  some: { workshopId: context.workshopId }
+                }
+              }
+            ]
+          }
+        : {}
       : {
           memberships: {
             some: {

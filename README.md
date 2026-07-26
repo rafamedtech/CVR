@@ -12,7 +12,7 @@ El MVP incluye:
 - Anticipos, pagos parciales, métodos de pago y saldos pendientes.
 - Gastos operativos.
 - Indicadores de ventas, costos, utilidad bruta, utilidad neta, cuentas por cobrar y tiempos de entrega.
-- Invitaciones de usuarios mediante Supabase Auth.
+- Vinculación de usuarios existentes de Supabase Auth con permisos por taller.
 - Estructura preparada para agregar sucursales y la futura tienda de pinturas.
 
 ## Requisitos
@@ -31,12 +31,13 @@ Completa en `.env`:
 
 - `NUXT_PUBLIC_SUPABASE_URL`
 - `NUXT_PUBLIC_SUPABASE_KEY`: clave publicable de Supabase.
-- `NUXT_SUPABASE_SECRET_KEY`: clave secreta, utilizada únicamente en el servidor para invitar usuarios.
-- `DATABASE_URL`: conexión de Supavisor en modo sesión, puerto 5432.
-- `DIRECT_URL`: conexión directa para migraciones cuando tu red tenga IPv6 o el proyecto tenga IPv4 dedicado.
+- `NUXT_SUPABASE_SECRET_KEY`: clave secreta, utilizada únicamente en el servidor para consultar y vincular usuarios.
+- `DATABASE_URL`: conexión de Supavisor en modo transacción, puerto 6543, para Vercel y otros entornos serverless.
+- `DIRECT_URL`: conexión de Supavisor en modo sesión, puerto 5432, para ejecutar migraciones fuera de Vercel.
 - `BOOTSTRAP_ADMIN_EMAIL`: correo que podrá convertirse en el primer administrador.
 
 No expongas `NUXT_SUPABASE_SECRET_KEY` en variables públicas o código del navegador.
+En `DATABASE_URL`, conserva el parámetro `pgbouncer=true` del archivo de ejemplo.
 
 ## 2. Usuario PostgreSQL para Prisma
 
@@ -62,6 +63,14 @@ grant all privileges on sequences to "prisma";
 
 Usa ese usuario en `DATABASE_URL` y `DIRECT_URL`.
 
+## Deploy en Vercel
+
+El repositorio está preparado para que Vercel detecte Nuxt y construya la salida Nitro
+automáticamente. Las migraciones no se ejecutan durante el build.
+
+Sigue el checklist de [docs/deploy-vercel.md](./docs/deploy-vercel.md) para crear el proyecto,
+configurar las variables, conectar Supabase Auth y validar el primer deploy.
+
 ## 3. Instalar y crear la base
 
 ```bash
@@ -86,7 +95,14 @@ En Authentication:
 3. Agrega `http://localhost:3000/confirm` y la URL equivalente de producción a Redirect URLs.
 4. Crea o invita manualmente al usuario indicado en `BOOTSTRAP_ADMIN_EMAIL`.
 
-Cuando ese usuario inicie sesión por primera vez y todavía no exista ningún perfil, el sistema lo convierte en administrador general y lo asigna a ambos talleres. A partir de ahí, las demás invitaciones se gestionan desde **Configuración → Usuarios**.
+Cuando ese usuario inicie sesión por primera vez y todavía no exista ningún perfil, el sistema lo convierte en administrador general y lo asigna a ambos talleres.
+
+Crea después en Supabase Auth las cuentas de Javier, Paulo y del segundo administrador. Desde
+**Configuración → Usuarios**, vincula cada correo con el acceso preparado:
+
+- Javier: encargado del Taller Mecánico.
+- Paulo: encargado del Taller de Carrocería.
+- Segundo administrador: administrador general con vista de ambos talleres.
 
 ## 5. Cargar datos de muestra
 

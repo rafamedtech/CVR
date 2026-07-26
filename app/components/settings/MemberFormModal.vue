@@ -1,37 +1,76 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { WorkshopSummary } from '~/types/crm'
+import type {
+  MemberAccessPreset,
+  MemberAccessType,
+  WorkshopSummary
+} from '~/types/crm'
 
 const props = defineProps<{
   workshops: readonly WorkshopSummary[]
   selectedWorkshopId: string | null
   allowWorkshopSelection?: boolean
+  allowSuperAdmin?: boolean
+  preset?: MemberAccessPreset | null
 }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
 const roleOptions = Object.entries(workshopRoleLabels).map(([value, label]) => ({ value, label }))
+const accessTypeOptions = [
+  { value: 'WORKSHOP', label: 'Usuario de taller' },
+  { value: 'SUPER_ADMIN', label: 'Administrador general' }
+] satisfies Array<{ value: MemberAccessType, label: string }>
 const schema = z.object({
   fullName: z.string().min(2, 'Escribe el nombre.'),
   email: z.email('Escribe un correo válido.'),
   phone: z.string().optional(),
-  workshopId: z.string().min(1, 'Selecciona un taller.'),
+  accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN']),
+  workshopId: z.string(),
   role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER'])
+}).superRefine((value, context) => {
+  if (value.accessType === 'WORKSHOP' && !value.workshopId) {
+    context.addIssue({
+      code: 'custom',
+      path: ['workshopId'],
+      message: 'Selecciona un taller.'
+    })
+  }
 })
 type MemberSchema = z.output<typeof schema>
 const state = reactive<MemberSchema>({
   fullName: '',
   email: '',
   phone: '',
+  accessType: 'WORKSHOP',
   workshopId: props.selectedWorkshopId ?? props.workshops[0]?.id ?? '',
-  role: 'ADVISOR'
+  role: 'MANAGER'
 })
 
-watch(() => props.selectedWorkshopId, (value) => {
-  if (value) state.workshopId = value
-})
+function resetForm() {
+  const presetWorkshop = props.workshops.find(workshop => (
+    workshop.slug === props.preset?.workshopSlug
+  ))
+
+  state.fullName = props.preset?.fullName ?? ''
+  state.email = ''
+  state.phone = ''
+  state.accessType = props.preset?.accessType ?? 'WORKSHOP'
+  state.workshopId = presetWorkshop?.id
+    ?? props.selectedWorkshopId
+    ?? props.workshops[0]?.id
+    ?? ''
+  state.role = props.preset?.role ?? 'MANAGER'
+}
+
+watch(
+  [open, () => props.preset, () => props.selectedWorkshopId],
+  ([isOpen]) => {
+    if (isOpen) resetForm()
+  }
+)
 
 const workshopOptions = computed(() => props.workshops.map(workshop => ({
   label: workshop.name,
@@ -41,10 +80,10 @@ const workshopOptions = computed(() => props.workshops.map(workshop => ({
 async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
   loading.value = true
   try {
-    const result = await $fetch<{ invited: boolean }>('/api/members', { method: 'POST', body: event.data })
+    await $fetch('/api/members', { method: 'POST', body: event.data })
     toast.add({
-      title: result.invited ? 'Invitación enviada' : 'Permisos actualizados',
-      description: result.invited ? 'El usuario recibirá un enlace para definir su contraseña.' : undefined,
+      title: 'Usuario vinculado',
+      description: 'La cuenta ya puede entrar con sus credenciales de Supabase.',
       color: 'success'
     })
     open.value = false
@@ -60,8 +99,8 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
 <template>
   <UModal
     v-model:open="open"
-    title="Invitar usuario"
-    description="El acceso se activa mediante un enlace seguro enviado por correo."
+    title="Vincular usuario"
+    description="La cuenta debe existir previamente en Supabase Auth."
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
@@ -83,7 +122,25 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
             <UInput v-model="state.phone" class="w-full" />
           </UFormField>
         </div>
-        <UFormField name="workshopId" label="Taller" required>
+        <UFormField
+          v-if="allowSuperAdmin"
+          name="accessType"
+          label="Tipo de acceso"
+          required
+        >
+          <USelect
+            v-model="state.accessType"
+            :items="accessTypeOptions"
+            value-key="value"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          v-if="state.accessType === 'WORKSHOP'"
+          name="workshopId"
+          label="Taller"
+          required
+        >
           <USelect
             v-model="state.workshopId"
             :items="workshopOptions"
@@ -92,7 +149,12 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
             :disabled="!allowWorkshopSelection && Boolean(selectedWorkshopId)"
           />
         </UFormField>
-        <UFormField name="role" label="Rol" required>
+        <UFormField
+          v-if="state.accessType === 'WORKSHOP'"
+          name="role"
+          label="Rol"
+          required
+        >
           <USelect
             v-model="state.role"
             :items="roleOptions"
@@ -101,8 +163,10 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
           />
         </UFormField>
         <UAlert
-          title="Los permisos se aplican por taller"
-          description="Un mismo usuario podrá agregarse después a otros negocios con un rol diferente."
+          :title="state.accessType === 'SUPER_ADMIN' ? 'Acceso global' : 'Permisos por taller'"
+          :description="state.accessType === 'SUPER_ADMIN'
+            ? 'Este usuario podrá ver y administrar ambos talleres.'
+            : 'El usuario sólo tendrá acceso al taller y las funciones de su rol.'"
           icon="i-lucide-shield-check"
           color="info"
           variant="subtle"
@@ -119,7 +183,7 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
       <UButton
         type="submit"
         form="member-form"
-        label="Enviar invitación"
+        label="Vincular cuenta"
         :loading="loading"
       />
     </template>

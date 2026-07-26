@@ -1,5 +1,6 @@
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'
+export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN'
 export type TaxRate = 0 | 8 | 16
 export type OrderStatus = 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'CANCELLED'
 export type OrderPriority = 'NORMAL' | 'HIGH' | 'URGENT'
@@ -169,6 +170,14 @@ export interface MemberListItem {
     workshopName: string
     role: WorkshopRole
   }>
+}
+
+export interface MemberAccessPreset {
+  key: 'javier-mechanical' | 'paulo-body-shop' | 'second-admin'
+  fullName: string
+  accessType: MemberAccessType
+  workshopSlug?: string
+  role?: WorkshopRole
 }
 
 export interface DashboardData {
