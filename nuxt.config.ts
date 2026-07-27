@@ -17,6 +17,14 @@ export default defineNuxtConfig({
     }
   },
 
+  nitro: {
+    vercel: {
+      functions: {
+        runtime: 'nodejs24.x'
+      }
+    }
+  },
+
   compatibilityDate: '2026-06-30',
   vite: {
     optimizeDeps: {

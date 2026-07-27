@@ -35,7 +35,7 @@ automáticamente; no requiere `vercel.json` ni un directorio de salida personali
    - Install Command: automático.
    - Build Command: `pnpm build`.
    - Output Directory: automático; no escribas `.output`.
-   - Node.js: `22.x`, fijado por `package.json` y alineado con el runtime de Nitro.
+   - Node.js: `24.x`, fijado por `package.json` y alineado con el runtime de Nitro.
 5. No pulses **Deploy** hasta terminar las variables de entorno.
 
 ## Variables de entorno en Vercel
