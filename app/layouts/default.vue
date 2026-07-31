@@ -31,7 +31,7 @@ const links = computed<NavigationMenuItem[][]>(() => [[
   {
     label: 'Órdenes',
     icon: 'i-lucide-clipboard-list',
-    to: '/orders',
+    to: '/ordenes',
     onSelect: () => { open.value = false }
   },
   {
@@ -43,21 +43,21 @@ const links = computed<NavigationMenuItem[][]>(() => [[
   {
     label: 'Vehículos',
     icon: 'i-lucide-car-front',
-    to: '/vehicles',
+    to: '/vehiculos',
     onSelect: () => { open.value = false }
   },
   ...(canViewExpenses.value
     ? [{
         label: 'Gastos',
         icon: 'i-lucide-receipt-text',
-        to: '/expenses',
+        to: '/gastos',
         onSelect: () => { open.value = false }
       }]
     : []),
   {
     label: 'Configuración',
     icon: 'i-lucide-settings',
-    to: '/settings',
+    to: '/configuracion',
     onSelect: () => { open.value = false }
   }
 ]])

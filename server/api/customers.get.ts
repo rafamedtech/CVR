@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const customers = await prisma.customer.findMany({
     where: {
-      ...workshopWhere(context),
+      ...customerAccessWhere(context),
       ...(search
         ? {
             OR: [
@@ -18,11 +18,15 @@ export default defineEventHandler(async (event) => {
         : {})
     },
     include: {
-      workshop: true,
+      workshops: {
+        where: context.isSuperAdmin ? {} : { workshopId: context.workshopId! },
+        include: { workshop: true },
+        orderBy: { createdAt: 'asc' }
+      },
       _count: {
         select: {
-          vehicles: true,
-          orders: true
+          vehicles: { where: vehicleAccessWhere(context) },
+          orders: { where: workshopWhere(context) }
         }
       }
     },
@@ -31,14 +35,17 @@ export default defineEventHandler(async (event) => {
 
   return customers.map(customer => ({
     id: customer.id,
-    workshopId: customer.workshopId,
-    workshopName: customer.workshop.name,
+    workshops: customer.workshops.map(({ workshop }) => ({
+      id: workshop.id,
+      name: workshop.name,
+      type: workshop.type
+    })),
     fullName: customer.fullName,
     phone: customer.phone,
     alternatePhone: customer.alternatePhone,
     email: customer.email,
     taxId: customer.taxId,
-    address: customer.address,
+    address: serializeCustomerAddress(customer),
     notes: customer.notes,
     vehiclesCount: customer._count.vehicles,
     ordersCount: customer._count.orders,

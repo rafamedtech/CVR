@@ -36,7 +36,7 @@ const columns: TableColumn<OrderListItem>[] = [{
           </p>
         </div>
         <UButton
-          to="/orders"
+          to="/ordenes"
           label="Ver todas"
           color="neutral"
           variant="ghost"
@@ -48,7 +48,7 @@ const columns: TableColumn<OrderListItem>[] = [{
     <UTable :data="orders" :columns="columns">
       <template #orderNumber-cell="{ row }">
         <NuxtLink
-          :to="`/orders/${row.original.id}`"
+          :to="`/ordenes/${row.original.id}`"
           class="font-medium text-primary hover:underline"
         >
           {{ row.original.orderNumber }}
@@ -83,7 +83,7 @@ const columns: TableColumn<OrderListItem>[] = [{
 
       <template #actions-cell="{ row }">
         <UButton
-          :to="`/orders/${row.original.id}`"
+          :to="`/ordenes/${row.original.id}`"
           icon="i-lucide-arrow-up-right"
           color="neutral"
           variant="ghost"

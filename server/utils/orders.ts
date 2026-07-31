@@ -1,4 +1,5 @@
 import type { Payment, Profile, ServiceOrder, Vehicle, Customer, Workshop } from '../../generated/prisma/client'
+import { calculatePaymentStatus } from '../../shared/payment-status'
 
 export interface LineItemInput {
   type: 'SERVICE' | 'PART' | 'LABOR' | 'OTHER'
@@ -36,7 +37,13 @@ export function calculateLineItem(item: LineItemInput) {
 
 export async function recalculateOrder(orderId: string) {
   const prisma = usePrisma()
-  const items = await prisma.orderItem.findMany({ where: { orderId } })
+  const [items, payments] = await Promise.all([
+    prisma.orderItem.findMany({ where: { orderId } }),
+    prisma.payment.findMany({
+      where: { orderId },
+      select: { amount: true }
+    })
+  ])
   const totals = items.reduce((result, item) => ({
     subtotal: result.subtotal + Number(item.subtotal),
     discountTotal: result.discountTotal + Number(item.discount),
@@ -48,10 +55,14 @@ export async function recalculateOrder(orderId: string) {
     taxTotal: 0,
     total: 0
   })
+  const paid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
   return prisma.serviceOrder.update({
     where: { id: orderId },
-    data: totals
+    data: {
+      ...totals,
+      paymentStatus: calculatePaymentStatus(totals.total, paid, payments.length)
+    }
   })
 }
 
@@ -74,6 +85,7 @@ export function serializeOrderListItem(order: OrderForList) {
     customerId: order.customerId,
     orderNumber: order.orderNumber,
     status: order.status,
+    paymentStatus: order.paymentStatus,
     priority: order.priority,
     customerName: order.customer.fullName,
     customerPhone: order.customer.phone,

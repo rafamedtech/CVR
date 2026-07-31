@@ -14,7 +14,6 @@ export default defineEventHandler(async (event) => {
       ...assignedOrderWhere(context)
     },
     include: {
-      workshop: true,
       customer: true,
       vehicle: true,
       assignedTo: true,
@@ -24,6 +23,15 @@ export default defineEventHandler(async (event) => {
       },
       items: {
         orderBy: { createdAt: 'asc' }
+      },
+      workshop: {
+        include: {
+          members: {
+            where: { profile: { active: true } },
+            include: { profile: true },
+            orderBy: { profile: { fullName: 'asc' } }
+          }
+        }
       }
     }
   })
@@ -40,6 +48,7 @@ export default defineEventHandler(async (event) => {
     ...base,
     customerId: order.customerId,
     vehicleId: order.vehicleId,
+    assignedToId: order.assignedToId,
     complaint: order.complaint,
     diagnosis: order.diagnosis,
     intakeNotes: order.intakeNotes,
@@ -76,6 +85,13 @@ export default defineEventHandler(async (event) => {
       notes: payment.notes,
       paidAt: payment.paidAt.toISOString(),
       recordedByName: payment.recordedBy.fullName
-    }))
+    })),
+    availableAssignees: context.isSuperAdmin
+      ? order.workshop.members.map(member => ({
+          id: member.profile.id,
+          fullName: member.profile.fullName,
+          role: member.role
+        }))
+      : []
   }
 })

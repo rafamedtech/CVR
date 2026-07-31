@@ -7,8 +7,9 @@ useHead({ title: 'Clientes' })
 const search = shallowRef('')
 const createOpen = shallowRef(false)
 const editOpen = shallowRef(false)
+const assignmentsOpen = shallowRef(false)
 const selectedCustomer = shallowRef<CustomerListItem | null>(null)
-const { canManageCustomers, isAllWorkshops } = useCrmSession()
+const { session, canManageCustomers, isAllWorkshops, isSuperAdmin } = useCrmSession()
 const { data: customers, status, refresh } = await useFetch<CustomerListItem[]>('/api/customers', {
   default: () => [],
   key: 'crm-customers'
@@ -26,6 +27,7 @@ const filteredCustomers = computed(() => {
     customer.taxId
   ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
 })
+const canEditCustomers = computed(() => canManageCustomers.value || isSuperAdmin.value)
 
 async function handleCreated() {
   await refresh()
@@ -34,6 +36,11 @@ async function handleCreated() {
 function handleEdit(customer: CustomerListItem) {
   selectedCustomer.value = customer
   editOpen.value = true
+}
+
+function handleAssignWorkshops(customer: CustomerListItem) {
+  selectedCustomer.value = customer
+  assignmentsOpen.value = true
 }
 
 async function handleUpdated() {
@@ -90,8 +97,10 @@ async function handleUpdated() {
         :customers="filteredCustomers"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
-        :can-edit="canManageCustomers"
+        :can-edit="canEditCustomers"
+        :can-assign-workshops="isSuperAdmin"
         @edit="handleEdit"
+        @assign-workshops="handleAssignWorkshops"
       />
 
       <CustomersCustomerFormModal
@@ -101,6 +110,12 @@ async function handleUpdated() {
       <CustomersCustomerEditModal
         v-model:open="editOpen"
         :customer="selectedCustomer"
+        @updated="handleUpdated"
+      />
+      <CustomersCustomerWorkshopsModal
+        v-model:open="assignmentsOpen"
+        :customer="selectedCustomer"
+        :workshops="session?.workshops ?? []"
         @updated="handleUpdated"
       />
     </template>

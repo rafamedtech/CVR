@@ -1,3 +1,8 @@
+import type { CustomerAddress } from '#shared/customer-address'
+import type { PaymentStatus } from '#shared/payment-status'
+
+export type { PaymentStatus } from '#shared/payment-status'
+
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'
 export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN'
@@ -32,14 +37,13 @@ export interface CrmSession {
 
 export interface CustomerListItem {
   id: string
-  workshopId: string
-  workshopName: string
+  workshops: Array<Pick<WorkshopSummary, 'id' | 'name' | 'type'>>
   fullName: string
   phone: string
   alternatePhone: string | null
   email: string | null
   taxId: string | null
-  address: string | null
+  address: CustomerAddress | null
   notes: string | null
   vehiclesCount: number
   ordersCount: number
@@ -54,8 +58,7 @@ export interface CustomerDetail extends CustomerListItem {
 
 export interface VehicleListItem {
   id: string
-  workshopId: string
-  workshopName: string
+  workshops: Array<Pick<WorkshopSummary, 'id' | 'name' | 'type'>>
   customerId: string
   customerName: string
   licensePlate: string
@@ -111,6 +114,7 @@ export interface OrderListItem {
   customerId: string
   orderNumber: string
   status: OrderStatus
+  paymentStatus: PaymentStatus
   priority: OrderPriority
   customerName: string
   customerPhone: string
@@ -127,6 +131,7 @@ export interface OrderListItem {
 export interface OrderDetail extends OrderListItem {
   customerId: string
   vehicleId: string
+  assignedToId: string | null
   complaint: string
   diagnosis: string | null
   intakeNotes: string | null
@@ -143,6 +148,11 @@ export interface OrderDetail extends OrderListItem {
   workshopTaxRate: TaxRate
   items: OrderLineItem[]
   payments: OrderPayment[]
+  availableAssignees: Array<{
+    id: string
+    fullName: string
+    role: WorkshopRole
+  }>
 }
 
 export interface ExpenseListItem {

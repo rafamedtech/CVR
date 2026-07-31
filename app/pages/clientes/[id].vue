@@ -69,7 +69,7 @@ useHead({
               </p>
             </div>
             <UButton
-              :to="{ path: '/vehicles', query: { customer: customer.id } }"
+              :to="{ path: '/vehiculos', query: { customer: customer.id } }"
               label="Abrir vehículos"
               icon="i-lucide-external-link"
               color="neutral"

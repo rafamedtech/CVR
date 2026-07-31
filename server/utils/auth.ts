@@ -154,6 +154,15 @@ export function requireSelectedWorkshop(context: CrmRequestContext) {
   return context.workshopId
 }
 
+export function requireSuperAdmin(context: CrmRequestContext) {
+  if (!context.isSuperAdmin) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Sólo los administradores generales pueden realizar esta acción.'
+    })
+  }
+}
+
 export function requireWorkshopRole(context: CrmRequestContext, roles: Array<'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'>) {
   if (context.isSuperAdmin) return
 
@@ -179,4 +188,16 @@ export function assignedOrderWhere(context: CrmRequestContext) {
 
 export function workshopWhere(context: CrmRequestContext) {
   return context.workshopId ? { workshopId: context.workshopId } : {}
+}
+
+export function customerAccessWhere(context: CrmRequestContext) {
+  return context.workshopId
+    ? { workshops: { some: { workshopId: context.workshopId } } }
+    : {}
+}
+
+export function vehicleAccessWhere(context: CrmRequestContext) {
+  return context.workshopId
+    ? { workshops: { some: { workshopId: context.workshopId } } }
+    : {}
 }

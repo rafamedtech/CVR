@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { getDefaultOrderAssigneeName } from '../../../shared/order-assignee'
 import { taxRateSchema } from '../../utils/tax'
 
 const lineItemSchema = z.object({
@@ -37,7 +38,8 @@ export default defineEventHandler(async (event) => {
     where: {
       id: body.vehicleId,
       customerId: body.customerId,
-      workshopId
+      workshops: { some: { workshopId } },
+      customer: { workshops: { some: { workshopId } } }
     }
   })
 
@@ -48,11 +50,13 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (body.assignedToId) {
+  let assignedToId = body.assignedToId || null
+
+  if (assignedToId) {
     const assigned = await prisma.workshopMember.findUnique({
       where: {
         profileId_workshopId: {
-          profileId: body.assignedToId,
+          profileId: assignedToId,
           workshopId
         }
       }
@@ -63,6 +67,30 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'El técnico seleccionado no pertenece a este taller.'
       })
     }
+  } else {
+    const defaultAssigneeName = getDefaultOrderAssigneeName(context.selectedWorkshop?.type)
+    const defaultMembership = defaultAssigneeName
+      ? await prisma.workshopMember.findFirst({
+          where: {
+            workshopId,
+            profile: {
+              active: true,
+              fullName: { contains: defaultAssigneeName, mode: 'insensitive' }
+            }
+          },
+          select: { profileId: true },
+          orderBy: { createdAt: 'asc' }
+        })
+      : null
+
+    if (defaultAssigneeName && !defaultMembership) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Configura a ${defaultAssigneeName} como integrante de este taller antes de crear órdenes.`
+      })
+    }
+
+    assignedToId = defaultMembership?.profileId ?? null
   }
 
   const year = new Date().getFullYear()
@@ -106,7 +134,7 @@ export default defineEventHandler(async (event) => {
       mileageIn: body.mileageIn ?? null,
       fuelLevelIn: body.fuelLevelIn ?? null,
       promisedAt: body.promisedAt ? new Date(body.promisedAt) : null,
-      assignedToId: body.assignedToId || null,
+      assignedToId,
       createdById: context.profile.id,
       ...totals,
       items: {

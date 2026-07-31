@@ -8,9 +8,11 @@ const props = defineProps<{
   loading?: boolean
   showWorkshop?: boolean
   canEdit?: boolean
+  canAssignWorkshops?: boolean
 }>()
 const emit = defineEmits<{
   edit: [customer: CustomerListItem]
+  assignWorkshops: [customer: CustomerListItem]
 }>()
 
 const columns = computed<TableColumn<CustomerListItem>[]>(() => {
@@ -35,8 +37,8 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
   return [
     ...baseColumns.slice(0, -1),
     {
-      accessorKey: 'workshopName',
-      header: 'Taller'
+      id: 'workshops',
+      header: 'Talleres'
     },
     baseColumns.at(-1)!
   ]
@@ -73,7 +75,7 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
 
       <template #vehiclesCount-cell="{ row }">
         <NuxtLink
-          :to="{ path: '/vehicles', query: { customer: row.original.id } }"
+          :to="{ path: '/vehiculos', query: { customer: row.original.id } }"
           :aria-label="`Ver vehículos de ${row.original.fullName}`"
           class="inline-flex rounded-md"
         >
@@ -88,7 +90,7 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
 
       <template #ordersCount-cell="{ row }">
         <NuxtLink
-          :to="{ path: '/orders', query: { customer: row.original.id } }"
+          :to="{ path: '/ordenes', query: { customer: row.original.id } }"
           :aria-label="`Ver órdenes de ${row.original.fullName}`"
           class="inline-flex rounded-md"
         >
@@ -101,12 +103,29 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
         </NuxtLink>
       </template>
 
-      <template #workshopName-cell="{ row }">
-        <span class="text-sm text-muted">{{ row.original.workshopName }}</span>
+      <template #workshops-cell="{ row }">
+        <div class="flex flex-wrap gap-1.5">
+          <UBadge
+            v-for="workshop in row.original.workshops"
+            :key="workshop.id"
+            :label="workshop.name"
+            color="neutral"
+            variant="subtle"
+          />
+        </div>
       </template>
 
       <template #actions-cell="{ row }">
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-1">
+          <UButton
+            v-if="canAssignWorkshops"
+            label="Asignar talleres"
+            icon="i-lucide-building-2"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="emit('assignWorkshops', row.original)"
+          />
           <UButton
             label="Editar"
             icon="i-lucide-pencil"

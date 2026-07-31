@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { customerAddressSchema, emptyCustomerAddress } from '#shared/customer-address'
 
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
@@ -15,7 +16,7 @@ const schema = z.object({
   alternatePhone: z.union([z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'), z.literal('')]),
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]),
   taxId: z.string().optional(),
-  address: z.string().optional(),
+  address: customerAddressSchema,
   notes: z.string().optional()
 })
 type CustomerSchema = z.output<typeof schema>
@@ -26,7 +27,7 @@ const state = reactive<CustomerSchema>({
   alternatePhone: '',
   email: '',
   taxId: '',
-  address: '',
+  address: emptyCustomerAddress(),
   notes: ''
 })
 
@@ -37,7 +38,7 @@ function reset() {
     alternatePhone: '',
     email: '',
     taxId: '',
-    address: '',
+    address: emptyCustomerAddress(),
     notes: ''
   })
 }
@@ -69,8 +70,8 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
   <UModal
     v-model:open="open"
     title="Nuevo cliente"
-    description="Datos de contacto y facturación interna."
-    :ui="{ content: 'sm:max-w-2xl', footer: 'justify-end' }"
+    description="Captura los datos de contacto y domicilio fiscal del cliente"
+    :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>
       <UForm
@@ -80,6 +81,12 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
         class="grid gap-4 sm:grid-cols-2"
         @submit="onSubmit"
       >
+        <div class="sm:col-span-2">
+          <h3 class="text-base font-semibold text-highlighted">
+            Datos de contacto
+          </h3>
+        </div>
+
         <UFormField
           name="fullName"
           label="Nombre completo"
@@ -100,14 +107,7 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
         <UFormField name="taxId" label="RFC">
           <UInput v-model="state.taxId" class="w-full" />
         </UFormField>
-        <UFormField name="address" label="Domicilio" class="sm:col-span-2">
-          <UTextarea
-            v-model="state.address"
-            class="w-full"
-            :rows="2"
-            autoresize
-          />
-        </UFormField>
+        <CustomersCustomerAddressFields v-model="state.address" />
         <UFormField name="notes" label="Notas" class="sm:col-span-2">
           <UTextarea
             v-model="state.notes"

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { customerAddressSchema } from '../../shared/customer-address'
 import { normalizePhone } from '../utils/phone'
 
 const phoneSchema = z.string()
@@ -13,7 +14,7 @@ const customerSchema = z.object({
   alternatePhone: optionalPhoneSchema,
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]).optional().nullable(),
   taxId: z.string().trim().max(20).optional().nullable(),
-  address: z.string().trim().max(300).optional().nullable(),
+  address: customerAddressSchema,
   notes: z.string().trim().max(1000).optional().nullable()
 })
 
@@ -24,16 +25,45 @@ export default defineEventHandler(async (event) => {
   const body = await readCrmBody(event, customerSchema)
   const prisma = usePrisma()
 
-  return prisma.customer.create({
+  const existingCustomer = await prisma.customer.findFirst({
+    where: {
+      OR: [
+        { phone: body.phone },
+        ...(body.email ? [{ email: { equals: body.email, mode: 'insensitive' as const } }] : []),
+        ...(body.taxId ? [{ taxId: { equals: body.taxId, mode: 'insensitive' as const } }] : [])
+      ]
+    },
+    select: {
+      workshops: {
+        where: { workshopId },
+        select: { workshopId: true }
+      }
+    }
+  })
+
+  if (existingCustomer) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: existingCustomer.workshops.length
+        ? 'Este cliente ya está registrado en el taller seleccionado.'
+        : 'Este cliente ya existe. Un administrador debe asignarlo a este taller.'
+    })
+  }
+
+  const customer = await prisma.customer.create({
     data: {
-      workshopId,
       fullName: body.fullName,
       phone: body.phone,
       alternatePhone: body.alternatePhone || null,
       email: body.email || null,
       taxId: body.taxId || null,
-      address: body.address || null,
-      notes: body.notes || null
+      ...customerAddressData(body.address),
+      notes: body.notes || null,
+      workshops: {
+        create: { workshopId }
+      }
     }
   })
+
+  return serializeCustomer(customer)
 })

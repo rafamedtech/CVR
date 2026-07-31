@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
-  requireWorkshopRole(context, ['MANAGER', 'ADVISOR'])
+  requireSuperAdmin(context)
   const id = getRouterParam(event, 'id')
   const itemId = getRouterParam(event, 'itemId')
   const prisma = usePrisma()

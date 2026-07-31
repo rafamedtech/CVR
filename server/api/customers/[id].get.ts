@@ -10,15 +10,30 @@ export default defineEventHandler(async (event) => {
   const customer = await prisma.customer.findFirst({
     where: {
       id,
-      ...workshopWhere(context)
+      ...customerAccessWhere(context)
     },
     include: {
-      workshop: true,
+      workshops: {
+        where: context.isSuperAdmin ? {} : { workshopId: context.workshopId! },
+        include: { workshop: true },
+        orderBy: { createdAt: 'asc' }
+      },
       vehicles: {
+        where: vehicleAccessWhere(context),
+        include: {
+          workshops: {
+            where: context.isSuperAdmin ? {} : { workshopId: context.workshopId! },
+            include: { workshop: true },
+            orderBy: { createdAt: 'asc' }
+          }
+        },
         orderBy: { createdAt: 'desc' }
       },
       orders: {
-        where: assignedOrderWhere(context),
+        where: {
+          ...workshopWhere(context),
+          ...assignedOrderWhere(context)
+        },
         include: {
           workshop: true,
           customer: true,
@@ -30,8 +45,8 @@ export default defineEventHandler(async (event) => {
       },
       _count: {
         select: {
-          vehicles: true,
-          orders: true
+          vehicles: { where: vehicleAccessWhere(context) },
+          orders: { where: workshopWhere(context) }
         }
       }
     }
@@ -41,42 +56,33 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró el cliente.' })
   }
 
-  const workshopTypes = context.workshopId
-    ? [customer.workshop.type]
-    : [...new Set((await prisma.customer.findMany({
-        where: {
-          OR: [
-            { phone: customer.phone },
-            ...(customer.email ? [{ email: customer.email }] : []),
-            ...(customer.taxId ? [{ taxId: customer.taxId }] : [])
-          ]
-        },
-        select: {
-          workshop: {
-            select: { type: true }
-          }
-        }
-      })).map(item => item.workshop.type))]
+  const workshops = customer.workshops.map(({ workshop }) => ({
+    id: workshop.id,
+    name: workshop.name,
+    type: workshop.type
+  }))
 
   return {
     id: customer.id,
-    workshopId: customer.workshopId,
-    workshopName: customer.workshop.name,
-    workshopTypes,
+    workshops,
+    workshopTypes: workshops.map(workshop => workshop.type),
     fullName: customer.fullName,
     phone: customer.phone,
     alternatePhone: customer.alternatePhone,
     email: customer.email,
     taxId: customer.taxId,
-    address: customer.address,
+    address: serializeCustomerAddress(customer),
     notes: customer.notes,
     vehiclesCount: customer._count.vehicles,
     ordersCount: customer._count.orders,
     createdAt: customer.createdAt.toISOString(),
     vehicles: customer.vehicles.map(vehicle => ({
       id: vehicle.id,
-      workshopId: vehicle.workshopId,
-      workshopName: customer.workshop.name,
+      workshops: vehicle.workshops.map(({ workshop }) => ({
+        id: workshop.id,
+        name: workshop.name,
+        type: workshop.type
+      })),
       customerId: customer.id,
       customerName: customer.fullName,
       licensePlate: vehicle.licensePlate,

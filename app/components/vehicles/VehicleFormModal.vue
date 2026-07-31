@@ -20,8 +20,6 @@ const schema = z.object({
   model: z.string().min(1, 'Escribe el modelo.'),
   year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
   color: z.string().optional(),
-  mileage: z.coerce.number().int().nonnegative().optional(),
-  fuelLevel: z.coerce.number().int().min(0).max(100).optional(),
   notes: z.string().optional()
 })
 type VehicleSchema = z.output<typeof schema>
@@ -33,8 +31,6 @@ const state = reactive<Partial<VehicleSchema>>({
   model: '',
   year: new Date().getFullYear(),
   color: '',
-  mileage: undefined,
-  fuelLevel: undefined,
   notes: ''
 })
 
@@ -105,23 +101,6 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
         </UFormField>
         <UFormField name="color" label="Color">
           <UInput v-model="state.color" class="w-full" />
-        </UFormField>
-        <UFormField name="mileage" label="Kilometraje">
-          <UInput
-            v-model="state.mileage"
-            type="number"
-            min="0"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField name="fuelLevel" label="Combustible (%)">
-          <UInput
-            v-model="state.fuelLevel"
-            type="number"
-            min="0"
-            max="100"
-            class="w-full"
-          />
         </UFormField>
         <UFormField name="notes" label="Daños previos y observaciones" class="sm:col-span-2">
           <UTextarea

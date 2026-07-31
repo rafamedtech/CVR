@@ -2,28 +2,38 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { VehicleListItem } from '~/types/crm'
 
-defineProps<{
+const props = defineProps<{
   vehicles: VehicleListItem[]
   loading?: boolean
   showWorkshop?: boolean
+  canAssignWorkshops?: boolean
+}>()
+const emit = defineEmits<{
+  assignWorkshops: [vehicle: VehicleListItem]
 }>()
 
-const columns: TableColumn<VehicleListItem>[] = [{
-  accessorKey: 'licensePlate',
-  header: 'Vehículo'
-}, {
-  accessorKey: 'customerName',
-  header: 'Cliente'
-}, {
-  accessorKey: 'vin',
-  header: 'VIN / serie'
-}, {
-  accessorKey: 'mileage',
-  header: 'Kilometraje'
-}, {
-  accessorKey: 'workshopName',
-  header: 'Taller'
-}]
+const columns = computed<TableColumn<VehicleListItem>[]>(() => {
+  const baseColumns: TableColumn<VehicleListItem>[] = [{
+    accessorKey: 'licensePlate',
+    header: 'Vehículo'
+  }, {
+    accessorKey: 'customerName',
+    header: 'Cliente'
+  }, {
+    accessorKey: 'vin',
+    header: 'VIN / serie'
+  }, {
+    id: 'actions'
+  }]
+
+  if (!props.showWorkshop) return baseColumns
+
+  return [
+    ...baseColumns.slice(0, -1),
+    { id: 'workshops', header: 'Talleres' },
+    baseColumns.at(-1)!
+  ]
+})
 </script>
 
 <template>
@@ -49,12 +59,29 @@ const columns: TableColumn<VehicleListItem>[] = [{
       <template #vin-cell="{ row }">
         <span class="font-mono text-xs text-muted">{{ row.original.vin || '—' }}</span>
       </template>
-      <template #mileage-cell="{ row }">
-        {{ row.original.mileage?.toLocaleString('es-MX') ?? '—' }}<span v-if="row.original.mileage"> km</span>
+      <template #workshops-cell="{ row }">
+        <div class="flex flex-wrap gap-1.5">
+          <UBadge
+            v-for="workshop in row.original.workshops"
+            :key="workshop.id"
+            :label="workshop.name"
+            color="neutral"
+            variant="subtle"
+          />
+        </div>
       </template>
-      <template #workshopName-cell="{ row }">
-        <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
-        <span v-else>—</span>
+      <template #actions-cell="{ row }">
+        <div class="flex justify-end">
+          <UButton
+            v-if="canAssignWorkshops"
+            label="Asignar talleres"
+            icon="i-lucide-building-2"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="emit('assignWorkshops', row.original)"
+          />
+        </div>
       </template>
       <template #empty>
         <div class="py-12 text-center">

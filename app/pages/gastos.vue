@@ -27,7 +27,7 @@ const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum
 </script>
 
 <template>
-  <UDashboardPanel id="expenses">
+  <UDashboardPanel id="gastos">
     <template #header>
       <UDashboardNavbar title="Gastos operativos">
         <template #leading>

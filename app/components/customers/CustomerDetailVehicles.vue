@@ -12,9 +12,6 @@ const columns: TableColumn<VehicleListItem>[] = [{
 }, {
   accessorKey: 'vin',
   header: 'VIN / serie'
-}, {
-  accessorKey: 'mileage',
-  header: 'Kilometraje'
 }]
 </script>
 
@@ -33,9 +30,6 @@ const columns: TableColumn<VehicleListItem>[] = [{
       </template>
       <template #vin-cell="{ row }">
         <span class="font-mono text-xs text-muted">{{ row.original.vin || '—' }}</span>
-      </template>
-      <template #mileage-cell="{ row }">
-        {{ row.original.mileage?.toLocaleString('es-MX') ?? '—' }}<span v-if="row.original.mileage"> km</span>
       </template>
       <template #empty>
         <div class="py-12 text-center">

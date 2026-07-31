@@ -19,11 +19,13 @@ export default defineEventHandler(async (event) => {
   const workshopId = requireSelectedWorkshop(context)
   const body = await readCrmBody(event, vehicleSchema)
   const prisma = usePrisma()
+  const licensePlate = body.licensePlate.toUpperCase()
+  const vin = body.vin?.toUpperCase() || null
 
   const customer = await prisma.customer.findFirst({
     where: {
       id: body.customerId,
-      workshopId
+      workshops: { some: { workshopId } }
     }
   })
 
@@ -34,19 +36,45 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const existingVehicle = await prisma.vehicle.findFirst({
+    where: {
+      OR: [
+        { licensePlate },
+        ...(vin ? [{ vin }] : [])
+      ]
+    },
+    select: {
+      workshops: {
+        where: { workshopId },
+        select: { workshopId: true }
+      }
+    }
+  })
+
+  if (existingVehicle) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: existingVehicle.workshops.length
+        ? 'Este vehículo ya está registrado en el taller seleccionado.'
+        : 'Este vehículo ya existe. Un administrador debe asignarlo a este taller.'
+    })
+  }
+
   return prisma.vehicle.create({
     data: {
-      workshopId,
       customerId: body.customerId,
-      licensePlate: body.licensePlate.toUpperCase(),
-      vin: body.vin?.toUpperCase() || null,
+      licensePlate,
+      vin,
       make: body.make,
       model: body.model,
       year: body.year,
       color: body.color || null,
       mileage: body.mileage ?? null,
       fuelLevel: body.fuelLevel ?? null,
-      notes: body.notes || null
+      notes: body.notes || null,
+      workshops: {
+        create: { workshopId }
+      }
     }
   })
 })

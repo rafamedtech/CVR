@@ -3,33 +3,21 @@ import { z } from 'zod'
 const updateOrderSchema = z.object({
   status: z.enum(['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'CANCELLED']).optional(),
   priority: z.enum(['NORMAL', 'HIGH', 'URGENT']).optional(),
+  complaint: z.string().trim().min(3).max(2000).optional(),
   diagnosis: z.string().trim().max(2000).optional().nullable(),
+  intakeNotes: z.string().trim().max(2000).optional().nullable(),
   internalNotes: z.string().trim().max(2000).optional().nullable(),
+  mileageIn: z.coerce.number().int().nonnegative().optional().nullable(),
+  fuelLevelIn: z.coerce.number().int().min(0).max(100).optional().nullable(),
   promisedAt: z.string().optional().nullable(),
   assignedToId: z.union([z.uuid(), z.literal('')]).optional().nullable()
 })
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
-  requireWorkshopRole(context, ['MANAGER', 'ADVISOR', 'TECHNICIAN'])
+  requireSuperAdmin(context)
   const id = getRouterParam(event, 'id')
   const body = await readCrmBody(event, updateOrderSchema)
-  const role = currentWorkshopRole(context)
-
-  if (role === 'TECHNICIAN') {
-    const forbiddenChange = body.priority !== undefined
-      || body.internalNotes !== undefined
-      || body.promisedAt !== undefined
-      || body.assignedToId !== undefined
-      || (body.status !== undefined && !['IN_PROGRESS', 'QUALITY_CONTROL', 'READY'].includes(body.status))
-
-    if (forbiddenChange) {
-      throw createError({
-        statusCode: 403,
-        statusMessage: 'El técnico solo puede actualizar el diagnóstico y avance de sus órdenes.'
-      })
-    }
-  }
   const prisma = usePrisma()
 
   const order = await prisma.serviceOrder.findFirst({
@@ -73,8 +61,12 @@ export default defineEventHandler(async (event) => {
     data: {
       ...(body.status ? { status: body.status } : {}),
       ...(body.priority ? { priority: body.priority } : {}),
+      ...(body.complaint !== undefined ? { complaint: body.complaint } : {}),
       ...(body.diagnosis !== undefined ? { diagnosis: body.diagnosis || null } : {}),
+      ...(body.intakeNotes !== undefined ? { intakeNotes: body.intakeNotes || null } : {}),
       ...(body.internalNotes !== undefined ? { internalNotes: body.internalNotes || null } : {}),
+      ...(body.mileageIn !== undefined ? { mileageIn: body.mileageIn } : {}),
+      ...(body.fuelLevelIn !== undefined ? { fuelLevelIn: body.fuelLevelIn } : {}),
       ...(body.promisedAt !== undefined ? { promisedAt: body.promisedAt ? new Date(body.promisedAt) : null } : {}),
       ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId || null } : {}),
       ...statusDates

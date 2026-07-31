@@ -52,7 +52,7 @@ async function applyRange() {
 
         <template #right>
           <UButton
-            to="/orders"
+            to="/ordenes"
             label="Ver órdenes"
             icon="i-lucide-clipboard-list"
             color="neutral"

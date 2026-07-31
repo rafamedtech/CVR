@@ -2,6 +2,8 @@
 import type { TaxRate } from '~/types/crm'
 import { taxRateOptions } from '~/utils/crm'
 
+useHead({ title: 'Configuración' })
+
 const {
   session,
   activeWorkshop,

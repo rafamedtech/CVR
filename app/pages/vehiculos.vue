@@ -6,7 +6,9 @@ useHead({ title: 'Vehículos' })
 const route = useRoute()
 const search = shallowRef('')
 const createOpen = shallowRef(false)
-const { canManageCustomers, isAllWorkshops } = useCrmSession()
+const assignmentsOpen = shallowRef(false)
+const selectedVehicle = shallowRef<VehicleListItem | null>(null)
+const { session, canManageCustomers, isAllWorkshops, isSuperAdmin } = useCrmSession()
 const { data: vehicles, status, refresh } = await useFetch<VehicleListItem[]>('/api/vehicles', {
   default: () => [],
   key: 'crm-vehicles'
@@ -32,10 +34,15 @@ const filteredVehicles = computed(() => {
     ].some(value => value?.toLocaleLowerCase('es-MX').includes(term))
   })
 })
+
+function handleAssignWorkshops(vehicle: VehicleListItem) {
+  selectedVehicle.value = vehicle
+  assignmentsOpen.value = true
+}
 </script>
 
 <template>
-  <UDashboardPanel id="vehicles">
+  <UDashboardPanel id="vehiculos">
     <template #header>
       <UDashboardNavbar title="Vehículos">
         <template #leading>
@@ -69,7 +76,7 @@ const filteredVehicles = computed(() => {
             color="neutral"
             variant="ghost"
             icon="i-lucide-x"
-            to="/vehicles"
+            to="/vehiculos"
           />
         </template>
       </UDashboardToolbar>
@@ -99,11 +106,19 @@ const filteredVehicles = computed(() => {
         :vehicles="filteredVehicles"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
+        :can-assign-workshops="isSuperAdmin"
+        @assign-workshops="handleAssignWorkshops"
       />
       <VehiclesVehicleFormModal
         v-model:open="createOpen"
         :customers="customers"
         @created="refresh"
+      />
+      <VehiclesVehicleWorkshopsModal
+        v-model:open="assignmentsOpen"
+        :vehicle="selectedVehicle"
+        :workshops="session?.workshops ?? []"
+        @updated="refresh"
       />
     </template>
   </UDashboardPanel>

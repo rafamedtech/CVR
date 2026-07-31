@@ -53,6 +53,12 @@ enum PaymentMethod {
   OTHER
 }
 
+enum PaymentStatus {
+  NO_PAYMENTS
+  PARTIALLY_PAID
+  PAID
+}
+
 enum ExpenseCategory {
   RENT
   PAYROLL
@@ -65,39 +71,39 @@ enum ExpenseCategory {
 }
 
 model Workshop {
-  id          String       @id @default(uuid()) @db.Uuid
-  slug        String       @unique
-  name        String
-  type        WorkshopType
-  active      Boolean      @default(true)
-  currency    String       @default("MXN")
-  taxRate     Decimal      @default(16) @db.Decimal(5, 2)
-  timezone    String       @default("America/Tijuana")
-  phone       String?
-  address     String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  members     WorkshopMember[]
-  customers   Customer[]
-  vehicles    Vehicle[]
-  orders      ServiceOrder[]
-  expenses    Expense[]
+  id        String             @id @default(uuid()) @db.Uuid
+  slug      String             @unique
+  name      String
+  type      WorkshopType
+  active    Boolean            @default(true)
+  currency  String             @default("MXN")
+  taxRate   Decimal            @default(16) @db.Decimal(5, 2)
+  timezone  String             @default("America/Tijuana")
+  phone     String?
+  address   String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  members   WorkshopMember[]
+  customers CustomerWorkshop[]
+  vehicles  VehicleWorkshop[]
+  orders    ServiceOrder[]
+  expenses  Expense[]
 
   @@map("workshops")
 }
 
 model Profile {
-  id             String       @id @db.Uuid
-  email          String       @unique
-  fullName       String
-  phone          String?
-  isSuperAdmin   Boolean      @default(false)
-  active         Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  memberships    WorkshopMember[]
-  createdOrders  ServiceOrder[] @relation("CreatedOrders")
-  assignedOrders ServiceOrder[] @relation("AssignedOrders")
+  id               String           @id @db.Uuid
+  email            String           @unique
+  fullName         String
+  phone            String?
+  isSuperAdmin     Boolean          @default(false)
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  memberships      WorkshopMember[]
+  createdOrders    ServiceOrder[]   @relation("CreatedOrders")
+  assignedOrders   ServiceOrder[]   @relation("AssignedOrders")
   recordedPayments Payment[]
   recordedExpenses Expense[]
 
@@ -105,12 +111,12 @@ model Profile {
 }
 
 model WorkshopMember {
-  profileId String       @db.Uuid
-  workshopId String      @db.Uuid
+  profileId  String       @db.Uuid
+  workshopId String       @db.Uuid
   role       WorkshopRole
-  createdAt  DateTime    @default(now())
-  profile    Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  workshop   Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  profile    Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  workshop   Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
   @@id([profileId, workshopId])
   @@index([workshopId, role])
@@ -118,85 +124,114 @@ model WorkshopMember {
 }
 
 model Customer {
-  id          String       @id @default(uuid()) @db.Uuid
-  workshopId  String       @db.Uuid
-  fullName    String
-  phone       String
-  alternatePhone String?
-  email       String?
-  taxId       String?
-  address     String?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  workshop    Workshop     @relation(fields: [workshopId], references: [id], onDelete: Restrict)
-  vehicles    Vehicle[]
-  orders      ServiceOrder[]
+  id                    String             @id @default(uuid()) @db.Uuid
+  fullName              String
+  phone                 String
+  alternatePhone        String?
+  email                 String?
+  taxId                 String?
+  addressLine           String?            @map("address")
+  addressInteriorNumber String?
+  addressExteriorNumber String?
+  addressColony         String?
+  addressLocality       String?
+  addressCountryCode    String?
+  addressStateCode      String?
+  addressCityCode       String?
+  addressPostalCode     String?
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  workshops             CustomerWorkshop[]
+  vehicles              Vehicle[]
+  orders                ServiceOrder[]
 
-  @@index([workshopId, fullName])
-  @@index([workshopId, phone])
+  @@index([fullName])
+  @@index([phone])
   @@map("customers")
 }
 
-model Vehicle {
-  id          String       @id @default(uuid()) @db.Uuid
-  workshopId  String       @db.Uuid
-  customerId  String       @db.Uuid
-  vin         String?
-  licensePlate String
-  make        String
-  model       String
-  year        Int
-  color       String?
-  mileage     Int?
-  fuelLevel   Int?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  workshop    Workshop     @relation(fields: [workshopId], references: [id], onDelete: Restrict)
-  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  orders      ServiceOrder[]
+model CustomerWorkshop {
+  customerId String   @db.Uuid
+  workshopId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
-  @@unique([workshopId, licensePlate])
-  @@index([workshopId, vin])
+  @@id([customerId, workshopId])
+  @@index([workshopId, createdAt])
+  @@map("customer_workshops")
+}
+
+model Vehicle {
+  id           String            @id @default(uuid()) @db.Uuid
+  customerId   String            @db.Uuid
+  vin          String?           @unique
+  licensePlate String            @unique
+  make         String
+  model        String
+  year         Int
+  color        String?
+  mileage      Int?
+  fuelLevel    Int?
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  customer     Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  workshops    VehicleWorkshop[]
+  orders       ServiceOrder[]
+
   @@index([customerId])
   @@map("vehicles")
 }
 
+model VehicleWorkshop {
+  vehicleId  String   @db.Uuid
+  workshopId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@id([vehicleId, workshopId])
+  @@index([workshopId, createdAt])
+  @@map("vehicle_workshops")
+}
+
 model ServiceOrder {
-  id              String        @id @default(uuid()) @db.Uuid
-  workshopId      String        @db.Uuid
-  customerId      String        @db.Uuid
-  vehicleId       String        @db.Uuid
-  orderNumber     String
-  status          OrderStatus   @default(ESTIMATE)
-  priority        OrderPriority @default(NORMAL)
-  complaint       String
-  diagnosis       String?
-  intakeNotes     String?
-  internalNotes   String?
-  mileageIn       Int?
-  fuelLevelIn     Int?
-  promisedAt      DateTime?
-  approvedAt      DateTime?
-  startedAt       DateTime?
-  completedAt     DateTime?
-  deliveredAt     DateTime?
-  subtotal        Decimal       @default(0) @db.Decimal(12, 2)
-  discountTotal   Decimal       @default(0) @db.Decimal(12, 2)
-  taxTotal        Decimal       @default(0) @db.Decimal(12, 2)
-  total           Decimal       @default(0) @db.Decimal(12, 2)
-  createdById     String        @db.Uuid
-  assignedToId    String?       @db.Uuid
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  workshop        Workshop      @relation(fields: [workshopId], references: [id], onDelete: Restrict)
-  customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  vehicle         Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  createdBy       Profile       @relation("CreatedOrders", fields: [createdById], references: [id], onDelete: Restrict)
-  assignedTo      Profile?      @relation("AssignedOrders", fields: [assignedToId], references: [id], onDelete: SetNull)
-  items           OrderItem[]
-  payments        Payment[]
+  id            String        @id @default(uuid()) @db.Uuid
+  workshopId    String        @db.Uuid
+  customerId    String        @db.Uuid
+  vehicleId     String        @db.Uuid
+  orderNumber   String
+  status        OrderStatus   @default(ESTIMATE)
+  paymentStatus PaymentStatus @default(NO_PAYMENTS)
+  priority      OrderPriority @default(NORMAL)
+  complaint     String
+  diagnosis     String?
+  intakeNotes   String?
+  internalNotes String?
+  mileageIn     Int?
+  fuelLevelIn   Int?
+  promisedAt    DateTime?
+  approvedAt    DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  deliveredAt   DateTime?
+  subtotal      Decimal       @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal       @default(0) @db.Decimal(12, 2)
+  taxTotal      Decimal       @default(0) @db.Decimal(12, 2)
+  total         Decimal       @default(0) @db.Decimal(12, 2)
+  createdById   String        @db.Uuid
+  assignedToId  String?       @db.Uuid
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  workshop      Workshop      @relation(fields: [workshopId], references: [id], onDelete: Restrict)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  createdBy     Profile       @relation("CreatedOrders", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo    Profile?      @relation("AssignedOrders", fields: [assignedToId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  payments      Payment[]
 
   @@unique([workshopId, orderNumber])
   @@index([workshopId, status, createdAt])
@@ -229,36 +264,36 @@ model OrderItem {
 }
 
 model Payment {
-  id            String        @id @default(uuid()) @db.Uuid
-  orderId       String        @db.Uuid
-  amount        Decimal       @db.Decimal(12, 2)
-  method        PaymentMethod
-  reference     String?
-  notes         String?
-  paidAt        DateTime      @default(now())
-  recordedById  String        @db.Uuid
-  createdAt     DateTime      @default(now())
-  order         ServiceOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  recordedBy    Profile       @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+  id           String        @id @default(uuid()) @db.Uuid
+  orderId      String        @db.Uuid
+  amount       Decimal       @db.Decimal(12, 2)
+  method       PaymentMethod
+  reference    String?
+  notes        String?
+  paidAt       DateTime      @default(now())
+  recordedById String        @db.Uuid
+  createdAt    DateTime      @default(now())
+  order        ServiceOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recordedBy   Profile       @relation(fields: [recordedById], references: [id], onDelete: Restrict)
 
   @@index([orderId, paidAt])
   @@map("payments")
 }
 
 model Expense {
-  id            String          @id @default(uuid()) @db.Uuid
-  workshopId    String          @db.Uuid
-  category      ExpenseCategory
-  description   String
-  vendor        String?
-  amount        Decimal         @db.Decimal(12, 2)
-  expenseDate   DateTime        @default(now())
-  notes         String?
-  recordedById  String          @db.Uuid
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  workshop      Workshop        @relation(fields: [workshopId], references: [id], onDelete: Restrict)
-  recordedBy    Profile         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+  id           String          @id @default(uuid()) @db.Uuid
+  workshopId   String          @db.Uuid
+  category     ExpenseCategory
+  description  String
+  vendor       String?
+  amount       Decimal         @db.Decimal(12, 2)
+  expenseDate  DateTime        @default(now())
+  notes        String?
+  recordedById String          @db.Uuid
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  workshop     Workshop        @relation(fields: [workshopId], references: [id], onDelete: Restrict)
+  recordedBy   Profile         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
 
   @@index([workshopId, expenseDate])
   @@map("expenses")

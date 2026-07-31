@@ -10,6 +10,7 @@
     "build": "prisma generate && nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
+    "test": "tsx --test tests/**/*.test.ts",
     "postinstall": "prisma generate && nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",

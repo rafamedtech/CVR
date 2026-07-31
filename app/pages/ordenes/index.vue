@@ -12,7 +12,7 @@ const route = useRoute()
 const search = shallowRef('')
 const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
 const createOpen = shallowRef(false)
-const { activeWorkshop, canCreateInWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
+const { activeWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
 
 const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
   default: () => [],
@@ -26,12 +26,6 @@ const { data: vehicles } = await useFetch<VehicleListItem[]>('/api/vehicles', {
   default: () => [],
   key: 'crm-vehicles-for-orders'
 })
-const { data: members } = await useFetch<Array<{ id: string, fullName: string, role: string }>>('/api/workshop-members', {
-  default: () => [],
-  key: 'crm-members-for-orders',
-  immediate: canCreateInWorkshop.value
-})
-
 const statusOptions = [
   { label: 'Todos los estados', value: 'ALL' },
   ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
@@ -56,7 +50,7 @@ const filteredOrders = computed(() => {
 </script>
 
 <template>
-  <UDashboardPanel id="orders">
+  <UDashboardPanel id="ordenes">
     <template #header>
       <UDashboardNavbar title="Órdenes de trabajo">
         <template #leading>
@@ -91,7 +85,7 @@ const filteredOrders = computed(() => {
             color="neutral"
             variant="ghost"
             icon="i-lucide-x"
-            to="/orders"
+            to="/ordenes"
           />
           <USelect
             v-model="statusFilter"
@@ -121,7 +115,7 @@ const filteredOrders = computed(() => {
         icon="i-lucide-circle-alert"
         color="warning"
         variant="subtle"
-        :actions="[{ label: 'Registrar cliente', to: '/clientes' }, { label: 'Registrar vehículo', to: '/vehicles' }]"
+        :actions="[{ label: 'Registrar cliente', to: '/clientes' }, { label: 'Registrar vehículo', to: '/vehiculos' }]"
       />
 
       <OrdersTable
@@ -133,7 +127,6 @@ const filteredOrders = computed(() => {
         v-model:open="createOpen"
         :customers="customers"
         :vehicles="vehicles"
-        :members="members"
         :default-tax-rate="activeWorkshop?.taxRate ?? 16"
         @created="refresh"
       />

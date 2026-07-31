@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { calculatePaymentStatus } from '../../../../shared/payment-status'
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('El pago debe ser mayor a cero.'),
@@ -10,7 +11,7 @@ const paymentSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
-  requireWorkshopRole(context, ['MANAGER', 'ADVISOR', 'CASHIER'])
+  requireSuperAdmin(context)
   const id = getRouterParam(event, 'id')
   const body = await readCrmBody(event, paymentSchema)
   const prisma = usePrisma()
@@ -36,15 +37,31 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return prisma.payment.create({
-    data: {
-      orderId: order.id,
-      amount: body.amount,
-      method: body.method,
-      reference: body.reference || null,
-      notes: body.notes || null,
-      paidAt: body.paidAt ? new Date(body.paidAt) : new Date(),
-      recordedById: context.profile.id
-    }
+  return prisma.$transaction(async (transaction) => {
+    const payment = await transaction.payment.create({
+      data: {
+        orderId: order.id,
+        amount: body.amount,
+        method: body.method,
+        reference: body.reference || null,
+        notes: body.notes || null,
+        paidAt: body.paidAt ? new Date(body.paidAt) : new Date(),
+        recordedById: context.profile.id
+      }
+    })
+    const payments = await transaction.payment.findMany({
+      where: { orderId: order.id },
+      select: { amount: true }
+    })
+    const paid = payments.reduce((sum, current) => sum + Number(current.amount), 0)
+
+    await transaction.serviceOrder.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: calculatePaymentStatus(Number(order.total), paid, payments.length)
+      }
+    })
+
+    return payment
   })
 })

@@ -5,7 +5,7 @@ const { session } = useCrmSession()
 const links = computed<NavigationMenuItem[]>(() => [{
   label: 'General',
   icon: 'i-lucide-building-2',
-  to: '/settings',
+  to: '/configuracion',
   exact: true
 }, ...(session.value?.profile.isSuperAdmin || session.value?.workshops.some(workshop => (
   workshop.id === session.value?.selectedWorkshopId && workshop.role === 'MANAGER'
@@ -13,13 +13,13 @@ const links = computed<NavigationMenuItem[]>(() => [{
   ? [{
       label: 'Usuarios',
       icon: 'i-lucide-users',
-      to: '/settings/members'
+      to: '/configuracion/usuarios'
     }]
   : [])])
 </script>
 
 <template>
-  <UDashboardPanel id="settings" :ui="{ body: 'lg:py-10' }">
+  <UDashboardPanel id="configuracion" :ui="{ body: 'lg:py-10' }">
     <template #header>
       <UDashboardNavbar title="Configuración">
         <template #leading>

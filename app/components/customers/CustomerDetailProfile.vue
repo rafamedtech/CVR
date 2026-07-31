@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CustomerDetail } from '~/types/crm'
-import { formatCurrency, formatDate, formatPhone } from '~/utils/crm'
+import { formatCurrency, formatCustomerAddress, formatDate, formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
   customer: CustomerDetail
@@ -15,7 +15,7 @@ const workshopBadgeLabel = computed(() => {
   if (types.has('MECHANICAL')) return 'Taller mecánico'
   if (types.has('PAINT_STORE')) return 'Tienda de pinturas'
 
-  return props.customer.workshopName
+  return props.customer.workshops.map(workshop => workshop.name).join(', ')
 })
 
 const orderTotals = computed(() => props.customer.orders.reduce((totals, order) => ({
@@ -88,7 +88,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
             Domicilio
           </dt>
           <dd class="mt-1.5 whitespace-pre-wrap text-default">
-            {{ customer.address || 'No registrado' }}
+            {{ formatCustomerAddress(customer.address) }}
           </dd>
         </div>
       </dl>

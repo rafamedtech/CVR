@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { MemberAccessPreset, MemberListItem } from '~/types/crm'
 
+useHead({ title: 'Usuarios' })
+
 const search = shallowRef('')
 const createOpen = shallowRef(false)
 const activePreset = shallowRef<MemberAccessPreset | null>(null)

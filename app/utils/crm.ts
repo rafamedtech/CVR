@@ -3,11 +3,13 @@ import type {
   LineItemType,
   OrderPriority,
   OrderStatus,
+  PaymentStatus,
   PaymentMethod,
   TaxRate,
   WorkshopRole,
   WorkshopType
 } from '~/types/crm'
+import type { CustomerAddress } from '#shared/customer-address'
 
 export const taxRateValues: readonly TaxRate[] = [0, 8, 16]
 
@@ -26,6 +28,25 @@ export function formatPhone(value: string | null | undefined) {
   if (digits.length <= 3) return digits ? `(${digits}${digits.length === 3 ? ')' : ''}` : ''
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+export function formatCustomerAddress(address: CustomerAddress | null) {
+  if (!address) return 'No registrado'
+
+  const street = [
+    address.address,
+    address.exterior_number ? `Ext. ${address.exterior_number}` : '',
+    address.interior_number ? `Int. ${address.interior_number}` : ''
+  ].filter(Boolean).join(' · ')
+  const area = [address.colony, address.locality].filter(Boolean).join(', ')
+  const locationCodes = [
+    address.city.country_code,
+    address.city.state_code ? `Estado ${address.city.state_code}` : '',
+    address.city.city_code ? `Ciudad ${address.city.city_code}` : '',
+    address.postal_code ? `C.P. ${address.postal_code}` : ''
+  ].filter(Boolean).join(' · ')
+
+  return [street, area, locationCodes].filter(Boolean).join('\n')
 }
 
 export const orderStatusLabels: Record<OrderStatus, string> = {
@@ -48,6 +69,18 @@ export const orderStatusColors: Record<OrderStatus, 'neutral' | 'warning' | 'inf
   READY: 'success',
   DELIVERED: 'success',
   CANCELLED: 'error'
+}
+
+export const paymentStatusLabels: Record<PaymentStatus, string> = {
+  NO_PAYMENTS: 'Sin pagos',
+  PARTIALLY_PAID: 'Abonado',
+  PAID: 'Pagado'
+}
+
+export const paymentStatusColors: Record<PaymentStatus, 'neutral' | 'warning' | 'success'> = {
+  NO_PAYMENTS: 'neutral',
+  PARTIALLY_PAID: 'warning',
+  PAID: 'success'
 }
 
 export const orderPriorityLabels: Record<OrderPriority, string> = {

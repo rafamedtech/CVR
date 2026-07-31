@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { customerAddressSchema, emptyCustomerAddress } from '#shared/customer-address'
 import type { CustomerListItem } from '~/types/crm'
 
 const props = defineProps<{
@@ -19,7 +20,7 @@ const schema = z.object({
   alternatePhone: z.union([z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'), z.literal('')]),
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]),
   taxId: z.string().optional(),
-  address: z.string().optional(),
+  address: customerAddressSchema,
   notes: z.string().optional()
 })
 type CustomerSchema = z.output<typeof schema>
@@ -30,7 +31,7 @@ const state = reactive<CustomerSchema>({
   alternatePhone: '',
   email: '',
   taxId: '',
-  address: '',
+  address: emptyCustomerAddress(),
   notes: ''
 })
 
@@ -43,7 +44,21 @@ watch([open, () => props.customer], ([isOpen, customer]) => {
     alternatePhone: customer.alternatePhone ?? '',
     email: customer.email ?? '',
     taxId: customer.taxId ?? '',
-    address: customer.address ?? '',
+    address: customer.address
+      ? {
+          address: customer.address.address,
+          interior_number: customer.address.interior_number ?? '',
+          exterior_number: customer.address.exterior_number ?? '',
+          colony: customer.address.colony ?? '',
+          locality: customer.address.locality ?? '',
+          city: {
+            country_code: customer.address.city.country_code || 'MX',
+            state_code: customer.address.city.state_code,
+            city_code: customer.address.city.city_code
+          },
+          postal_code: customer.address.postal_code ?? ''
+        }
+      : emptyCustomerAddress(),
     notes: customer.notes ?? ''
   })
 }, { immediate: true })
@@ -76,8 +91,8 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
   <UModal
     v-model:open="open"
     title="Editar cliente"
-    description="Actualiza los datos de contacto y facturación interna."
-    :ui="{ content: 'sm:max-w-2xl', footer: 'justify-end' }"
+    description="Actualiza los datos de contacto y domicilio compatible con Siigo México."
+    :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>
       <UForm
@@ -107,14 +122,7 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
         <UFormField name="taxId" label="RFC">
           <UInput v-model="state.taxId" class="w-full" />
         </UFormField>
-        <UFormField name="address" label="Domicilio" class="sm:col-span-2">
-          <UTextarea
-            v-model="state.address"
-            class="w-full"
-            :rows="2"
-            autoresize
-          />
-        </UFormField>
+        <CustomersCustomerAddressFields v-model="state.address" />
         <UFormField name="notes" label="Notas" class="sm:col-span-2">
           <UTextarea
             v-model="state.notes"

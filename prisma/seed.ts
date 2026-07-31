@@ -9,6 +9,7 @@ import {
   PrismaClient,
   WorkshopType
 } from '../generated/prisma/client'
+import { calculatePaymentStatus } from '../shared/payment-status'
 
 const connectionString = process.env.DATABASE_URL
 
@@ -154,6 +155,9 @@ async function upsertDemoOrder(seed: DemoOrder) {
     taxTotal: 0,
     total: 0
   })
+  const paymentAmounts = (seed.payments ?? []).map(payment =>
+    Math.round(totals.total * payment.ratio * 100) / 100
+  )
   const orderData = {
     customerId: seed.customerId,
     vehicleId: seed.vehicleId,
@@ -173,6 +177,11 @@ async function upsertDemoOrder(seed: DemoOrder) {
     createdById: seed.createdById,
     assignedToId: seed.assignedToId ?? null,
     createdAt: seed.createdAt,
+    paymentStatus: calculatePaymentStatus(
+      totals.total,
+      paymentAmounts.reduce((sum, amount) => sum + amount, 0),
+      paymentAmounts.length
+    ),
     ...totals
   }
   const order = await prisma.serviceOrder.upsert({
@@ -207,7 +216,7 @@ async function upsertDemoOrder(seed: DemoOrder) {
     await prisma.payment.createMany({
       data: seed.payments.map((payment, index) => ({
         orderId: order.id,
-        amount: Math.round(totals.total * payment.ratio * 100) / 100,
+        amount: paymentAmounts[index],
         method: payment.method,
         reference: payment.reference ?? `DEMO-${seed.orderNumber}-${index + 1}`,
         notes: payment.notes ?? 'Pago de muestra',
@@ -268,106 +277,111 @@ async function main() {
   const customers = [
     {
       id: ids.customers.bodyOne,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       fullName: 'Alejandro Vargas',
-      phone: '(664) 203-1148',
-      alternatePhone: '(664) 331-7802',
+      phone: '6642031148',
+      alternatePhone: '6643317802',
       email: 'alejandro.vargas@example.com',
       taxId: 'VAAA850214KJ8',
-      address: 'Col. Hipódromo, Tijuana, B.C.',
+      addressLine: 'Col. Hipódromo, Tijuana, B.C.',
       notes: 'Prefiere actualizaciones por WhatsApp. Cliente recurrente.'
     },
     {
       id: ids.customers.bodyTwo,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       fullName: 'Transportes del Pacífico, S.A. de C.V.',
-      phone: '(664) 608-4410',
+      phone: '6646084410',
       alternatePhone: null,
       email: 'flotilla@transportespacifico.example',
       taxId: 'TPA1906214R2',
-      address: 'Otay Industrial, Tijuana, B.C.',
+      addressLine: 'Otay Industrial, Tijuana, B.C.',
       notes: 'Crédito autorizado a 15 días. Solicitar orden de compra.'
     },
     {
       id: ids.customers.bodyThree,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       fullName: 'Fernanda Núñez',
-      phone: '(664) 125-9083',
+      phone: '6641259083',
       alternatePhone: null,
       email: 'fernanda.nunez@example.com',
       taxId: null,
-      address: 'Playas de Tijuana, B.C.',
+      addressLine: 'Playas de Tijuana, B.C.',
       notes: 'Vehículo asegurado; enviar fotografías antes de trabajos adicionales.'
     },
     {
       id: ids.customers.bodyFour,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       fullName: 'Ricardo Salgado',
-      phone: '(664) 790-2231',
+      phone: '6647902231',
       alternatePhone: null,
       email: null,
       taxId: null,
-      address: null,
+      addressLine: null,
       notes: 'Cotización cancelada por decisión del cliente.'
     },
     {
       id: ids.customers.mechanicalOne,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       fullName: 'Gabriela Moreno',
-      phone: '(664) 455-7812',
-      alternatePhone: '(664) 901-2240',
+      phone: '6644557812',
+      alternatePhone: '6649012240',
       email: 'gabriela.moreno@example.com',
       taxId: 'MOGG910607PA3',
-      address: 'Zona Río, Tijuana, B.C.',
+      addressLine: 'Zona Río, Tijuana, B.C.',
       notes: 'Autoriza diagnósticos hasta $1,500 sin llamada previa.'
     },
     {
       id: ids.customers.mechanicalTwo,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       fullName: 'Cafeterías Baja Norte',
-      phone: '(664) 312-6630',
+      phone: '6643126630',
       alternatePhone: null,
       email: 'administracion@cafeteriasbaja.example',
       taxId: 'CBN170902M81',
-      address: 'Blvd. Agua Caliente, Tijuana, B.C.',
+      addressLine: 'Blvd. Agua Caliente, Tijuana, B.C.',
       notes: 'Unidad de reparto. Prioridad alta por operación diaria.'
     },
     {
       id: ids.customers.mechanicalThree,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       fullName: 'Óscar Medina',
-      phone: '(664) 881-3479',
+      phone: '6648813479',
       alternatePhone: null,
       email: 'oscar.medina@example.com',
       taxId: null,
-      address: 'La Mesa, Tijuana, B.C.',
+      addressLine: 'La Mesa, Tijuana, B.C.',
       notes: 'Solicita conservar las piezas reemplazadas.'
     },
     {
       id: ids.customers.mechanicalFour,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       fullName: 'Laura Hernández',
-      phone: '(664) 521-9066',
+      phone: '6645219066',
       alternatePhone: null,
       email: 'laura.hernandez@example.com',
       taxId: null,
-      address: 'Santa Fe, Tijuana, B.C.',
+      addressLine: 'Santa Fe, Tijuana, B.C.',
       notes: 'Cliente recurrente; historial de servicios preventivos.'
     }
   ]
 
   for (const customer of customers) {
+    const { workshopIds, ...customerData } = customer
     await prisma.customer.upsert({
       where: { id: customer.id },
-      update: customer,
-      create: customer
+      update: customerData,
+      create: customerData
+    })
+    await prisma.customerWorkshop.createMany({
+      data: workshopIds.map(workshopId => ({ customerId: customer.id, workshopId })),
+      skipDuplicates: true
     })
   }
 
   const vehicles = [
     {
       id: ids.vehicles.bodyOne,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       customerId: ids.customers.bodyOne,
       vin: '3N1AB8AE7PY247811',
       licensePlate: 'CVR-B01',
@@ -381,7 +395,7 @@ async function main() {
     },
     {
       id: ids.vehicles.bodyTwo,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       customerId: ids.customers.bodyTwo,
       vin: '3GCNAAEK2NG185402',
       licensePlate: 'CVR-B02',
@@ -395,7 +409,7 @@ async function main() {
     },
     {
       id: ids.vehicles.bodyThree,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       customerId: ids.customers.bodyThree,
       vin: 'JM3KFBCM5M0321847',
       licensePlate: 'CVR-B03',
@@ -409,7 +423,7 @@ async function main() {
     },
     {
       id: ids.vehicles.bodyFour,
-      workshopId: bodyWorkshop.id,
+      workshopIds: [bodyWorkshop.id],
       customerId: ids.customers.bodyFour,
       vin: null,
       licensePlate: 'CVR-B04',
@@ -423,7 +437,7 @@ async function main() {
     },
     {
       id: ids.vehicles.mechanicalOne,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       customerId: ids.customers.mechanicalOne,
       vin: '1HGCV1F39LA026541',
       licensePlate: 'CVR-M01',
@@ -437,7 +451,7 @@ async function main() {
     },
     {
       id: ids.vehicles.mechanicalTwo,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       customerId: ids.customers.mechanicalTwo,
       vin: 'MEX5G2600LT142803',
       licensePlate: 'CVR-M02',
@@ -451,7 +465,7 @@ async function main() {
     },
     {
       id: ids.vehicles.mechanicalThree,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       customerId: ids.customers.mechanicalThree,
       vin: '3VW2K7AJ7KM109642',
       licensePlate: 'CVR-M03',
@@ -465,7 +479,7 @@ async function main() {
     },
     {
       id: ids.vehicles.mechanicalFour,
-      workshopId: mechanicalWorkshop.id,
+      workshopIds: [mechanicalWorkshop.id],
       customerId: ids.customers.mechanicalFour,
       vin: 'KL8CD6SA7LC427103',
       licensePlate: 'CVR-M04',
@@ -480,10 +494,15 @@ async function main() {
   ]
 
   for (const vehicle of vehicles) {
+    const { workshopIds, ...vehicleData } = vehicle
     await prisma.vehicle.upsert({
       where: { id: vehicle.id },
-      update: vehicle,
-      create: vehicle
+      update: vehicleData,
+      create: vehicleData
+    })
+    await prisma.vehicleWorkshop.createMany({
+      data: workshopIds.map(workshopId => ({ vehicleId: vehicle.id, workshopId })),
+      skipDuplicates: true
     })
   }
 

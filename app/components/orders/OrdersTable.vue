@@ -39,7 +39,7 @@ const columns: TableColumn<OrderListItem>[] = [{
     <UTable :data="orders" :columns="columns" :loading="loading">
       <template #orderNumber-cell="{ row }">
         <div>
-          <NuxtLink :to="`/orders/${row.original.id}`" class="font-medium text-primary hover:underline">
+          <NuxtLink :to="`/ordenes/${row.original.id}`" class="font-medium text-primary hover:underline">
             {{ row.original.orderNumber }}
           </NuxtLink>
           <div class="mt-1 flex gap-1">
@@ -88,7 +88,7 @@ const columns: TableColumn<OrderListItem>[] = [{
       <template #actions-cell="{ row }">
         <div class="flex justify-end">
           <UButton
-            :to="`/orders/${row.original.id}`"
+            :to="`/ordenes/${row.original.id}`"
             icon="i-lucide-arrow-right"
             label="Abrir"
             color="neutral"

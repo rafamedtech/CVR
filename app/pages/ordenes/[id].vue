@@ -5,8 +5,11 @@ import { formatPhone } from '~/utils/crm'
 const route = useRoute()
 const toast = useToast()
 const savingStatus = shallowRef(false)
+const editOpen = shallowRef(false)
+const deleteOpen = shallowRef(false)
+const deleting = shallowRef(false)
 const orderId = computed(() => route.params.id as string)
-const { canManageOrders, canRecordPayments } = useCrmSession()
+const { isSuperAdmin } = useCrmSession()
 
 const { data: order, status, refresh } = await useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
   key: `crm-order-${orderId.value}`
@@ -17,6 +20,16 @@ useHead({
 })
 
 const statusOptions = Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
+const statusSelectClasses: Record<OrderStatus, string> = {
+  ESTIMATE: 'bg-elevated text-default ring ring-inset ring-accented',
+  AWAITING_APPROVAL: 'bg-warning/10 text-warning ring ring-inset ring-warning/25',
+  APPROVED: 'bg-info/10 text-info ring ring-inset ring-info/25',
+  IN_PROGRESS: 'bg-primary/10 text-primary ring ring-inset ring-primary/25',
+  QUALITY_CONTROL: 'bg-secondary/10 text-secondary ring ring-inset ring-secondary/25',
+  READY: 'bg-success/10 text-success ring ring-inset ring-success/25',
+  DELIVERED: 'bg-success/10 text-success ring ring-inset ring-success/25',
+  CANCELLED: 'bg-error/10 text-error ring ring-inset ring-error/25'
+}
 
 async function updateStatus(value: OrderStatus) {
   if (!order.value || value === order.value.status) return
@@ -37,6 +50,21 @@ async function updateStatus(value: OrderStatus) {
     savingStatus.value = false
   }
 }
+
+async function deleteOrder() {
+  if (!order.value) return
+
+  deleting.value = true
+  try {
+    await $fetch(`/api/orders/${order.value.id}`, { method: 'DELETE' })
+    toast.add({ title: 'Orden eliminada', color: 'success', icon: 'i-lucide-check' })
+    await navigateTo('/ordenes')
+  } catch (error) {
+    toast.add({ title: 'No se pudo eliminar la orden', description: getApiErrorMessage(error), color: 'error' })
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -48,20 +76,11 @@ async function updateStatus(value: OrderStatus) {
         </template>
         <template #right>
           <UButton
-            to="/orders"
+            to="/ordenes"
             label="Volver"
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
-          />
-          <USelect
-            v-if="order"
-            :model-value="order.status"
-            :items="statusOptions"
-            value-key="value"
-            :loading="savingStatus"
-            class="w-52"
-            @update:model-value="updateStatus($event as OrderStatus)"
           />
           <WorkshopSwitcher />
         </template>
@@ -75,19 +94,54 @@ async function updateStatus(value: OrderStatus) {
       </div>
 
       <div v-else-if="order" class="space-y-6">
-        <div class="flex flex-wrap items-center gap-2">
-          <UBadge
-            :label="orderStatusLabels[order.status]"
-            :color="orderStatusColors[order.status]"
-            variant="subtle"
-            size="lg"
-          />
-          <UBadge
-            :label="orderPriorityLabels[order.priority]"
-            :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
-            variant="subtle"
-          />
-          <span class="text-sm text-muted">{{ order.workshopName }}</span>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            <UBadge
+              :label="orderPriorityLabels[order.priority]"
+              :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
+              variant="subtle"
+            />
+            <span class="text-sm text-muted">{{ order.workshopName }}</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+            <UBadge
+              :label="paymentStatusLabels[order.paymentStatus]"
+              :color="paymentStatusColors[order.paymentStatus]"
+              variant="subtle"
+              size="lg"
+            />
+            <USelectMenu
+              :model-value="order.status"
+              :color="orderStatusColors[order.status]"
+              variant="subtle"
+              size="lg"
+              :items="statusOptions"
+              value-key="value"
+              :search-input="false"
+              :loading="savingStatus"
+              :disabled="!isSuperAdmin"
+              class="w-full sm:w-auto"
+              :ui="{ base: [statusSelectClasses[order.status], 'px-2 py-1 gap-1.5'] }"
+              @update:model-value="updateStatus($event as OrderStatus)"
+            />
+            <UButton
+              v-if="isSuperAdmin"
+              label="Editar"
+              icon="i-lucide-pencil"
+              color="neutral"
+              variant="outline"
+              @click="editOpen = true"
+            />
+            <UButton
+              v-if="isSuperAdmin"
+              label="Eliminar"
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="outline"
+              @click="deleteOpen = true"
+            />
+          </div>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -118,7 +172,7 @@ async function updateStatus(value: OrderStatus) {
               Entrega prometida
             </p>
             <p class="mt-2 font-semibold text-highlighted">
-              {{ formatDate(order.promisedAt, true) }}
+              {{ formatDate(order.promisedAt) }}
             </p>
             <p class="text-sm text-muted">
               {{ order.assignedToName || 'Sin responsable asignado' }}
@@ -170,11 +224,10 @@ async function updateStatus(value: OrderStatus) {
             </div>
             <div>
               <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                Datos de entrada
+                Notas internas
               </dt>
-              <dd class="mt-2 text-default">
-                {{ order.mileageIn?.toLocaleString('es-MX') ?? '—' }} km ·
-                {{ order.fuelLevelIn ?? '—' }}% de combustible
+              <dd class="mt-2 whitespace-pre-wrap text-default">
+                {{ order.internalNotes || 'Sin notas internas' }}
               </dd>
             </div>
           </dl>
@@ -188,7 +241,7 @@ async function updateStatus(value: OrderStatus) {
             :tax-total="order.taxTotal"
             :total="order.total"
             :default-tax-rate="order.workshopTaxRate"
-            :can-edit="canManageOrders"
+            :can-edit="isSuperAdmin"
             @updated="refresh"
           />
           <OrdersOrderPaymentsCard
@@ -196,10 +249,48 @@ async function updateStatus(value: OrderStatus) {
             :payments="order.payments"
             :balance="order.balance"
             :total="order.total"
-            :can-record="canRecordPayments"
+            :can-record="isSuperAdmin"
             @updated="refresh"
           />
         </div>
+
+        <OrdersOrderEditModal
+          v-model:open="editOpen"
+          :order="order"
+          @updated="refresh"
+        />
+
+        <UModal
+          v-model:open="deleteOpen"
+          title="Eliminar orden"
+          description="Esta acción eliminará también sus conceptos y pagos, y no se puede deshacer."
+          :ui="{ footer: 'justify-end' }"
+        >
+          <template #body>
+            <UAlert
+              :title="`¿Eliminar definitivamente ${order.orderNumber}?`"
+              description="Verifica que no necesites conservar esta orden para el historial del taller."
+              icon="i-lucide-triangle-alert"
+              color="error"
+              variant="subtle"
+            />
+          </template>
+          <template #footer="{ close }">
+            <UButton
+              label="Cancelar"
+              color="neutral"
+              variant="outline"
+              @click="close"
+            />
+            <UButton
+              label="Eliminar orden"
+              icon="i-lucide-trash-2"
+              color="error"
+              :loading="deleting"
+              @click="deleteOrder"
+            />
+          </template>
+        </UModal>
       </div>
     </template>
   </UDashboardPanel>
