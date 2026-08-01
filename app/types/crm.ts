@@ -61,7 +61,7 @@ export interface VehicleListItem {
   workshops: Array<Pick<WorkshopSummary, 'id' | 'name' | 'type'>>
   customerId: string
   customerName: string
-  licensePlate: string
+  licensePlate: string | null
   vin: string | null
   make: string
   model: string
@@ -70,6 +70,13 @@ export interface VehicleListItem {
   mileage: number | null
   fuelLevel: number | null
   notes: string | null
+}
+
+export interface VehicleDetail extends VehicleListItem {
+  customer: Pick<CustomerListItem, 'id' | 'fullName' | 'phone' | 'email'>
+  ordersCount: number
+  createdAt: string
+  orders: OrderListItem[]
 }
 
 export interface OrderLineItem {

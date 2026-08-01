@@ -167,7 +167,7 @@ model Vehicle {
   id           String            @id @default(uuid()) @db.Uuid
   customerId   String            @db.Uuid
   vin          String?           @unique
-  licensePlate String            @unique
+  licensePlate String?           @unique
   make         String
   model        String
   year         Int

@@ -90,7 +90,7 @@ export function serializeOrderListItem(order: OrderForList) {
     customerName: order.customer.fullName,
     customerPhone: order.customer.phone,
     vehicleLabel: `${order.vehicle.make} ${order.vehicle.model} ${order.vehicle.year}`,
-    licensePlate: order.vehicle.licensePlate,
+    licensePlate: order.vehicle.licensePlate ?? 'Sin placas',
     assignedToName: order.assignedTo?.fullName ?? null,
     total,
     paid,

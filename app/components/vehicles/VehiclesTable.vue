@@ -6,9 +6,11 @@ const props = defineProps<{
   vehicles: VehicleListItem[]
   loading?: boolean
   showWorkshop?: boolean
+  canEdit?: boolean
   canAssignWorkshops?: boolean
 }>()
 const emit = defineEmits<{
+  edit: [vehicle: VehicleListItem]
   assignWorkshops: [vehicle: VehicleListItem]
 }>()
 
@@ -42,7 +44,12 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
       <template #licensePlate-cell="{ row }">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-highlighted">{{ row.original.licensePlate }}</span>
+            <NuxtLink
+              :to="`/vehiculos/${row.original.id}`"
+              class="font-medium text-primary hover:underline"
+            >
+              {{ row.original.make }} {{ row.original.model }} {{ row.original.year }}
+            </NuxtLink>
             <UBadge
               v-if="row.original.color"
               :label="row.original.color"
@@ -52,7 +59,7 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
             />
           </div>
           <p class="text-xs text-muted">
-            {{ row.original.make }} {{ row.original.model }} {{ row.original.year }}
+            {{ row.original.licensePlate || 'Sin placas' }}
           </p>
         </div>
       </template>
@@ -71,7 +78,7 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
         </div>
       </template>
       <template #actions-cell="{ row }">
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-1">
           <UButton
             v-if="canAssignWorkshops"
             label="Asignar talleres"
@@ -80,6 +87,15 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
             variant="ghost"
             size="sm"
             @click="emit('assignWorkshops', row.original)"
+          />
+          <UButton
+            label="Editar"
+            icon="i-lucide-pencil"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :disabled="!canEdit"
+            @click="emit('edit', row.original)"
           />
         </div>
       </template>

@@ -33,7 +33,7 @@ async function saveAssignments() {
     })
     toast.add({
       title: 'Talleres actualizados',
-      description: `${props.vehicle.licensePlate} ya está disponible en los talleres seleccionados.`,
+      description: `${props.vehicle.licensePlate || `${props.vehicle.make} ${props.vehicle.model} ${props.vehicle.year}`} ya está disponible en los talleres seleccionados.`,
       color: 'success',
       icon: 'i-lucide-check'
     })
@@ -55,7 +55,7 @@ async function saveAssignments() {
   <UModal
     v-model:open="open"
     title="Asignar vehículo a talleres"
-    :description="vehicle ? `Define qué equipos pueden usar el vehículo ${vehicle.licensePlate}. Su cliente también será visible en esos talleres.` : undefined"
+    :description="vehicle ? `Define qué equipos pueden usar el vehículo ${vehicle.licensePlate || `${vehicle.make} ${vehicle.model} ${vehicle.year}`}. Su cliente también será visible en esos talleres.` : undefined"
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>

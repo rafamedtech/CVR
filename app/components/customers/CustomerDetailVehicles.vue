@@ -20,9 +20,12 @@ const columns: TableColumn<VehicleListItem>[] = [{
     <UTable :data="vehicles" :columns="columns">
       <template #licensePlate-cell="{ row }">
         <div>
-          <p class="font-medium text-highlighted">
-            {{ row.original.licensePlate }}
-          </p>
+          <NuxtLink
+            :to="`/vehiculos/${row.original.id}`"
+            class="font-medium text-primary hover:underline"
+          >
+            {{ row.original.licensePlate || 'Sin placas' }}
+          </NuxtLink>
           <p class="text-xs text-muted">
             {{ row.original.make }} {{ row.original.model }} {{ row.original.year }}
           </p>

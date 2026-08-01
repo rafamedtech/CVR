@@ -1,9 +1,18 @@
 import { z } from 'zod'
 
+const optionalVinSchema = z.preprocess(
+  value => typeof value === 'string' && !value.trim() ? undefined : value,
+  z.string().trim().max(30).optional().nullable()
+)
+const optionalLicensePlateSchema = z.preprocess(
+  value => typeof value === 'string' && !value.trim() ? undefined : value,
+  z.string().trim().min(2).max(20).optional().nullable()
+)
+
 const vehicleSchema = z.object({
   customerId: z.uuid('Selecciona un cliente.'),
-  licensePlate: z.string().trim().min(2, 'Escribe las placas.').max(20),
-  vin: z.string().trim().max(30).optional().nullable(),
+  licensePlate: optionalLicensePlateSchema,
+  vin: optionalVinSchema,
   make: z.string().trim().min(2, 'Escribe la marca.').max(50),
   model: z.string().trim().min(1, 'Escribe el modelo.').max(60),
   year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
@@ -19,7 +28,7 @@ export default defineEventHandler(async (event) => {
   const workshopId = requireSelectedWorkshop(context)
   const body = await readCrmBody(event, vehicleSchema)
   const prisma = usePrisma()
-  const licensePlate = body.licensePlate.toUpperCase()
+  const licensePlate = body.licensePlate?.toUpperCase() || null
   const vin = body.vin?.toUpperCase() || null
 
   const customer = await prisma.customer.findFirst({
@@ -36,20 +45,21 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const existingVehicle = await prisma.vehicle.findFirst({
-    where: {
-      OR: [
-        { licensePlate },
-        ...(vin ? [{ vin }] : [])
-      ]
-    },
-    select: {
-      workshops: {
-        where: { workshopId },
-        select: { workshopId: true }
-      }
-    }
-  })
+  const identifiers = [
+    ...(licensePlate ? [{ licensePlate }] : []),
+    ...(vin ? [{ vin }] : [])
+  ]
+  const existingVehicle = identifiers.length
+    ? await prisma.vehicle.findFirst({
+        where: { OR: identifiers },
+        select: {
+          workshops: {
+            where: { workshopId },
+            select: { workshopId: true }
+          }
+        }
+      })
+    : null
 
   if (existingVehicle) {
     throw createError({

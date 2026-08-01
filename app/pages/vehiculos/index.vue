@@ -6,6 +6,7 @@ useHead({ title: 'Vehículos' })
 const route = useRoute()
 const search = shallowRef('')
 const createOpen = shallowRef(false)
+const editOpen = shallowRef(false)
 const assignmentsOpen = shallowRef(false)
 const selectedVehicle = shallowRef<VehicleListItem | null>(null)
 const { session, canManageCustomers, isAllWorkshops, isSuperAdmin } = useCrmSession()
@@ -34,6 +35,12 @@ const filteredVehicles = computed(() => {
     ].some(value => value?.toLocaleLowerCase('es-MX').includes(term))
   })
 })
+const canEditVehicles = computed(() => canManageCustomers.value || isSuperAdmin.value)
+
+function handleEdit(vehicle: VehicleListItem) {
+  selectedVehicle.value = vehicle
+  editOpen.value = true
+}
 
 function handleAssignWorkshops(vehicle: VehicleListItem) {
   selectedVehicle.value = vehicle
@@ -106,13 +113,21 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
         :vehicles="filteredVehicles"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
+        :can-edit="canEditVehicles"
         :can-assign-workshops="isSuperAdmin"
+        @edit="handleEdit"
         @assign-workshops="handleAssignWorkshops"
       />
       <VehiclesVehicleFormModal
         v-model:open="createOpen"
         :customers="customers"
         @created="refresh"
+      />
+      <VehiclesVehicleEditModal
+        v-model:open="editOpen"
+        :vehicle="selectedVehicle"
+        :customers="customers"
+        @updated="refresh"
       />
       <VehiclesVehicleWorkshopsModal
         v-model:open="assignmentsOpen"

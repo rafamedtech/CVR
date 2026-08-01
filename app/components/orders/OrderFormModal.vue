@@ -68,7 +68,7 @@ const customerOptions = computed(() => props.customers.map(customer => ({
 const vehicleOptions = computed(() => props.vehicles
   .filter(vehicle => !state.customerId || vehicle.customerId === state.customerId)
   .map(vehicle => ({
-    label: `${vehicle.licensePlate} · ${vehicle.make} ${vehicle.model} ${vehicle.year}`,
+    label: `${vehicle.licensePlate || 'Sin placas'} · ${vehicle.make} ${vehicle.model} ${vehicle.year}`,
     value: vehicle.id
   })))
 const priorityOptions = Object.entries(orderPriorityLabels).map(([value, label]) => ({ value, label }))

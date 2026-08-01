@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { CustomerListItem } from '~/types/crm'
+import type { CustomerListItem, VehicleListItem } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
+  vehicle: VehicleListItem | null
   customers: CustomerListItem[]
 }>()
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ created: [] }>()
+const emit = defineEmits<{
+  updated: []
+}>()
+
 const toast = useToast()
 const loading = shallowRef(false)
 const optionalVinSchema = z.preprocess(
@@ -19,7 +23,6 @@ const optionalLicensePlateSchema = z.preprocess(
   value => typeof value === 'string' && !value.trim() ? undefined : value,
   z.string().trim().min(2, 'Escribe al menos 2 caracteres.').max(20).optional()
 )
-
 const schema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente.'),
   licensePlate: optionalLicensePlateSchema,
@@ -31,7 +34,8 @@ const schema = z.object({
   notes: z.string().optional()
 })
 type VehicleSchema = z.output<typeof schema>
-const state = reactive<Partial<VehicleSchema>>({
+
+const state = reactive<VehicleSchema>({
   customerId: '',
   licensePlate: '',
   vin: '',
@@ -47,15 +51,39 @@ const customerOptions = computed(() => props.customers.map(customer => ({
   value: customer.id
 })))
 
+watch([open, () => props.vehicle], ([isOpen, vehicle]) => {
+  if (!isOpen || !vehicle) return
+
+  Object.assign(state, {
+    customerId: vehicle.customerId,
+    licensePlate: vehicle.licensePlate ?? '',
+    vin: vehicle.vin ?? '',
+    make: vehicle.make,
+    model: vehicle.model,
+    year: vehicle.year,
+    color: vehicle.color ?? '',
+    notes: vehicle.notes ?? ''
+  })
+}, { immediate: true })
+
 async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
+  if (!props.vehicle) return
+
   loading.value = true
   try {
-    await $fetch('/api/vehicles', { method: 'POST', body: event.data })
-    toast.add({ title: 'Vehículo registrado', color: 'success', icon: 'i-lucide-check' })
+    await $fetch(`/api/vehicles/${props.vehicle.id}`, {
+      method: 'PATCH',
+      body: event.data
+    })
+    toast.add({ title: 'Vehículo actualizado', color: 'success', icon: 'i-lucide-check' })
     open.value = false
-    emit('created')
+    emit('updated')
   } catch (error) {
-    toast.add({ title: 'No se pudo registrar el vehículo', description: getApiErrorMessage(error), color: 'error' })
+    toast.add({
+      title: 'No se pudo actualizar el vehículo',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
   } finally {
     loading.value = false
   }
@@ -65,13 +93,13 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
 <template>
   <UModal
     v-model:open="open"
-    title="Nuevo vehículo"
-    description="Identificación y condiciones de recepción."
+    title="Editar vehículo"
+    description="Actualiza los datos de identificación y recepción del vehículo."
     :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>
       <UForm
-        id="vehicle-form"
+        id="vehicle-edit-form"
         :schema="schema"
         :state="state"
         class="grid gap-4 sm:grid-cols-2"
@@ -120,6 +148,7 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
         </UFormField>
       </UForm>
     </template>
+
     <template #footer="{ close }">
       <UButton
         label="Cancelar"
@@ -129,8 +158,8 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
       />
       <UButton
         type="submit"
-        form="vehicle-form"
-        label="Guardar vehículo"
+        form="vehicle-edit-form"
+        label="Guardar cambios"
         :loading="loading"
       />
     </template>
