@@ -1,26 +1,25 @@
 <script setup lang="ts">
-import type { VehicleDetail } from '~/types/crm'
-import { formatCurrency, formatDate, formatPhone } from '~/utils/crm'
+import type { VehicleDetail } from "~/types/crm";
+import { formatCurrency, formatDate, formatPhone } from "~/utils/crm";
 
 const props = defineProps<{
-  vehicle: VehicleDetail
-  showWorkshopBadge?: boolean
-}>()
+  vehicle: VehicleDetail;
+  showWorkshopBadge?: boolean;
+}>();
 
-const workshopBadgeLabel = computed(() => props.vehicle.workshops
-  .map(workshop => workshop.name)
-  .join(', '))
-const orderTotals = computed(() => props.vehicle.orders.reduce((totals, order) => ({
-  total: totals.total + order.total,
-  paid: totals.paid + order.paid,
-  balance: totals.balance + order.balance
-}), { total: 0, paid: 0, balance: 0 }))
-const mileageLabel = computed(() => props.vehicle.mileage === null
-  ? 'No registrado'
-  : `${new Intl.NumberFormat('es-MX').format(props.vehicle.mileage)} km`)
-const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
-  ? 'No registrado'
-  : `${props.vehicle.fuelLevel}%`)
+const workshopBadgeLabel = computed(() =>
+  props.vehicle.workshops.map((workshop) => workshop.name).join(", "),
+);
+const orderTotals = computed(() =>
+  props.vehicle.orders.reduce(
+    (totals, order) => ({
+      total: totals.total + order.total,
+      paid: totals.paid + order.paid,
+      balance: totals.balance + order.balance,
+    }),
+    { total: 0, paid: 0, balance: 0 },
+  ),
+);
 </script>
 
 <template>
@@ -28,7 +27,9 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
     <UCard>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div
+            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+          >
             <UIcon name="i-lucide-car-front" class="size-5" />
           </div>
           <div class="min-w-0 flex-1">
@@ -63,7 +64,7 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
             Placas
           </dt>
           <dd class="mt-1.5 text-default">
-            {{ vehicle.licensePlate || 'Sin placas' }}
+            {{ vehicle.licensePlate || "Sin placas" }}
           </dd>
         </div>
         <div>
@@ -71,7 +72,7 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
             VIN / número de serie
           </dt>
           <dd class="mt-1.5 break-all font-mono text-sm text-default">
-            {{ vehicle.vin || 'No registrado' }}
+            {{ vehicle.vin || "No registrado" }}
           </dd>
         </div>
         <div>
@@ -79,23 +80,7 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
             Color
           </dt>
           <dd class="mt-1.5 text-default">
-            {{ vehicle.color || 'No registrado' }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-            Kilometraje
-          </dt>
-          <dd class="mt-1.5 text-default">
-            {{ mileageLabel }}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-            Combustible
-          </dt>
-          <dd class="mt-1.5 text-default">
-            {{ fuelLevelLabel }}
+            {{ vehicle.color || "No registrado" }}
           </dd>
         </div>
         <div class="sm:col-span-2">
@@ -110,7 +95,10 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
               {{ vehicle.customer.fullName }}
             </NuxtLink>
             <p class="mt-1 text-sm text-muted">
-              {{ formatPhone(vehicle.customer.phone) }}<span v-if="vehicle.customer.email"> · {{ vehicle.customer.email }}</span>
+              {{ formatPhone(vehicle.customer.phone)
+              }}<span v-if="vehicle.customer.email">
+                · {{ vehicle.customer.email }}</span
+              >
             </p>
           </dd>
         </div>
@@ -120,13 +108,13 @@ const fuelLevelLabel = computed(() => props.vehicle.fuelLevel === null
     <UCard>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div
+            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+          >
             <UIcon name="i-lucide-chart-column" class="size-5" />
           </div>
           <div class="min-w-0 flex-1">
-            <h2 class="font-semibold text-highlighted">
-              Resumen
-            </h2>
+            <h2 class="font-semibold text-highlighted">Resumen</h2>
             <p class="mt-1 text-sm text-muted">
               Actividad y saldo del vehículo.
             </p>
