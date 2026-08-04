@@ -25,7 +25,7 @@ useHead({
         <template #right>
           <UButton
             to="/clientes"
-            label="Volver a clientes"
+            label="Volver"
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
