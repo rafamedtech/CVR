@@ -10,24 +10,20 @@ const { data: vehicle, error, status } = await useFetch<VehicleDetail>(
   { key: `crm-vehicle-${vehicleId.value}` }
 )
 
-useHead({
-  title: computed(() => vehicle.value
-    ? `${vehicle.value.make} ${vehicle.value.model} ${vehicle.value.year}`
-    : 'Vehículo')
-})
+useHead({ title: 'Detalle del vehículo' })
 </script>
 
 <template>
   <UDashboardPanel id="vehicle-detail">
     <template #header>
-      <UDashboardNavbar :title="vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : 'Detalle del vehículo'">
+      <UDashboardNavbar title="Detalle del vehículo">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
           <UButton
             to="/vehiculos"
-            label="Volver a vehículos"
+            label="Volver"
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
@@ -68,7 +64,14 @@ useHead({
               Historial de órdenes registradas para este vehículo.
             </p>
           </div>
-          <OrdersTable :orders="vehicle.orders" :show-workshop="isAllWorkshops" />
+          <OrdersTable
+            :orders="vehicle.orders"
+            :show-workshop="isAllWorkshops"
+            :show-vehicle="false"
+            :show-actions="false"
+            show-created-at
+            mobile-cards
+          />
         </section>
       </div>
     </template>

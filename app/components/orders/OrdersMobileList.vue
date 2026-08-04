@@ -5,6 +5,8 @@ defineProps<{
   orders: OrderListItem[]
   loading?: boolean
   showWorkshop?: boolean
+  showCustomer?: boolean
+  showVehicle?: boolean
   showCreatedAt?: boolean
 }>()
 </script>
@@ -60,21 +62,39 @@ defineProps<{
         </div>
 
         <div class="mt-4 border-t border-muted pt-3">
-          <div class="flex flex-wrap items-center gap-2">
+          <template v-if="showCustomer && showVehicle">
             <p class="font-medium text-highlighted">
-              {{ order.vehicleLabel }}
+              {{ order.customerName }}
             </p>
-            <UBadge
-              v-if="order.vehicleColor"
-              :label="order.vehicleColor"
-              color="neutral"
-              variant="subtle"
-              size="sm"
-            />
-          </div>
-          <p class="text-xs text-muted">
-            {{ order.licensePlate || 'Sin placas' }}
-          </p>
+            <p class="text-xs text-muted">
+              {{ order.vehicleLabel }} · {{ order.licensePlate || 'Sin placas' }}
+            </p>
+          </template>
+          <template v-else-if="showCustomer">
+            <p class="font-medium text-highlighted">
+              {{ order.customerName }}
+            </p>
+            <p class="text-xs text-muted">
+              {{ formatPhone(order.customerPhone) }}
+            </p>
+          </template>
+          <template v-else>
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-medium text-highlighted">
+                {{ order.vehicleLabel }}
+              </p>
+              <UBadge
+                v-if="order.vehicleColor"
+                :label="order.vehicleColor"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <p class="text-xs text-muted">
+              {{ order.licensePlate || 'Sin placas' }}
+            </p>
+          </template>
         </div>
 
         <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-muted pt-3">

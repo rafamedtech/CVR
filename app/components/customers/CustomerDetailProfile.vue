@@ -133,7 +133,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
       <div class="grid grid-cols-2 gap-4">
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-car-front" class="size-4" />
+            <UIcon name="i-lucide-car-front" class="size-6" />
             <span class="text-sm">Vehículos registrados</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-highlighted">
@@ -142,7 +142,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-clipboard-list" class="size-4" />
+            <UIcon name="i-lucide-clipboard-list" class="size-6" />
             <span class="text-sm">Órdenes de trabajo</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-highlighted">
@@ -151,7 +151,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-receipt-text" class="size-4" />
+            <UIcon name="i-lucide-receipt-text" class="size-6" />
             <span class="text-sm">Total de órdenes</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-highlighted">
@@ -160,7 +160,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-hand-coins" class="size-4" />
+            <UIcon name="i-lucide-hand-coins" class="size-6" />
             <span class="text-sm">Saldo pendiente</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-warning">

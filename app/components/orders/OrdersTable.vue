@@ -8,11 +8,13 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   showWorkshop?: boolean
   showCustomer?: boolean
+  showVehicle?: boolean
   showActions?: boolean
   showCreatedAt?: boolean
   mobileCards?: boolean
 }>(), {
   showCustomer: true,
+  showVehicle: true,
   showActions: true
 })
 
@@ -22,7 +24,9 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     header: 'Orden'
   }, {
     accessorKey: 'customerName',
-    header: props.showCustomer ? 'Cliente y vehículo' : 'Vehículo'
+    header: props.showCustomer && props.showVehicle
+      ? 'Cliente y vehículo'
+      : props.showCustomer ? 'Cliente' : 'Vehículo'
   }, {
     accessorKey: 'status',
     header: 'Estado'
@@ -60,6 +64,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       :orders="orders"
       :loading="loading"
       :show-workshop="showWorkshop"
+      :show-customer="showCustomer"
+      :show-vehicle="showVehicle"
       :show-created-at="showCreatedAt"
     />
 
@@ -88,12 +94,20 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           </div>
         </template>
         <template #customerName-cell="{ row }">
-          <div v-if="showCustomer">
+          <div v-if="showCustomer && showVehicle">
             <p class="font-medium text-highlighted">
               {{ row.original.customerName }}
             </p>
             <p class="text-xs text-muted">
               {{ row.original.vehicleLabel }} · {{ row.original.licensePlate }}
+            </p>
+          </div>
+          <div v-else-if="showCustomer">
+            <p class="font-medium text-highlighted">
+              {{ row.original.customerName }}
+            </p>
+            <p class="text-xs text-muted">
+              {{ formatPhone(row.original.customerPhone) }}
             </p>
           </div>
           <div v-else>

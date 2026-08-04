@@ -69,7 +69,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>
-      <UDashboardToolbar>
+      <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>
           <UInput
             v-model="search"

@@ -1,25 +1,42 @@
 <script setup lang="ts">
-import type { VehicleDetail } from "~/types/crm";
-import { formatCurrency, formatDate, formatPhone } from "~/utils/crm";
+import type { VehicleDetail } from '~/types/crm'
+import { formatCurrency, formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
-  vehicle: VehicleDetail;
-  showWorkshopBadge?: boolean;
-}>();
+  vehicle: VehicleDetail
+  showWorkshopBadge?: boolean
+}>()
 
-const workshopBadgeLabel = computed(() =>
-  props.vehicle.workshops.map((workshop) => workshop.name).join(", "),
-);
+const workshopBadgeLabel = computed(() => {
+  const types = new Set(props.vehicle.workshops.map(workshop => workshop.type))
+
+  if (types.has('BODY_SHOP') && types.has('MECHANICAL')) return 'Ambos talleres'
+  if (types.has('BODY_SHOP')) return 'Taller de carrocería'
+  if (types.has('MECHANICAL')) return 'Taller mecánico'
+  if (types.has('PAINT_STORE')) return 'Tienda de pinturas'
+
+  return props.vehicle.workshops.map(workshop => workshop.name).join(', ')
+})
+const vehicleWorkshopLabel = computed(() => {
+  const types = new Set(props.vehicle.workshops.map(workshop => workshop.type))
+
+  if (types.has('BODY_SHOP') && types.has('MECHANICAL')) return 'Vehículo de ambos talleres'
+  if (types.has('BODY_SHOP')) return 'Vehículo de taller de carrocería'
+  if (types.has('MECHANICAL')) return 'Vehículo de taller mecánico'
+  if (types.has('PAINT_STORE')) return 'Vehículo de tienda de pinturas'
+
+  return 'Vehículo'
+})
 const orderTotals = computed(() =>
   props.vehicle.orders.reduce(
     (totals, order) => ({
       total: totals.total + order.total,
       paid: totals.paid + order.paid,
-      balance: totals.balance + order.balance,
+      balance: totals.balance + order.balance
     }),
-    { total: 0, paid: 0, balance: 0 },
-  ),
-);
+    { total: 0, paid: 0, balance: 0 }
+  )
+)
 </script>
 
 <template>
@@ -37,7 +54,7 @@ const orderTotals = computed(() =>
               Información del vehículo
             </h2>
             <p class="mt-1 text-sm text-muted">
-              Registrado el {{ formatDate(vehicle.createdAt) }}
+              {{ vehicleWorkshopLabel }}
             </p>
           </div>
           <UBadge
@@ -97,8 +114,7 @@ const orderTotals = computed(() =>
             <p class="mt-1 text-sm text-muted">
               {{ formatPhone(vehicle.customer.phone)
               }}<span v-if="vehicle.customer.email">
-                · {{ vehicle.customer.email }}</span
-              >
+                · {{ vehicle.customer.email }}</span>
             </p>
           </dd>
         </div>
@@ -114,7 +130,9 @@ const orderTotals = computed(() =>
             <UIcon name="i-lucide-chart-column" class="size-5" />
           </div>
           <div class="min-w-0 flex-1">
-            <h2 class="font-semibold text-highlighted">Resumen</h2>
+            <h2 class="font-semibold text-highlighted">
+              Resumen
+            </h2>
             <p class="mt-1 text-sm text-muted">
               Actividad y saldo del vehículo.
             </p>
@@ -125,7 +143,7 @@ const orderTotals = computed(() =>
       <div class="grid grid-cols-2 gap-4">
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-clipboard-list" class="size-4" />
+            <UIcon name="i-lucide-clipboard-list" class="size-6" />
             <span class="text-sm">Órdenes de trabajo</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-highlighted">
@@ -134,7 +152,7 @@ const orderTotals = computed(() =>
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-receipt-text" class="size-4" />
+            <UIcon name="i-lucide-receipt-text" class="size-6" />
             <span class="text-sm">Total de órdenes</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-highlighted">
@@ -143,8 +161,8 @@ const orderTotals = computed(() =>
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-circle-dollar-sign" class="size-4" />
-            <span class="text-sm">Cobrado</span>
+            <UIcon name="i-lucide-circle-dollar-sign" class="size-6" />
+            <span class="text-sm">Total cobrado</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-success">
             {{ formatCurrency(orderTotals.paid) }}
@@ -152,7 +170,7 @@ const orderTotals = computed(() =>
         </div>
         <div class="rounded-lg bg-elevated/60 p-4">
           <div class="flex items-center gap-2 text-muted">
-            <UIcon name="i-lucide-hand-coins" class="size-4" />
+            <UIcon name="i-lucide-hand-coins" class="size-6" />
             <span class="text-sm">Saldo pendiente</span>
           </div>
           <p class="mt-2 text-2xl font-semibold text-warning">

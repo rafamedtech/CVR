@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CustomerListItem } from '~/types/crm'
-import { formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
   customers: CustomerListItem[]
@@ -11,6 +11,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
+const isMobile = useMediaQuery('(max-width: 639px)')
 const optionalVinSchema = z.preprocess(
   value => typeof value === 'string' && !value.trim() ? undefined : value,
   z.string().trim().max(30, 'El VIN no puede exceder 30 caracteres.').optional()
@@ -43,7 +44,7 @@ const state = reactive<Partial<VehicleSchema>>({
 })
 
 const customerOptions = computed(() => props.customers.map(customer => ({
-  label: `${customer.fullName} · ${formatPhone(customer.phone)}`,
+  label: customer.fullName,
   value: customer.id
 })))
 
@@ -67,6 +68,8 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
     v-model:open="open"
     title="Nuevo vehículo"
     description="Identificación y condiciones de recepción."
+    :close="false"
+    :dismissible="false"
     :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>
@@ -81,14 +84,16 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
           name="customerId"
           label="Cliente"
           required
-          class="sm:col-span-2"
+          class="min-w-0 sm:col-span-2"
         >
           <USelectMenu
             v-model="state.customerId"
             :items="customerOptions"
             value-key="value"
             searchable
-            class="w-full"
+            :size="isMobile ? 'lg' : undefined"
+            class="min-w-0 max-w-full"
+            :ui="{ base: 'w-full min-w-0', value: 'min-w-0 truncate', itemLabel: 'min-w-0 truncate' }"
             placeholder="Buscar cliente…"
           />
         </UFormField>

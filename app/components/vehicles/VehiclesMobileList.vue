@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { CustomerListItem, WorkshopType } from '~/types/crm'
+import type { VehicleListItem, WorkshopType } from '~/types/crm'
 
 defineProps<{
-  customers: CustomerListItem[]
+  vehicles: VehicleListItem[]
   loading?: boolean
   canEdit?: boolean
   canAssignWorkshops?: boolean
 }>()
 
 const emit = defineEmits<{
-  edit: [customer: CustomerListItem]
-  assignWorkshops: [customer: CustomerListItem]
+  edit: [vehicle: VehicleListItem]
+  assignWorkshops: [vehicle: VehicleListItem]
 }>()
 
 const workshopIcons: Record<WorkshopType, string> = {
@@ -21,7 +21,7 @@ const workshopIcons: Record<WorkshopType, string> = {
 </script>
 
 <template>
-  <div v-if="loading" class="space-y-3" aria-label="Cargando clientes">
+  <div v-if="loading" class="space-y-3" aria-label="Cargando vehículos">
     <UCard v-for="index in 3" :key="index">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
@@ -37,25 +37,35 @@ const workshopIcons: Record<WorkshopType, string> = {
     </UCard>
   </div>
 
-  <div v-else-if="customers.length" class="space-y-3">
+  <div v-else-if="vehicles.length" class="space-y-3">
     <UCard
-      v-for="customer in customers"
-      :key="customer.id"
+      v-for="vehicle in vehicles"
+      :key="vehicle.id"
       :ui="{ body: 'p-4 sm:p-4' }"
     >
-      <article :aria-labelledby="`customer-${customer.id}`">
+      <article :aria-labelledby="`vehicle-${vehicle.id}`">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <NuxtLink
-              :id="`customer-${customer.id}`"
-              :to="`/clientes/${customer.id}`"
+              :id="`vehicle-${vehicle.id}`"
+              :to="`/vehiculos/${vehicle.id}`"
               class="font-semibold text-primary hover:underline"
             >
-              {{ customer.fullName }}
+              {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year }}
             </NuxtLink>
-            <p v-if="customer.taxId" class="mt-0.5 text-xs text-muted">
-              RFC: {{ customer.taxId }}
-            </p>
+            <div class="mt-0.5 flex items-center gap-2">
+              <p class="text-xs text-muted">
+                {{ vehicle.licensePlate || 'Sin placas' }}
+              </p>
+              <UBadge
+                v-if="vehicle.color"
+                :label="vehicle.color"
+                icon="i-lucide-palette"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
           </div>
 
           <UButton
@@ -65,33 +75,21 @@ const workshopIcons: Record<WorkshopType, string> = {
             variant="ghost"
             size="sm"
             :disabled="!canEdit"
-            :aria-label="`Editar a ${customer.fullName}`"
-            @click="emit('edit', customer)"
+            :aria-label="`Editar ${vehicle.make} ${vehicle.model}`"
+            @click="emit('edit', vehicle)"
           />
         </div>
 
         <div class="mt-4 flex items-center justify-between gap-3 border-t border-muted pt-3">
           <div class="flex flex-wrap items-center gap-2">
             <NuxtLink
-              :to="{ path: '/vehiculos', query: { customer: customer.id } }"
-              :aria-label="`Ver ${customer.vehiclesCount} vehículos de ${customer.fullName}`"
+              :to="`/clientes/${vehicle.customerId}`"
+              :aria-label="`Ver cliente ${vehicle.customerName}`"
               class="inline-flex rounded-md"
             >
               <UBadge
-                :label="`${customer.vehiclesCount} vehículos`"
-                icon="i-lucide-car-front"
-                color="neutral"
-                variant="subtle"
-              />
-            </NuxtLink>
-            <NuxtLink
-              :to="{ path: '/ordenes', query: { customer: customer.id } }"
-              :aria-label="`Ver ${customer.ordersCount} órdenes de ${customer.fullName}`"
-              class="inline-flex rounded-md"
-            >
-              <UBadge
-                :label="`${customer.ordersCount} órdenes`"
-                icon="i-lucide-clipboard-list"
+                :label="vehicle.customerName"
+                icon="i-lucide-user-round"
                 color="primary"
                 variant="subtle"
               />
@@ -104,12 +102,12 @@ const workshopIcons: Record<WorkshopType, string> = {
             variant="ghost"
             size="sm"
             class="shrink-0"
-            :aria-label="`Editar talleres de ${customer.fullName}`"
-            @click="emit('assignWorkshops', customer)"
+            :aria-label="`Editar talleres de ${vehicle.make} ${vehicle.model}`"
+            @click="emit('assignWorkshops', vehicle)"
           >
             <span class="flex items-center gap-1.5">
               <UIcon
-                v-for="workshop in customer.workshops"
+                v-for="workshop in vehicle.workshops"
                 :key="workshop.id"
                 :name="workshopIcons[workshop.type]"
                 class="size-4"
@@ -119,10 +117,10 @@ const workshopIcons: Record<WorkshopType, string> = {
           <div
             v-else
             class="flex shrink-0 items-center gap-1.5"
-            :aria-label="`Talleres asignados a ${customer.fullName}`"
+            :aria-label="`Talleres asignados a ${vehicle.make} ${vehicle.model}`"
           >
             <UIcon
-              v-for="workshop in customer.workshops"
+              v-for="workshop in vehicle.workshops"
               :key="workshop.id"
               :name="workshopIcons[workshop.type]"
               class="size-4"
@@ -135,12 +133,12 @@ const workshopIcons: Record<WorkshopType, string> = {
 
   <UCard v-else>
     <div class="py-8 text-center">
-      <UIcon name="i-lucide-users" class="mx-auto size-9 text-dimmed" />
+      <UIcon name="i-lucide-car-front" class="mx-auto size-9 text-dimmed" />
       <p class="mt-3 font-medium text-highlighted">
-        No hay clientes
+        No hay vehículos
       </p>
       <p class="text-sm text-muted">
-        Registra el primero para comenzar.
+        Registra el primero para crear órdenes de trabajo.
       </p>
     </div>
   </UCard>
