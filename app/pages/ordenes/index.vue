@@ -71,7 +71,7 @@ const filteredOrders = computed(() => {
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar>
+      <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>
           <UInput
             v-model="search"
@@ -99,16 +99,7 @@ const filteredOrders = computed(() => {
 
     <template #body>
       <UAlert
-        v-if="isAllWorkshops"
-        class="mb-4"
-        title="Vista consolidada"
-        description="Selecciona un taller para crear una orden nueva."
-        icon="i-lucide-info"
-        color="info"
-        variant="subtle"
-      />
-      <UAlert
-        v-else-if="!customers.length || !vehicles.length"
+        v-if="!isAllWorkshops && (!customers.length || !vehicles.length)"
         class="mb-4"
         title="Faltan datos para crear una orden"
         description="Necesitas por lo menos un cliente y un vehículo registrado."
@@ -122,6 +113,7 @@ const filteredOrders = computed(() => {
         :orders="filteredOrders"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
+        show-created-at
       />
       <OrdersOrderFormModal
         v-model:open="createOpen"

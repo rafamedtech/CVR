@@ -154,3 +154,12 @@ export function formatDate(value: string | Date | null, withTime = false) {
     ...(withTime ? { timeStyle: 'short' as const } : {})
   }).format(new Date(value))
 }
+
+export function formatDayMonth(value: string | Date | null) {
+  if (!value) return '—'
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'short'
+  }).format(new Date(value))
+}

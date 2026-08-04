@@ -9,17 +9,38 @@ const props = withDefaults(defineProps<{
   showWorkshop?: boolean
   showCustomer?: boolean
   showVehicle?: boolean
-  showActions?: boolean
   showCreatedAt?: boolean
-  mobileCards?: boolean
 }>(), {
   showCustomer: true,
-  showVehicle: true,
-  showActions: true
+  showVehicle: true
+})
+
+const page = shallowRef(1)
+const pageSize = 10
+const orderIds = computed(() => props.orders.map(order => order.id).join(','))
+const paginatedOrders = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return props.orders.slice(start, start + pageSize)
+})
+const visibleRange = computed(() => {
+  if (!props.orders.length) return null
+
+  const start = (page.value - 1) * pageSize + 1
+  return {
+    start,
+    end: Math.min(start + pageSize - 1, props.orders.length)
+  }
+})
+
+watch(orderIds, () => {
+  page.value = 1
 })
 
 const columns = computed<TableColumn<OrderListItem>[]>(() => {
   const columns: TableColumn<OrderListItem>[] = [{
+    accessorKey: 'createdAt',
+    header: 'Fecha'
+  }, {
     accessorKey: 'orderNumber',
     header: 'Orden'
   }, {
@@ -34,23 +55,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'total',
     header: 'Importe'
   }, {
-    accessorKey: 'balance',
-    header: 'Saldo'
-  }, {
     accessorKey: 'promisedAt',
     header: 'Entrega'
   }, {
     accessorKey: 'workshopName',
     header: 'Taller'
   }]
-
-  if (props.showCreatedAt) {
-    columns.unshift({ accessorKey: 'createdAt', header: 'Fecha' })
-  }
-
-  if (props.showActions) {
-    columns.push({ id: 'actions' })
-  }
 
   return columns
 })
@@ -59,9 +69,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 <template>
   <div>
     <OrdersMobileList
-      v-if="mobileCards"
       class="md:hidden"
-      :orders="orders"
+      :orders="paginatedOrders"
       :loading="loading"
       :show-workshop="showWorkshop"
       :show-customer="showCustomer"
@@ -69,11 +78,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       :show-created-at="showCreatedAt"
     />
 
-    <UCard
-      :class="mobileCards ? 'hidden md:block' : undefined"
-      :ui="{ body: 'p-0 sm:p-0' }"
-    >
-      <UTable :data="orders" :columns="columns" :loading="loading">
+    <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
+      <UTable :data="paginatedOrders" :columns="columns" :loading="loading">
         <template #createdAt-cell="{ row }">
           <span class="text-sm">{{ formatDate(row.original.createdAt) }}</span>
         </template>
@@ -138,29 +144,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         <template #total-cell="{ row }">
           <span class="font-medium text-highlighted">{{ formatCurrency(row.original.total) }}</span>
         </template>
-        <template #balance-cell="{ row }">
-          <span :class="row.original.balance > 0 ? 'text-warning' : 'text-success'">
-            {{ formatCurrency(row.original.balance) }}
-          </span>
-        </template>
         <template #promisedAt-cell="{ row }">
-          <span class="text-sm">{{ formatDate(row.original.promisedAt) }}</span>
+          <span class="text-sm">{{ formatDayMonth(row.original.promisedAt) }}</span>
         </template>
         <template #workshopName-cell="{ row }">
           <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
           <span v-else>—</span>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              :to="`/ordenes/${row.original.id}`"
-              icon="i-lucide-arrow-right"
-              label="Abrir"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-            />
-          </div>
         </template>
         <template #empty>
           <div class="py-12 text-center">
@@ -175,5 +164,20 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         </template>
       </UTable>
     </UCard>
+
+    <div
+      v-if="!loading && orders.length > pageSize"
+      class="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row"
+    >
+      <p v-if="visibleRange" class="text-sm text-muted" aria-live="polite">
+        Mostrando {{ visibleRange.start }}–{{ visibleRange.end }} de {{ orders.length }} órdenes
+      </p>
+      <UPagination
+        v-model:page="page"
+        :total="orders.length"
+        :items-per-page="pageSize"
+        aria-label="Paginación de órdenes"
+      />
+    </div>
   </div>
 </template>

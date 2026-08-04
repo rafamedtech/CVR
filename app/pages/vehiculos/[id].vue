@@ -68,9 +68,7 @@ useHead({ title: 'Detalle del vehículo' })
             :orders="vehicle.orders"
             :show-workshop="isAllWorkshops"
             :show-vehicle="false"
-            :show-actions="false"
             show-created-at
-            mobile-cards
           />
         </section>
       </div>

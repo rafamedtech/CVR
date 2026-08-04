@@ -91,9 +91,7 @@ useHead({
           <OrdersTable
             :orders="customer.orders"
             :show-customer="false"
-            :show-actions="false"
             show-created-at
-            mobile-cards
           />
         </section>
       </div>
