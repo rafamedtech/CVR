@@ -18,7 +18,7 @@ useHead({
 <template>
   <UDashboardPanel id="customer-detail">
     <template #header>
-      <UDashboardNavbar :title="customer?.fullName ?? 'Detalle del cliente'">
+      <UDashboardNavbar title="Detalle del cliente">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -88,7 +88,13 @@ useHead({
               Historial de órdenes registradas hasta ahora.
             </p>
           </div>
-          <OrdersTable :orders="customer.orders" />
+          <OrdersTable
+            :orders="customer.orders"
+            :show-customer="false"
+            :show-actions="false"
+            show-created-at
+            mobile-cards
+          />
         </section>
       </div>
     </template>

@@ -65,7 +65,6 @@ async function saveAssignments() {
           :key="workshop.id"
           :model-value="selectedWorkshopIds.includes(workshop.id)"
           :label="workshop.name"
-          :description="selectedWorkshopIds.includes(workshop.id) ? 'Este taller puede consultar al cliente.' : 'Este taller no puede ver al cliente.'"
           @update:model-value="toggleWorkshop(workshop.id, Boolean($event))"
         />
 

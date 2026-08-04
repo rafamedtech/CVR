@@ -10,6 +10,10 @@ import type {
   WorkshopType
 } from '~/types/crm'
 import type { CustomerAddress } from '#shared/customer-address'
+import {
+  SIIGO_MEXICO_STATES,
+  getSiigoMexicoMunicipalities
+} from '#shared/siigo-mexico-locations'
 
 export const taxRateValues: readonly TaxRate[] = [0, 8, 16]
 
@@ -39,14 +43,19 @@ export function formatCustomerAddress(address: CustomerAddress | null) {
     address.interior_number ? `Int. ${address.interior_number}` : ''
   ].filter(Boolean).join(' · ')
   const area = [address.colony, address.locality].filter(Boolean).join(', ')
-  const locationCodes = [
-    address.city.country_code,
-    address.city.state_code ? `Estado ${address.city.state_code}` : '',
-    address.city.city_code ? `Ciudad ${address.city.city_code}` : '',
-    address.postal_code ? `C.P. ${address.postal_code}` : ''
+  const stateName = SIIGO_MEXICO_STATES.find(state => state.value === address.city.state_code)?.label
+    ?? address.city.state_code
+  const cityName = getSiigoMexicoMunicipalities(address.city.state_code)
+    .find(city => city.value === address.city.city_code)?.label
+    ?? address.city.city_code
+  const location = [
+    cityName,
+    stateName,
+    address.postal_code ? `C.P. ${address.postal_code}` : '',
+    address.city.country_code
   ].filter(Boolean).join(' · ')
 
-  return [street, area, locationCodes].filter(Boolean).join('\n')
+  return [street, area, location].filter(Boolean).join('\n')
 }
 
 export const orderStatusLabels: Record<OrderStatus, string> = {

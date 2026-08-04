@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { VehicleListItem } from '~/types/crm'
+import type { VehicleListItem, WorkshopType } from '~/types/crm'
 
-const props = defineProps<{
+defineProps<{
   vehicles: VehicleListItem[]
   loading?: boolean
-  showWorkshop?: boolean
   canEdit?: boolean
   canAssignWorkshops?: boolean
 }>()
@@ -13,6 +12,12 @@ const emit = defineEmits<{
   edit: [vehicle: VehicleListItem]
   assignWorkshops: [vehicle: VehicleListItem]
 }>()
+
+const workshopIcons: Record<WorkshopType, string> = {
+  BODY_SHOP: 'i-lucide-paintbrush',
+  MECHANICAL: 'i-lucide-wrench',
+  PAINT_STORE: 'i-lucide-palette'
+}
 
 const columns = computed<TableColumn<VehicleListItem>[]>(() => {
   const baseColumns: TableColumn<VehicleListItem>[] = [{
@@ -28,11 +33,9 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
     id: 'actions'
   }]
 
-  if (!props.showWorkshop) return baseColumns
-
   return [
     ...baseColumns.slice(0, -1),
-    { id: 'workshops', header: 'Talleres' },
+    { id: 'workshops', header: 'Taller' },
     baseColumns.at(-1)!
   ]
 })
@@ -67,27 +70,37 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
         <span class="font-mono text-xs text-muted">{{ row.original.vin || '—' }}</span>
       </template>
       <template #workshops-cell="{ row }">
-        <div class="flex flex-wrap gap-1.5">
-          <UBadge
+        <UButton
+          v-if="canAssignWorkshops"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="w-14 justify-center"
+          :aria-label="`Editar talleres de ${row.original.make} ${row.original.model}`"
+          @click="emit('assignWorkshops', row.original)"
+        >
+          <UIcon
             v-for="workshop in row.original.workshops"
             :key="workshop.id"
-            :label="workshop.name"
-            color="neutral"
-            variant="subtle"
+            :name="workshopIcons[workshop.type]"
+            class="size-4"
+          />
+        </UButton>
+        <div
+          v-else
+          class="flex items-center gap-1"
+          :aria-label="`Talleres asignados a ${row.original.make} ${row.original.model}`"
+        >
+          <UIcon
+            v-for="workshop in row.original.workshops"
+            :key="workshop.id"
+            :name="workshopIcons[workshop.type]"
+            class="size-4"
           />
         </div>
       </template>
       <template #actions-cell="{ row }">
         <div class="flex justify-end gap-1">
-          <UButton
-            v-if="canAssignWorkshops"
-            label="Asignar talleres"
-            icon="i-lucide-building-2"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            @click="emit('assignWorkshops', row.original)"
-          />
           <UButton
             label="Editar"
             icon="i-lucide-pencil"

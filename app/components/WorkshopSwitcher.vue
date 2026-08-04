@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
+import type { WorkshopType } from '~/types/crm'
 
 const { session, selectWorkshop } = useCrmSession()
+
+const workshopIcons: Record<WorkshopType, string> = {
+  BODY_SHOP: 'i-lucide-paintbrush',
+  MECHANICAL: 'i-lucide-wrench',
+  PAINT_STORE: 'i-lucide-palette'
+}
 
 const current = computed(() => session.value?.selectedWorkshop ?? {
   name: 'Todos los talleres',
@@ -11,11 +18,7 @@ const current = computed(() => session.value?.selectedWorkshop ?? {
 const items = computed<DropdownMenuItem[][]>(() => {
   const workshopItems = (session.value?.workshops ?? []).map(workshop => ({
     label: workshop.name,
-    icon: workshop.type === 'BODY_SHOP'
-      ? 'i-lucide-paintbrush'
-      : workshop.type === 'MECHANICAL'
-        ? 'i-lucide-wrench'
-        : 'i-lucide-palette',
+    icon: workshopIcons[workshop.type],
     checked: session.value?.selectedWorkshopId === workshop.id,
     type: 'checkbox' as const,
     onSelect: (event: Event) => {
@@ -49,7 +52,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
   >
     <UButton
       :label="current.name"
-      :icon="'icon' in current ? current.icon : 'i-lucide-gauge'"
+      :icon="'icon' in current ? current.icon : workshopIcons[current.type]"
       trailing-icon="i-lucide-chevrons-up-down"
       color="neutral"
       variant="outline"

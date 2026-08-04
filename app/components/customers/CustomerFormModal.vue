@@ -70,7 +70,9 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
   <UModal
     v-model:open="open"
     title="Nuevo cliente"
-    description="Captura los datos de contacto y domicilio fiscal del cliente"
+    description="Captura los datos de contacto y domicilio del cliente"
+    :close="false"
+    :dismissible="false"
     :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CustomerDetail } from '~/types/crm'
-import { formatCurrency, formatCustomerAddress, formatDate, formatPhone } from '~/utils/crm'
+import { formatCurrency, formatCustomerAddress, formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
   customer: CustomerDetail
@@ -16,6 +16,17 @@ const workshopBadgeLabel = computed(() => {
   if (types.has('PAINT_STORE')) return 'Tienda de pinturas'
 
   return props.customer.workshops.map(workshop => workshop.name).join(', ')
+})
+
+const customerTypeLabel = computed(() => {
+  const types = new Set(props.customer.workshopTypes)
+
+  if (types.has('BODY_SHOP') && types.has('MECHANICAL')) return 'Cliente de ambos talleres'
+  if (types.has('BODY_SHOP')) return 'Cliente de taller de carrocería'
+  if (types.has('MECHANICAL')) return 'Cliente de taller mecánico'
+  if (types.has('PAINT_STORE')) return 'Cliente de tienda de pinturas'
+
+  return 'Cliente'
 })
 
 const orderTotals = computed(() => props.customer.orders.reduce((totals, order) => ({
@@ -37,7 +48,7 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
               Información de contacto
             </h2>
             <p class="mt-1 text-sm text-muted">
-              Cliente desde {{ formatDate(customer.createdAt) }}
+              {{ customerTypeLabel }}
             </p>
           </div>
           <UBadge
@@ -51,6 +62,22 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
       </template>
 
       <dl class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+            Nombre del cliente
+          </dt>
+          <dd class="mt-1.5 text-default">
+            {{ customer.fullName }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+            RFC
+          </dt>
+          <dd class="mt-1.5 text-default">
+            {{ customer.taxId || 'No registrado' }}
+          </dd>
+        </div>
         <div>
           <dt class="text-xs font-medium uppercase tracking-wide text-muted">
             Teléfono principal
@@ -76,14 +103,6 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
           </dd>
         </div>
         <div>
-          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-            RFC
-          </dt>
-          <dd class="mt-1.5 text-default">
-            {{ customer.taxId || 'No registrado' }}
-          </dd>
-        </div>
-        <div class="sm:col-span-2">
           <dt class="text-xs font-medium uppercase tracking-wide text-muted">
             Domicilio
           </dt>

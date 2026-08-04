@@ -29,12 +29,6 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     onSelect: () => { open.value = false }
   },
   {
-    label: 'Órdenes',
-    icon: 'i-lucide-clipboard-list',
-    to: '/ordenes',
-    onSelect: () => { open.value = false }
-  },
-  {
     label: 'Clientes',
     icon: 'i-lucide-users',
     to: '/clientes',
@@ -44,6 +38,12 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     label: 'Vehículos',
     icon: 'i-lucide-car-front',
     to: '/vehiculos',
+    onSelect: () => { open.value = false }
+  },
+  {
+    label: 'Órdenes',
+    icon: 'i-lucide-clipboard-list',
+    to: '/ordenes',
     onSelect: () => { open.value = false }
   },
   ...(canViewExpenses.value

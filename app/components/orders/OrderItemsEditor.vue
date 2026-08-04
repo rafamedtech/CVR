@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { OrderItemDraft, TaxRate } from '~/types/crm'
-import { taxRateOptions } from '~/utils/crm'
 
 const props = defineProps<{
   defaultTaxRate: TaxRate
@@ -58,8 +57,8 @@ function lineTotal(item: OrderItemDraft) {
       :key="index"
       class="rounded-xl border border-default bg-elevated/30 p-4"
     >
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <UFormField :name="`items.${index}.type`" label="Tipo">
+      <div class="grid gap-3 sm:grid-cols-6">
+        <UFormField :name="`items.${index}.type`" label="Tipo" class="sm:col-span-2">
           <USelect
             v-model="item.type"
             :items="typeOptions"
@@ -67,10 +66,10 @@ function lineTotal(item: OrderItemDraft) {
             class="w-full"
           />
         </UFormField>
-        <UFormField :name="`items.${index}.description`" label="Descripción" class="sm:col-span-2 lg:col-span-2">
+        <UFormField :name="`items.${index}.description`" label="Descripción" class="sm:col-span-4">
           <UInput v-model="item.description" class="w-full" />
         </UFormField>
-        <UFormField :name="`items.${index}.quantity`" label="Cantidad">
+        <UFormField :name="`items.${index}.quantity`" label="Cantidad" class="sm:col-span-2">
           <UInput
             v-model="item.quantity"
             type="number"
@@ -79,7 +78,7 @@ function lineTotal(item: OrderItemDraft) {
             class="w-full"
           />
         </UFormField>
-        <UFormField :name="`items.${index}.unitCost`" label="Costo unitario">
+        <UFormField :name="`items.${index}.unitCost`" label="Costo unitario" class="sm:col-span-2">
           <UInput
             v-model="item.unitCost"
             type="number"
@@ -88,7 +87,7 @@ function lineTotal(item: OrderItemDraft) {
             class="w-full"
           />
         </UFormField>
-        <UFormField :name="`items.${index}.unitPrice`" label="Precio unitario">
+        <UFormField :name="`items.${index}.unitPrice`" label="Precio unitario" class="sm:col-span-2">
           <UInput
             v-model="item.unitPrice"
             type="number"
@@ -98,26 +97,7 @@ function lineTotal(item: OrderItemDraft) {
           />
         </UFormField>
       </div>
-      <div class="mt-3 flex flex-wrap items-end justify-between gap-3">
-        <div class="grid flex-1 gap-3 sm:grid-cols-2 lg:max-w-sm">
-          <UFormField :name="`items.${index}.discount`" label="Descuento">
-            <UInput
-              v-model="item.discount"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField :name="`items.${index}.taxRate`" label="IVA (%)">
-            <USelect
-              v-model="item.taxRate"
-              :items="taxRateOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-        </div>
+      <div class="mt-3 flex items-end justify-end gap-3">
         <div class="flex items-center gap-3">
           <div class="text-right">
             <p class="text-xs text-muted">

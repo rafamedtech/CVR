@@ -126,6 +126,7 @@ export interface OrderListItem {
   customerName: string
   customerPhone: string
   vehicleLabel: string
+  vehicleColor: string | null
   licensePlate: string
   assignedToName: string | null
   total: number

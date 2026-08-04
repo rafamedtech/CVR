@@ -91,7 +91,9 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
   <UModal
     v-model:open="open"
     title="Editar cliente"
-    description="Actualiza los datos de contacto y domicilio compatible con Siigo México."
+    description="Actualiza los datos de contacto y domicilio"
+    :close="false"
+    :dismissible="false"
     :ui="{ content: 'sm:max-w-3xl', footer: 'justify-end' }"
   >
     <template #body>

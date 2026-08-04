@@ -112,7 +112,6 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
       <VehiclesTable
         :vehicles="filteredVehicles"
         :loading="status === 'pending'"
-        :show-workshop="isAllWorkshops"
         :can-edit="canEditVehicles"
         :can-assign-workshops="isSuperAdmin"
         @edit="handleEdit"

@@ -70,33 +70,27 @@ async function handleUpdated() {
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar>
+      <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>
           <UInput
             v-model="search"
             icon="i-lucide-search"
+            size="lg"
             placeholder="Buscar por nombre, teléfono, correo o RFC…"
             class="w-full sm:w-96"
+            :ui="{
+              base: 'sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:ps-9',
+              leading: 'sm:ps-2.5'
+            }"
           />
         </template>
       </UDashboardToolbar>
     </template>
 
     <template #body>
-      <UAlert
-        v-if="isAllWorkshops"
-        class="mb-4"
-        title="Vista consolidada"
-        description="Puedes consultar todos los clientes. Selecciona un taller para registrar uno nuevo."
-        icon="i-lucide-info"
-        color="info"
-        variant="subtle"
-      />
-
       <CustomersTable
         :customers="filteredCustomers"
         :loading="status === 'pending'"
-        :show-workshop="isAllWorkshops"
         :can-edit="canEditCustomers"
         :can-assign-workshops="isSuperAdmin"
         @edit="handleEdit"
