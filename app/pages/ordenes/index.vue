@@ -9,10 +9,11 @@ import type {
 useHead({ title: 'Órdenes' })
 
 const route = useRoute()
+const isMobileViewport = useMobileViewport()
 const search = shallowRef('')
 const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
 const createOpen = shallowRef(false)
-const { activeWorkshop, canManageOrders, isAllWorkshops } = useCrmSession()
+const { canManageOrders, isAllWorkshops } = useCrmSession()
 
 const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
   default: () => [],
@@ -30,6 +31,10 @@ const statusOptions = [
   { label: 'Todos los estados', value: 'ALL' },
   ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
 ]
+const searchPlaceholder = computed(() => isMobileViewport.value
+  ? 'Buscar'
+  : 'Buscar orden, cliente, placas o vehículo…')
+const newOrderLabel = computed(() => isMobileViewport.value ? 'Nueva' : 'Nueva orden')
 
 const filteredOrders = computed(() => {
   const customerId = typeof route.query.customer === 'string' ? route.query.customer : null
@@ -60,7 +65,7 @@ const filteredOrders = computed(() => {
           <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
-                label="Nueva orden"
+                :label="newOrderLabel"
                 icon="i-lucide-file-plus-2"
                 :disabled="!canManageOrders || !customers.length || !vehicles.length"
                 @click="createOpen = true"
@@ -76,7 +81,7 @@ const filteredOrders = computed(() => {
           <UInput
             v-model="search"
             icon="i-lucide-search"
-            placeholder="Buscar orden, cliente, placas o vehículo…"
+            :placeholder="searchPlaceholder"
             class="w-full sm:w-96"
           />
           <UButton
@@ -91,7 +96,16 @@ const filteredOrders = computed(() => {
             v-model="statusFilter"
             :items="statusOptions"
             value-key="value"
+            size="lg"
             class="w-48"
+            :ui="{
+              base: 'md:px-2.5 md:py-1.5 md:gap-1.5',
+              leading: 'md:ps-2.5',
+              trailing: 'md:pe-2.5',
+              label: 'md:p-1.5 md:gap-1.5',
+              item: 'md:p-1.5 md:gap-1.5',
+              empty: 'md:p-2.5'
+            }"
           />
         </template>
       </UDashboardToolbar>
@@ -119,7 +133,6 @@ const filteredOrders = computed(() => {
         v-model:open="createOpen"
         :customers="customers"
         :vehicles="vehicles"
-        :default-tax-rate="activeWorkshop?.taxRate ?? 16"
         @created="refresh"
       />
     </template>

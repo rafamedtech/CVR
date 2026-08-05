@@ -61,7 +61,7 @@ defineProps<{
           />
         </div>
 
-        <div class="mt-4 border-t border-muted pt-3">
+        <div class="mt-4">
           <template v-if="showCustomer && showVehicle">
             <p class="font-medium text-highlighted">
               {{ order.customerName }}
@@ -97,7 +97,7 @@ defineProps<{
           </template>
         </div>
 
-        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-muted pt-3">
+        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
           <div v-if="showCreatedAt">
             <dt class="text-xs text-muted">
               Fecha
@@ -108,29 +108,10 @@ defineProps<{
           </div>
           <div>
             <dt class="text-xs text-muted">
-              Entrega
-            </dt>
-            <dd class="mt-0.5 text-sm text-default">
-              {{ formatDate(order.promisedAt) }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs text-muted">
               Importe
             </dt>
             <dd class="mt-0.5 font-medium text-highlighted">
               {{ formatCurrency(order.total) }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs text-muted">
-              Saldo
-            </dt>
-            <dd
-              class="mt-0.5 font-medium"
-              :class="order.balance > 0 ? 'text-warning' : 'text-success'"
-            >
-              {{ formatCurrency(order.balance) }}
             </dd>
           </div>
           <div v-if="showWorkshop">

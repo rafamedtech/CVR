@@ -1,8 +1,19 @@
 import { z } from 'zod'
+import { getOrderTaxRate } from '../../../shared/order-tax'
+
+const lineItemSchema = z.object({
+  type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
+  description: z.string().trim().min(2, 'Describe el concepto.').max(250),
+  quantity: z.coerce.number().positive(),
+  unitCost: z.coerce.number().nonnegative().default(0),
+  unitPrice: z.coerce.number().nonnegative(),
+  discount: z.coerce.number().nonnegative().default(0)
+})
 
 const updateOrderSchema = z.object({
   status: z.enum(['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'CANCELLED']).optional(),
   priority: z.enum(['NORMAL', 'HIGH', 'URGENT']).optional(),
+  requiresInvoice: z.boolean().optional(),
   complaint: z.string().trim().min(3).max(2000).optional(),
   diagnosis: z.string().trim().max(2000).optional().nullable(),
   intakeNotes: z.string().trim().max(2000).optional().nullable(),
@@ -10,7 +21,8 @@ const updateOrderSchema = z.object({
   mileageIn: z.coerce.number().int().nonnegative().optional().nullable(),
   fuelLevelIn: z.coerce.number().int().min(0).max(100).optional().nullable(),
   promisedAt: z.string().optional().nullable(),
-  assignedToId: z.union([z.uuid(), z.literal('')]).optional().nullable()
+  assignedToId: z.union([z.uuid(), z.literal('')]).optional().nullable(),
+  items: z.array(lineItemSchema).optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -56,11 +68,39 @@ export default defineEventHandler(async (event) => {
       }
     : {}
 
-  return prisma.serviceOrder.update({
+  const shouldRecalculateItems = body.items !== undefined
+    || (body.requiresInvoice !== undefined && body.requiresInvoice !== order.requiresInvoice)
+  const itemInputs = body.items ?? (shouldRecalculateItems
+    ? await prisma.orderItem.findMany({ where: { orderId: order.id } })
+    : undefined)
+  const taxRate = getOrderTaxRate(body.requiresInvoice ?? order.requiresInvoice)
+  const calculatedItems = itemInputs?.map(item => calculateLineItem({
+    type: item.type,
+    description: item.description,
+    quantity: Number(item.quantity),
+    unitCost: Number(item.unitCost),
+    unitPrice: Number(item.unitPrice),
+    discount: Number(item.discount),
+    taxRate
+  }))
+  const totals = calculatedItems?.reduce((result, item) => ({
+    subtotal: result.subtotal + item.subtotal,
+    discountTotal: result.discountTotal + item.discount,
+    taxTotal: result.taxTotal + item.taxTotal,
+    total: result.total + item.total
+  }), {
+    subtotal: 0,
+    discountTotal: 0,
+    taxTotal: 0,
+    total: 0
+  })
+
+  const updatedOrder = await prisma.serviceOrder.update({
     where: { id: order.id },
     data: {
       ...(body.status ? { status: body.status } : {}),
       ...(body.priority ? { priority: body.priority } : {}),
+      ...(body.requiresInvoice !== undefined ? { requiresInvoice: body.requiresInvoice } : {}),
       ...(body.complaint !== undefined ? { complaint: body.complaint } : {}),
       ...(body.diagnosis !== undefined ? { diagnosis: body.diagnosis || null } : {}),
       ...(body.intakeNotes !== undefined ? { intakeNotes: body.intakeNotes || null } : {}),
@@ -69,7 +109,18 @@ export default defineEventHandler(async (event) => {
       ...(body.fuelLevelIn !== undefined ? { fuelLevelIn: body.fuelLevelIn } : {}),
       ...(body.promisedAt !== undefined ? { promisedAt: body.promisedAt ? new Date(body.promisedAt) : null } : {}),
       ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId || null } : {}),
+      ...(calculatedItems && totals
+        ? {
+            ...totals,
+            items: {
+              deleteMany: {},
+              create: calculatedItems
+            }
+          }
+        : {}),
       ...statusDates
     }
   })
+
+  return calculatedItems ? recalculateOrder(order.id) : updatedOrder
 })

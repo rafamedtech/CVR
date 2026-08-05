@@ -7,6 +7,7 @@ import type {
   WorkshopSummary
 } from '~/types/crm'
 
+const responsiveControlSize = useResponsiveControlSize()
 const props = defineProps<{
   workshops: readonly WorkshopSummary[]
   selectedWorkshopId: string | null
@@ -132,6 +133,7 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
             v-model="state.accessType"
             :items="accessTypeOptions"
             value-key="value"
+            :size="responsiveControlSize"
             class="w-full"
           />
         </UFormField>
@@ -145,6 +147,7 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
             v-model="state.workshopId"
             :items="workshopOptions"
             value-key="value"
+            :size="responsiveControlSize"
             class="w-full"
             :disabled="!allowWorkshopSelection && Boolean(selectedWorkshopId)"
           />
@@ -159,6 +162,7 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
             v-model="state.role"
             :items="roleOptions"
             value-key="value"
+            :size="responsiveControlSize"
             class="w-full"
           />
         </UFormField>

@@ -140,6 +140,7 @@ export interface OrderDetail extends OrderListItem {
   customerId: string
   vehicleId: string
   assignedToId: string | null
+  requiresInvoice: boolean
   complaint: string
   diagnosis: string | null
   intakeNotes: string | null
@@ -153,7 +154,6 @@ export interface OrderDetail extends OrderListItem {
   subtotal: number
   discountTotal: number
   taxTotal: number
-  workshopTaxRate: TaxRate
   items: OrderLineItem[]
   payments: OrderPayment[]
   availableAssignees: Array<{

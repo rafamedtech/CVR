@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CustomerListItem } from '~/types/crm'
@@ -11,7 +10,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
-const isMobile = useMediaQuery('(max-width: 639px)')
+const responsiveControlSize = useResponsiveControlSize()
 const optionalVinSchema = z.preprocess(
   value => typeof value === 'string' && !value.trim() ? undefined : value,
   z.string().trim().max(30, 'El VIN no puede exceder 30 caracteres.').optional()
@@ -91,7 +90,7 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
             :items="customerOptions"
             value-key="value"
             searchable
-            :size="isMobile ? 'lg' : undefined"
+            :size="responsiveControlSize"
             class="min-w-0 max-w-full"
             :ui="{ base: 'w-full min-w-0', value: 'min-w-0 truncate', itemLabel: 'min-w-0 truncate' }"
             placeholder="Buscar cliente…"

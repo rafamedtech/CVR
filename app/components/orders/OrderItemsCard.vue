@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
-import type { OrderLineItem, TaxRate } from '~/types/crm'
-import { taxRateOptions, taxRateValues } from '~/utils/crm'
+import type { DropdownMenuItem, FormSubmitEvent } from '@nuxt/ui'
+import type { OrderItemDraft, OrderLineItem, TaxRate } from '~/types/crm'
 
 const props = defineProps<{
   orderId: string
@@ -10,7 +9,7 @@ const props = defineProps<{
   subtotal: number
   taxTotal: number
   total: number
-  defaultTaxRate: TaxRate
+  requiresInvoice: boolean
   canEdit?: boolean
 }>()
 const emit = defineEmits<{ updated: [] }>()
@@ -18,7 +17,7 @@ const toast = useToast()
 const open = shallowRef(false)
 const loading = shallowRef(false)
 const deleting = shallowRef<string | null>(null)
-const typeOptions = Object.entries(lineItemTypeLabels).map(([value, label]) => ({ value, label }))
+const editingItemId = shallowRef<string | null>(null)
 
 const schema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -26,39 +25,92 @@ const schema = z.object({
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative(),
   unitPrice: z.coerce.number().nonnegative(),
-  discount: z.coerce.number().nonnegative(),
-  taxRate: z.coerce.number().refine(value => taxRateValues.includes(value as TaxRate), 'Selecciona una tasa de IVA válida.')
+  discount: z.coerce.number().nonnegative()
 })
 type ItemSchema = z.output<typeof schema>
-type ItemFormState = Omit<ItemSchema, 'taxRate'> & { taxRate: TaxRate }
-const state = reactive<ItemFormState>({
+const state = ref<OrderItemDraft>({
   type: 'SERVICE',
   description: '',
   quantity: 1,
   unitCost: 0,
   unitPrice: 0,
   discount: 0,
-  taxRate: props.defaultTaxRate
+  taxRate: 0
 })
+const isEditing = computed(() => editingItemId.value !== null)
+const modalTitle = computed(() => isEditing.value ? 'Editar concepto' : 'Agregar concepto')
+const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Agregar concepto')
+
+function resetState() {
+  Object.assign(state.value, {
+    type: 'SERVICE',
+    description: '',
+    quantity: 1,
+    unitCost: 0,
+    unitPrice: 0,
+    discount: 0,
+    taxRate: 0
+  })
+}
+
+function openCreateModal() {
+  editingItemId.value = null
+  resetState()
+  open.value = true
+}
+
+function openEditModal(item: OrderLineItem) {
+  editingItemId.value = item.id
+  Object.assign(state.value, {
+    type: item.type,
+    description: item.description,
+    quantity: item.quantity,
+    unitCost: item.unitCost,
+    unitPrice: item.unitPrice,
+    discount: item.discount,
+    taxRate: item.taxRate as TaxRate
+  })
+  open.value = true
+}
+
+function getItemActions(item: OrderLineItem): DropdownMenuItem[] {
+  return [{
+    label: 'Editar',
+    icon: 'i-lucide-pencil',
+    onSelect: () => openEditModal(item)
+  }, {
+    label: 'Quitar concepto',
+    icon: 'i-lucide-trash-2',
+    color: 'error',
+    onSelect: () => removeItem(item.id)
+  }]
+}
 
 async function onSubmit(event: FormSubmitEvent<ItemSchema>) {
   loading.value = true
   try {
-    await $fetch(`/api/orders/${props.orderId}/items`, { method: 'POST', body: event.data })
-    toast.add({ title: 'Concepto agregado', color: 'success' })
+    if (editingItemId.value) {
+      await $fetch(`/api/orders/${props.orderId}/items/${editingItemId.value}`, {
+        method: 'PATCH',
+        body: event.data
+      })
+    } else {
+      await $fetch(`/api/orders/${props.orderId}/items`, {
+        method: 'POST',
+        body: event.data
+      })
+    }
+    toast.add({ title: isEditing.value ? 'Concepto actualizado' : 'Concepto agregado', color: 'success' })
     open.value = false
-    Object.assign(state, {
-      type: 'SERVICE',
-      description: '',
-      quantity: 1,
-      unitCost: 0,
-      unitPrice: 0,
-      discount: 0,
-      taxRate: 16
-    })
+    editingItemId.value = null
+    resetState()
     emit('updated')
   } catch (error) {
-    toast.add({ title: 'No se pudo agregar el concepto', description: getApiErrorMessage(error), color: 'error' })
+    toast.add({
+      title: isEditing.value ? 'No se pudo actualizar el concepto' : 'No se pudo agregar el concepto',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
   } finally {
     loading.value = false
   }
@@ -96,7 +148,7 @@ async function removeItem(itemId: string) {
           icon="i-lucide-plus"
           color="neutral"
           variant="outline"
-          @click="open = true"
+          @click="openCreateModal"
         />
       </div>
     </template>
@@ -108,31 +160,29 @@ async function removeItem(itemId: string) {
             <p class="font-medium text-highlighted">
               {{ item.description }}
             </p>
-            <UBadge
-              :label="lineItemTypeLabels[item.type]"
-              color="neutral"
-              variant="subtle"
-              size="sm"
-            />
           </div>
           <p class="text-xs text-muted">
             {{ item.quantity }} × {{ formatCurrency(item.unitPrice) }}
             <span v-if="item.discount"> · Descuento {{ formatCurrency(item.discount) }}</span>
-            · IVA {{ item.taxRate === 0 ? 'NO APLICA' : `${item.taxRate}%` }}
+            <span v-if="requiresInvoice"> · IVA {{ item.taxRate }}%</span>
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <span class="font-medium text-highlighted">{{ formatCurrency(item.total) }}</span>
-          <UButton
+          <UDropdownMenu
             v-if="canEdit"
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            size="sm"
-            :loading="deleting === item.id"
-            aria-label="Eliminar concepto"
-            @click="removeItem(item.id)"
-          />
+            :items="getItemActions(item)"
+            :content="{ align: 'end' }"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              color="primary"
+              variant="ghost"
+              size="sm"
+              :loading="deleting === item.id"
+              aria-label="Acciones del concepto"
+            />
+          </UDropdownMenu>
         </div>
       </div>
     </div>
@@ -142,91 +192,41 @@ async function removeItem(itemId: string) {
 
     <template #footer>
       <dl class="ml-auto grid max-w-xs grid-cols-2 gap-x-8 gap-y-2 text-sm">
-        <dt class="text-muted">
+        <dt v-if="requiresInvoice" class="text-muted">
           Subtotal
         </dt>
-        <dd class="text-right text-default">
+        <dd v-if="requiresInvoice" class="text-right text-default">
           {{ formatCurrency(subtotal) }}
         </dd>
-        <dt class="text-muted">
+        <dt v-if="requiresInvoice" class="text-muted">
           IVA
         </dt>
-        <dd class="text-right text-default">
+        <dd v-if="requiresInvoice" class="text-right text-default">
           {{ formatCurrency(taxTotal) }}
         </dd>
-        <dt class="font-semibold text-highlighted">
+        <dt class="text-lg font-semibold text-primary">
           Total
         </dt>
-        <dd class="text-right text-lg font-semibold text-highlighted">
+        <dd class="text-right text-lg font-semibold text-primary">
           {{ formatCurrency(total) }}
         </dd>
       </dl>
     </template>
 
-    <UModal v-model:open="open" title="Agregar concepto" :ui="{ footer: 'justify-end' }">
+    <UModal
+      v-model:open="open"
+      :title="modalTitle"
+      :ui="{ content: 'sm:max-w-[44.8rem]', footer: 'justify-end' }"
+    >
       <template #body>
         <UForm
           id="item-form"
           :schema="schema"
           :state="state"
-          class="grid gap-4 sm:grid-cols-2"
+          :validate-on="[]"
           @submit="onSubmit"
         >
-          <UFormField name="type" label="Tipo">
-            <USelect
-              v-model="state.type"
-              :items="typeOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="quantity" label="Cantidad">
-            <UInput
-              v-model="state.quantity"
-              type="number"
-              min="0.01"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="description" label="Descripción" class="sm:col-span-2">
-            <UInput v-model="state.description" class="w-full" />
-          </UFormField>
-          <UFormField name="unitCost" label="Costo unitario">
-            <UInput
-              v-model="state.unitCost"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="unitPrice" label="Precio unitario">
-            <UInput
-              v-model="state.unitPrice"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="discount" label="Descuento">
-            <UInput
-              v-model="state.discount"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="taxRate" label="IVA (%)">
-            <USelect
-              v-model="state.taxRate"
-              :items="taxRateOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
+          <OrdersOrderItemFields v-model="state" />
         </UForm>
       </template>
       <template #footer="{ close }">
@@ -239,7 +239,7 @@ async function removeItem(itemId: string) {
         <UButton
           type="submit"
           form="item-form"
-          label="Agregar concepto"
+          :label="submitLabel"
           :loading="loading"
         />
       </template>

@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import type { OrderItemDraft, TaxRate } from '~/types/crm'
 
+const responsiveControlSize = useResponsiveControlSize()
 const props = defineProps<{
-  defaultTaxRate: TaxRate
+  taxRate: TaxRate
 }>()
 
 const items = defineModel<OrderItemDraft[]>({ required: true })
 
-const typeOptions = Object.entries(lineItemTypeLabels).map(([value, label]) => ({ value, label }))
+watch(() => props.taxRate, (taxRate) => {
+  for (const item of items.value) {
+    item.taxRate = taxRate
+  }
+}, { immediate: true })
 
 function addItem() {
   items.value.push({
@@ -17,7 +22,7 @@ function addItem() {
     unitCost: 0,
     unitPrice: 0,
     discount: 0,
-    taxRate: props.defaultTaxRate
+    taxRate: props.taxRate
   })
 }
 
@@ -33,89 +38,54 @@ function lineTotal(item: OrderItemDraft) {
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <h3 class="font-medium text-highlighted">
-          Servicios y partes
-        </h3>
-        <p class="text-xs text-muted">
-          El costo se usa únicamente para calcular utilidad.
-        </p>
-      </div>
-      <UButton
-        label="Agregar concepto"
-        icon="i-lucide-plus"
-        color="neutral"
-        variant="outline"
-        size="sm"
-        @click="addItem"
-      />
-    </div>
+    <h3 class="font-medium text-highlighted">
+      Servicios y partes
+    </h3>
 
     <div
       v-for="(item, index) in items"
       :key="index"
       class="rounded-xl border border-default bg-elevated/30 p-4"
     >
-      <div class="grid gap-3 sm:grid-cols-6">
-        <UFormField :name="`items.${index}.type`" label="Tipo" class="sm:col-span-2">
-          <USelect
-            v-model="item.type"
-            :items="typeOptions"
-            value-key="value"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField :name="`items.${index}.description`" label="Descripción" class="sm:col-span-4">
-          <UInput v-model="item.description" class="w-full" />
-        </UFormField>
-        <UFormField :name="`items.${index}.quantity`" label="Cantidad" class="sm:col-span-2">
-          <UInput
-            v-model="item.quantity"
-            type="number"
-            min="0.01"
-            step="0.01"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField :name="`items.${index}.unitCost`" label="Costo unitario" class="sm:col-span-2">
-          <UInput
-            v-model="item.unitCost"
-            type="number"
-            min="0"
-            step="0.01"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField :name="`items.${index}.unitPrice`" label="Precio unitario" class="sm:col-span-2">
-          <UInput
-            v-model="item.unitPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            class="w-full"
-          />
-        </UFormField>
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p class="text-sm font-medium text-highlighted">
+          Concepto {{ index + 1 }}
+        </p>
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          aria-label="Eliminar concepto"
+          @click="removeItem(index)"
+        />
       </div>
-      <div class="mt-3 flex items-end justify-end gap-3">
-        <div class="flex items-center gap-3">
-          <div class="text-right">
-            <p class="text-xs text-muted">
-              Total
-            </p>
-            <p class="font-semibold text-highlighted">
-              {{ formatCurrency(lineTotal(item)) }}
-            </p>
-          </div>
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            aria-label="Eliminar concepto"
-            @click="removeItem(index)"
-          />
+      <OrdersOrderItemFields
+        :model-value="item"
+        :name-prefix="`items.${index}`"
+        @update:model-value="items[index] = $event"
+      />
+      <div class="mt-3 flex justify-end">
+        <div class="text-right">
+          <p class="text-xs text-muted">
+            Total del concepto
+          </p>
+          <p class="font-semibold text-highlighted">
+            {{ formatCurrency(lineTotal(item)) }}
+          </p>
         </div>
       </div>
+    </div>
+
+    <div class="flex justify-end">
+      <UButton
+        label="Agregar concepto"
+        icon="i-lucide-plus"
+        color="neutral"
+        variant="outline"
+        :size="responsiveControlSize"
+        class="w-full justify-center md:w-auto"
+        @click="addItem"
+      />
     </div>
 
     <UAlert

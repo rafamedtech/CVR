@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { getDefaultOrderAssigneeName } from '../../../shared/order-assignee'
-import { taxRateSchema } from '../../utils/tax'
+import { getOrderTaxRate } from '../../../shared/order-tax'
 
 const lineItemSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -8,14 +8,14 @@ const lineItemSchema = z.object({
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative().default(0),
   unitPrice: z.coerce.number().nonnegative(),
-  discount: z.coerce.number().nonnegative().default(0),
-  taxRate: taxRateSchema.optional()
+  discount: z.coerce.number().nonnegative().default(0)
 })
 
 const orderSchema = z.object({
   customerId: z.uuid('Selecciona un cliente.'),
   vehicleId: z.uuid('Selecciona un vehículo.'),
   priority: z.enum(['NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
+  requiresInvoice: z.boolean().default(false),
   complaint: z.string().trim().min(3, 'Describe el servicio solicitado.').max(2000),
   diagnosis: z.string().trim().max(2000).optional().nullable(),
   intakeNotes: z.string().trim().max(2000).optional().nullable(),
@@ -103,10 +103,10 @@ export default defineEventHandler(async (event) => {
     }
   })
   const orderNumber = `OT-${year}-${String(count + 1).padStart(4, '0')}`
-  const defaultTaxRate = Number(context.selectedWorkshop?.taxRate ?? 16)
+  const taxRate = getOrderTaxRate(body.requiresInvoice)
   const calculatedItems = body.items.map(item => calculateLineItem({
     ...item,
-    taxRate: item.taxRate ?? defaultTaxRate
+    taxRate
   }))
   const totals = calculatedItems.reduce((result, item) => ({
     subtotal: result.subtotal + item.subtotal,
@@ -127,6 +127,7 @@ export default defineEventHandler(async (event) => {
       vehicleId: body.vehicleId,
       orderNumber,
       priority: body.priority,
+      requiresInvoice: body.requiresInvoice,
       complaint: body.complaint,
       diagnosis: body.diagnosis || null,
       intakeNotes: body.intakeNotes || null,

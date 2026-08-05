@@ -10,6 +10,7 @@ import {
   isSiigoMexicoStateCode
 } from '#shared/siigo-mexico-locations'
 
+const responsiveControlSize = useResponsiveControlSize()
 const address = defineModel<CustomerAddressForm>({ required: true })
 
 const municipalityOptions = computed(() =>
@@ -117,6 +118,7 @@ watch(
         :filter-fields="['label', 'value']"
         :search-input="{ placeholder: 'Buscar estado o código…' }"
         placeholder="Selecciona un estado"
+        :size="responsiveControlSize"
         class="w-full"
       />
     </UFormField>
@@ -136,6 +138,7 @@ watch(
         :placeholder="municipalityPlaceholder"
         :disabled="isMunicipalityDisabled"
         virtualize
+        :size="responsiveControlSize"
         class="w-full"
       />
     </UFormField>

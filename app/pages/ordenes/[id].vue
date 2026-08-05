@@ -2,6 +2,7 @@
 import type { OrderDetail, OrderStatus } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
+const responsiveControlSize = useResponsiveControlSize()
 const route = useRoute()
 const toast = useToast()
 const savingStatus = shallowRef(false)
@@ -96,57 +97,77 @@ async function deleteOrder() {
       <div v-else-if="order" class="space-y-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-wrap items-center gap-2">
-            <UBadge
-              :label="orderPriorityLabels[order.priority]"
-              :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
-              variant="subtle"
-            />
             <span class="text-sm text-muted">{{ order.workshopName }}</span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-            <UBadge
-              :label="paymentStatusLabels[order.paymentStatus]"
-              :color="paymentStatusColors[order.paymentStatus]"
-              variant="subtle"
-              size="lg"
-            />
-            <USelectMenu
-              :model-value="order.status"
-              :color="orderStatusColors[order.status]"
-              variant="subtle"
-              size="lg"
-              :items="statusOptions"
-              value-key="value"
-              :search-input="false"
-              :loading="savingStatus"
-              :disabled="!isSuperAdmin"
-              class="w-full sm:w-auto"
-              :ui="{ base: [statusSelectClasses[order.status], 'px-2 py-1 gap-1.5'] }"
-              @update:model-value="updateStatus($event as OrderStatus)"
-            />
-            <UButton
-              v-if="isSuperAdmin"
-              label="Editar"
-              icon="i-lucide-pencil"
-              color="neutral"
-              variant="outline"
-              @click="editOpen = true"
-            />
-            <UButton
-              v-if="isSuperAdmin"
-              label="Eliminar"
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="outline"
-              @click="deleteOpen = true"
-            />
+          <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div class="grid grid-cols-[auto_auto_minmax(10rem,1fr)] items-center gap-2 sm:flex sm:items-center">
+              <UBadge
+                v-if="order.priority !== 'NORMAL'"
+                :label="orderPriorityLabels[order.priority]"
+                :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
+                variant="subtle"
+                size="lg"
+                class="h-9 justify-center md:h-8"
+              />
+              <UBadge
+                :label="paymentStatusLabels[order.paymentStatus]"
+                :color="paymentStatusColors[order.paymentStatus]"
+                variant="subtle"
+                size="lg"
+                class="h-9 justify-center md:h-8"
+              />
+              <USelectMenu
+                :model-value="order.status"
+                :color="orderStatusColors[order.status]"
+                variant="subtle"
+                size="lg"
+                :items="statusOptions"
+                value-key="value"
+                :search-input="false"
+                :loading="savingStatus"
+                :disabled="!isSuperAdmin"
+                class="col-start-3 min-w-40 w-full sm:min-w-0 sm:w-48"
+                :ui="{
+                  base: [statusSelectClasses[order.status], 'md:px-2.5 md:py-1.5 md:gap-1.5'],
+                  leading: 'md:ps-2.5',
+                  trailing: 'md:pe-2.5',
+                  trailingIcon: 'text-current',
+                  label: 'md:p-1.5 md:gap-1.5',
+                  item: 'md:p-1.5 md:gap-1.5',
+                  empty: 'md:p-2.5',
+                  content: 'max-h-none',
+                  viewport: 'overflow-y-visible'
+                }"
+                @update:model-value="updateStatus($event as OrderStatus)"
+              />
+            </div>
+            <div v-if="isSuperAdmin" class="grid grid-cols-2 gap-2 sm:flex">
+              <UButton
+                label="Editar"
+                icon="i-lucide-pencil"
+                color="neutral"
+                variant="outline"
+                :size="responsiveControlSize"
+                class="w-full justify-center sm:w-auto"
+                @click="editOpen = true"
+              />
+              <UButton
+                label="Eliminar"
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="outline"
+                :size="responsiveControlSize"
+                class="w-full justify-center sm:w-auto"
+                @click="deleteOpen = true"
+              />
+            </div>
           </div>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">
+            <p class="text-xs font-medium uppercase tracking-wide text-primary">
               Cliente
             </p>
             <p class="mt-2 font-semibold text-highlighted">
@@ -157,7 +178,7 @@ async function deleteOrder() {
             </p>
           </UCard>
           <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">
+            <p class="text-xs font-medium uppercase tracking-wide text-primary">
               Vehículo
             </p>
             <p class="mt-2 font-semibold text-highlighted">
@@ -168,18 +189,18 @@ async function deleteOrder() {
             </p>
           </UCard>
           <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">
+            <p class="text-xs font-medium uppercase tracking-wide text-primary">
               Entrega prometida
             </p>
             <p class="mt-2 font-semibold text-highlighted">
               {{ formatDate(order.promisedAt) }}
             </p>
             <p class="text-sm text-muted">
-              {{ order.assignedToName || 'Sin responsable asignado' }}
+              Responsable: {{ order.assignedToName || 'Sin responsable asignado' }}
             </p>
           </UCard>
           <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted">
+            <p class="text-xs font-medium uppercase tracking-wide text-primary">
               Saldo pendiente
             </p>
             <p class="mt-2 text-xl font-semibold" :class="order.balance > 0 ? 'text-warning' : 'text-success'">
@@ -194,7 +215,7 @@ async function deleteOrder() {
         <UCard>
           <template #header>
             <h2 class="font-semibold text-highlighted">
-              Recepción y diagnóstico
+              Recepción
             </h2>
           </template>
           <dl class="grid gap-5 md:grid-cols-2">
@@ -204,14 +225,6 @@ async function deleteOrder() {
               </dt>
               <dd class="mt-2 whitespace-pre-wrap text-default">
                 {{ order.complaint }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                Diagnóstico
-              </dt>
-              <dd class="mt-2 whitespace-pre-wrap text-default">
-                {{ order.diagnosis || 'Pendiente de diagnóstico' }}
               </dd>
             </div>
             <div>
@@ -240,7 +253,7 @@ async function deleteOrder() {
             :subtotal="order.subtotal"
             :tax-total="order.taxTotal"
             :total="order.total"
-            :default-tax-rate="order.workshopTaxRate"
+            :requires-invoice="order.requiresInvoice"
             :can-edit="isSuperAdmin"
             @updated="refresh"
           />
@@ -254,7 +267,7 @@ async function deleteOrder() {
           />
         </div>
 
-        <OrdersOrderEditModal
+        <OrdersOrderFormModal
           v-model:open="editOpen"
           :order="order"
           @updated="refresh"

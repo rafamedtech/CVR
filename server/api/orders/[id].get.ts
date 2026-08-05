@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
     customerId: order.customerId,
     vehicleId: order.vehicleId,
     assignedToId: order.assignedToId,
+    requiresInvoice: order.requiresInvoice,
     complaint: order.complaint,
     diagnosis: order.diagnosis,
     intakeNotes: order.intakeNotes,
@@ -62,7 +63,6 @@ export default defineEventHandler(async (event) => {
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
     taxTotal: Number(order.taxTotal),
-    workshopTaxRate: Number(order.workshop.taxRate),
     items: order.items.map(item => ({
       id: item.id,
       type: item.type,

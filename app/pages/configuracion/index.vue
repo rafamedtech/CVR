@@ -4,6 +4,7 @@ import { taxRateOptions } from '~/utils/crm'
 
 useHead({ title: 'Configuración' })
 
+const responsiveControlSize = useResponsiveControlSize()
 const {
   session,
   activeWorkshop,
@@ -123,6 +124,7 @@ async function saveTaxRate() {
                 v-model="taxRate"
                 :items="taxRateOptions"
                 value-key="value"
+                :size="responsiveControlSize"
                 class="w-32"
                 :disabled="!canEditTaxRate || saving"
               />
