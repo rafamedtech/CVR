@@ -101,7 +101,6 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
             v-if="canAssignWorkshops"
             color="neutral"
             variant="ghost"
-            size="sm"
             class="w-14 justify-center"
             :aria-label="`Editar talleres de ${row.original.make} ${row.original.model}`"
             @click="emit('assignWorkshops', row.original)"
@@ -133,7 +132,6 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
               icon="i-lucide-pencil"
               color="neutral"
               variant="ghost"
-              size="sm"
               :disabled="!canEdit"
               @click="emit('edit', row.original)"
             />

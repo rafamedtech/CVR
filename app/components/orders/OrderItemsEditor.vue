@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { OrderItemDraft, TaxRate } from '~/types/crm'
 
-const responsiveControlSize = useResponsiveControlSize()
 const props = defineProps<{
   taxRate: TaxRate
 }>()
@@ -82,7 +81,6 @@ function lineTotal(item: OrderItemDraft) {
         icon="i-lucide-plus"
         color="neutral"
         variant="outline"
-        :size="responsiveControlSize"
         class="w-full justify-center md:w-auto"
         @click="addItem"
       />

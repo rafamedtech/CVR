@@ -4,7 +4,6 @@ import type { DashboardData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
 
-const responsiveControlSize = useResponsiveControlSize()
 const now = new Date()
 
 function toDateString(date: Date) {
@@ -73,7 +72,6 @@ async function applyRange() {
                   variant="outline"
                   icon="i-lucide-calendar-days"
                   :label="formatDateInput(from)"
-                  :size="responsiveControlSize"
                   class="w-40 justify-start font-normal"
                 />
 
@@ -81,7 +79,6 @@ async function applyRange() {
                   <UCalendar
                     v-model="from"
                     locale="es-MX"
-                    :size="responsiveControlSize"
                     @update:model-value="fromOpen = false"
                   />
                 </template>
@@ -94,7 +91,6 @@ async function applyRange() {
                   variant="outline"
                   icon="i-lucide-calendar-days"
                   :label="formatDateInput(to)"
-                  :size="responsiveControlSize"
                   class="w-40 justify-start font-normal"
                 />
 
@@ -102,7 +98,6 @@ async function applyRange() {
                   <UCalendar
                     v-model="to"
                     locale="es-MX"
-                    :size="responsiveControlSize"
                     @update:model-value="toOpen = false"
                   />
                 </template>

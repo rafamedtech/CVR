@@ -10,7 +10,6 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
-const responsiveControlSize = useResponsiveControlSize()
 const optionalVinSchema = z.preprocess(
   value => typeof value === 'string' && !value.trim() ? undefined : value,
   z.string().trim().max(30, 'El VIN no puede exceder 30 caracteres.').optional()
@@ -31,7 +30,7 @@ const schema = z.object({
   notes: z.string().optional()
 })
 type VehicleSchema = z.output<typeof schema>
-const state = reactive<Partial<VehicleSchema>>({
+const state = reactive<VehicleSchema>({
   customerId: '',
   licensePlate: '',
   vin: '',
@@ -90,7 +89,6 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
             :items="customerOptions"
             value-key="value"
             searchable
-            :size="responsiveControlSize"
             class="min-w-0 max-w-full"
             :ui="{ base: 'w-full min-w-0', value: 'min-w-0 truncate', itemLabel: 'min-w-0 truncate' }"
             placeholder="Buscar cliente…"
@@ -109,7 +107,7 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
           <UInput v-model="state.model" class="w-full" />
         </UFormField>
         <UFormField name="year" label="Año" required>
-          <UInput v-model="state.year" type="number" class="w-full" />
+          <VehiclesVehicleYearInput v-model="state.year" />
         </UFormField>
         <UFormField name="color" label="Color">
           <UInput v-model="state.color" class="w-full" />

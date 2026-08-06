@@ -178,7 +178,6 @@ async function removeItem(itemId: string) {
               icon="i-lucide-ellipsis-vertical"
               color="primary"
               variant="ghost"
-              size="sm"
               :loading="deleting === item.id"
               aria-label="Acciones del concepto"
             />

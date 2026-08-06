@@ -1,27 +1,34 @@
+const largeControl = {
+  defaultVariants: {
+    size: "xl" as const,
+  },
+};
+
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'blue',
-      neutral: 'slate'
+      primary: "blue",
+      neutral: "slate",
     },
-    input: {
-      slots: {
-        base: 'sm:gap-1.5 sm:px-2.5 sm:py-1.5',
-        leading: 'sm:ps-2.5',
-        trailing: 'sm:pe-2.5'
-      },
-      compoundVariants: [{
-        leading: true,
-        size: 'lg',
-        class: 'sm:ps-9'
-      }, {
-        trailing: true,
-        size: 'lg',
-        class: 'sm:pe-9'
-      }],
-      defaultVariants: {
-        size: 'lg'
-      }
-    }
-  }
-})
+    button: largeControl,
+    input: largeControl,
+    inputNumber: largeControl,
+    inputDate: largeControl,
+    inputTime: largeControl,
+    inputMenu: largeControl,
+    inputTags: largeControl,
+    inputRating: largeControl,
+    textarea: largeControl,
+    select: largeControl,
+    selectMenu: largeControl,
+    checkbox: largeControl,
+    checkboxGroup: largeControl,
+    radioGroup: largeControl,
+    switch: largeControl,
+    pinInput: largeControl,
+    calendar: largeControl,
+    fileUpload: largeControl,
+    colorPicker: largeControl,
+    slider: largeControl,
+  },
+});

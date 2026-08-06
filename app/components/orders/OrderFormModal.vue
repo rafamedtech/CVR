@@ -10,12 +10,11 @@ import type {
   TaxRate,
   VehicleListItem
 } from '~/types/crm'
-import { formatPhone, taxRateValues } from '~/utils/crm'
+import { taxRateValues } from '~/utils/crm'
 import { getOrderTaxRate } from '#shared/order-tax'
 
 type InvoiceRequirement = 'required' | 'not-required'
 
-const responsiveControlSize = useResponsiveControlSize()
 const props = defineProps<{
   customers?: CustomerListItem[]
   vehicles?: VehicleListItem[]
@@ -95,26 +94,9 @@ const invoiceRequirement = computed<InvoiceRequirement>({
   set: value => state.requiresInvoice = value === 'required'
 })
 const invoiceTaxRate = computed<TaxRate>(() => getOrderTaxRate(state.requiresInvoice))
-
-function getCustomerOptionLabel(name: string, phone: string) {
-  return isEditing.value ? name : `${name} · ${formatPhone(phone)}`
-}
-
-const customerOptions = computed(() => {
-  const options = (props.customers ?? []).map(customer => ({
-    label: getCustomerOptionLabel(customer.fullName, customer.phone),
-    value: customer.id
-  }))
-
-  if (props.order && !options.some(option => option.value === props.order?.customerId)) {
-    options.unshift({
-      label: getCustomerOptionLabel(props.order.customerName, props.order.customerPhone),
-      value: props.order.customerId
-    })
-  }
-
-  return options
-})
+const selectedCustomer = computed(() => props.order
+  ? { id: props.order.customerId, fullName: props.order.customerName }
+  : null)
 const vehicleOptions = computed(() => {
   const options = (props.vehicles ?? [])
     .filter(vehicle => !state.customerId || vehicle.customerId === state.customerId)
@@ -288,14 +270,10 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
       >
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField name="customerId" label="Cliente" required>
-            <USelectMenu
+            <OrdersOrderCustomerSelectMenu
               v-model="state.customerId"
-              :items="customerOptions"
-              value-key="value"
-              searchable
-              placeholder="Selecciona un cliente"
-              :size="responsiveControlSize"
-              class="w-full"
+              :customers="props.customers"
+              :selected-customer="selectedCustomer"
               :disabled="isEditing"
             />
           </UFormField>
@@ -306,7 +284,6 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               value-key="value"
               searchable
               placeholder="Selecciona un vehículo"
-              :size="responsiveControlSize"
               class="w-full"
               :disabled="isEditing || !state.customerId"
             />
@@ -317,7 +294,6 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                 v-model="invoiceRequirement"
                 :items="invoiceRequirementOptions"
                 value-key="value"
-                :size="responsiveControlSize"
                 class="w-full"
               />
             </UFormField>
@@ -326,7 +302,6 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                 v-model="state.priority"
                 :items="priorityOptions"
                 value-key="value"
-                :size="responsiveControlSize"
                 class="w-full"
               />
             </UFormField>
@@ -337,7 +312,6 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                   variant="outline"
                   icon="i-lucide-calendar-days"
                   :label="formatPromisedDate(promisedDate)"
-                  :size="responsiveControlSize"
                   class="w-full justify-start font-normal"
                 />
 
@@ -345,7 +319,6 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                   <UCalendar
                     v-model="promisedDate"
                     locale="es-MX"
-                    :size="responsiveControlSize"
                     @update:model-value="promisedDateOpen = false"
                   />
                 </template>

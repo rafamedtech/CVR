@@ -2,7 +2,6 @@
 import type { OrderDetail, OrderStatus } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
-const responsiveControlSize = useResponsiveControlSize()
 const route = useRoute()
 const toast = useToast()
 const savingStatus = shallowRef(false)
@@ -121,7 +120,6 @@ async function deleteOrder() {
                 :model-value="order.status"
                 :color="orderStatusColors[order.status]"
                 variant="subtle"
-                size="lg"
                 :items="statusOptions"
                 value-key="value"
                 :search-input="false"
@@ -129,13 +127,8 @@ async function deleteOrder() {
                 :disabled="!isSuperAdmin"
                 class="col-start-3 min-w-40 w-full sm:min-w-0 sm:w-48"
                 :ui="{
-                  base: [statusSelectClasses[order.status], 'md:px-2.5 md:py-1.5 md:gap-1.5'],
-                  leading: 'md:ps-2.5',
-                  trailing: 'md:pe-2.5',
+                  base: statusSelectClasses[order.status],
                   trailingIcon: 'text-current',
-                  label: 'md:p-1.5 md:gap-1.5',
-                  item: 'md:p-1.5 md:gap-1.5',
-                  empty: 'md:p-2.5',
                   content: 'max-h-none',
                   viewport: 'overflow-y-visible'
                 }"
@@ -148,7 +141,6 @@ async function deleteOrder() {
                 icon="i-lucide-pencil"
                 color="neutral"
                 variant="outline"
-                :size="responsiveControlSize"
                 class="w-full justify-center sm:w-auto"
                 @click="editOpen = true"
               />
@@ -157,7 +149,6 @@ async function deleteOrder() {
                 icon="i-lucide-trash-2"
                 color="error"
                 variant="outline"
-                :size="responsiveControlSize"
                 class="w-full justify-center sm:w-auto"
                 @click="deleteOpen = true"
               />

@@ -3,7 +3,6 @@ import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { OrderPayment } from '~/types/crm'
 
-const responsiveControlSize = useResponsiveControlSize()
 const props = defineProps<{
   orderId: string
   payments: OrderPayment[]
@@ -16,9 +15,6 @@ const toast = useToast()
 const open = shallowRef(false)
 const loading = shallowRef(false)
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
-const amountFormatOptions: Intl.NumberFormatOptions = {
-  maximumFractionDigits: 2
-}
 const schema = z.object({
   amount: z.coerce.number()
     .positive('Escribe un importe válido.')
@@ -128,16 +124,13 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
           />
           <div class="grid gap-4 sm:grid-cols-2">
             <UFormField name="amount" label="Importe" required>
-              <UInputNumber
+              <AppNumberInput
                 v-model="state.amount"
+                format="currency"
                 :min="0.01"
                 :max="balance"
                 :step="1"
                 :step-snapping="false"
-                :format-options="amountFormatOptions"
-                locale="es-MX"
-                :size="responsiveControlSize"
-                class="w-full"
               />
             </UFormField>
             <UFormField name="method" label="Método de pago" required>
@@ -145,7 +138,6 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
                 v-model="state.method"
                 :items="methodOptions"
                 value-key="value"
-                :size="responsiveControlSize"
                 class="w-full"
               />
             </UFormField>

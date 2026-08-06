@@ -87,7 +87,6 @@ const columns: TableColumn<OrderListItem>[] = [{
           icon="i-lucide-arrow-up-right"
           color="neutral"
           variant="ghost"
-          size="sm"
           aria-label="Abrir orden"
         />
       </template>

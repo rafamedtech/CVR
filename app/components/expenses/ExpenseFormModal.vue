@@ -2,7 +2,6 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
-const responsiveControlSize = useResponsiveControlSize()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
@@ -62,7 +61,6 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
               v-model="state.category"
               :items="categoryOptions"
               value-key="value"
-              :size="responsiveControlSize"
               class="w-full"
             />
           </UFormField>
@@ -70,7 +68,6 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
             <UInput
               v-model="state.expenseDate"
               type="date"
-              :size="responsiveControlSize"
               class="w-full"
             />
           </UFormField>
@@ -83,12 +80,11 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
             <UInput v-model="state.vendor" class="w-full" />
           </UFormField>
           <UFormField name="amount" label="Importe" required>
-            <UInput
+            <AppNumberInput
               v-model="state.amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              class="w-full"
+              format="currency"
+              :min="0.01"
+              :step="0.01"
             />
           </UFormField>
         </div>

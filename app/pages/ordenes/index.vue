@@ -96,16 +96,7 @@ const filteredOrders = computed(() => {
             v-model="statusFilter"
             :items="statusOptions"
             value-key="value"
-            size="lg"
             class="w-48"
-            :ui="{
-              base: 'md:px-2.5 md:py-1.5 md:gap-1.5',
-              leading: 'md:ps-2.5',
-              trailing: 'md:pe-2.5',
-              label: 'md:p-1.5 md:gap-1.5',
-              item: 'md:p-1.5 md:gap-1.5',
-              empty: 'md:p-2.5'
-            }"
           />
         </template>
       </UDashboardToolbar>
