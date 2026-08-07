@@ -257,7 +257,12 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
     :description="modalDescription"
     :close="false"
     :dismissible="false"
-    :ui="{ content: 'sm:max-w-[44.8rem]', body: 'max-h-[72vh] overflow-y-auto', footer: 'justify-end' }"
+    :ui="{
+      content: 'w-[calc(100vw-2rem)] min-w-0 sm:max-w-[44.8rem]',
+      wrapper: 'min-w-0',
+      body: 'min-w-0 max-h-[72vh] overflow-x-hidden overflow-y-auto',
+      footer: 'flex-wrap justify-end'
+    }"
   >
     <template #body>
       <UForm
@@ -265,11 +270,16 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
         :schema="schema"
         :state="state"
         :validate-on="[]"
-        class="space-y-6"
+        class="min-w-0 space-y-6"
         @submit="onSubmit"
       >
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField name="customerId" label="Cliente" required>
+        <div class="grid min-w-0 gap-4 sm:grid-cols-2">
+          <UFormField
+            name="customerId"
+            label="Cliente"
+            required
+            class="min-w-0"
+          >
             <OrdersOrderCustomerSelectMenu
               v-model="state.customerId"
               :customers="props.customers"
@@ -277,7 +287,12 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               :disabled="isEditing"
             />
           </UFormField>
-          <UFormField name="vehicleId" label="Vehículo" required>
+          <UFormField
+            name="vehicleId"
+            label="Vehículo"
+            required
+            class="min-w-0"
+          >
             <USelectMenu
               v-model="state.vehicleId"
               :items="vehicleOptions"
@@ -288,8 +303,8 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               :disabled="isEditing || !state.customerId"
             />
           </UFormField>
-          <div class="grid grid-cols-2 gap-4 sm:col-span-2 md:grid-cols-3">
-            <UFormField name="requiresInvoice" label="¿Requiere factura?">
+          <div class="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2 md:grid-cols-3">
+            <UFormField name="requiresInvoice" label="¿Requiere factura?" class="min-w-0">
               <USelect
                 v-model="invoiceRequirement"
                 :items="invoiceRequirementOptions"
@@ -297,7 +312,7 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                 class="w-full"
               />
             </UFormField>
-            <UFormField name="priority" label="Prioridad">
+            <UFormField name="priority" label="Prioridad" class="min-w-0">
               <USelect
                 v-model="state.priority"
                 :items="priorityOptions"
@@ -305,7 +320,11 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                 class="w-full"
               />
             </UFormField>
-            <UFormField name="promisedAt" label="Entrega prometida" class="col-span-2 md:col-span-1">
+            <UFormField
+              name="promisedAt"
+              label="Entrega prometida"
+              class="min-w-0 sm:col-span-2 md:col-span-1"
+            >
               <UPopover v-model:open="promisedDateOpen">
                 <UButton
                   color="neutral"
