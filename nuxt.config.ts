@@ -17,6 +17,8 @@ export default defineNuxtConfig({
     }
   },
 
+  compatibilityDate: '2026-06-30',
+
   nitro: {
     vercel: {
       functions: {
@@ -24,8 +26,6 @@ export default defineNuxtConfig({
       }
     }
   },
-
-  compatibilityDate: '2026-06-30',
   vite: {
     optimizeDeps: {
       include: ['zod']

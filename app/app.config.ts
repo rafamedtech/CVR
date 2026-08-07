@@ -1,14 +1,14 @@
 const largeControl = {
   defaultVariants: {
-    size: "xl" as const,
-  },
-};
+    size: 'xl' as const
+  }
+}
 
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: "blue",
-      neutral: "slate",
+      primary: 'blue',
+      neutral: 'neutral'
     },
     button: largeControl,
     input: largeControl,
@@ -29,6 +29,6 @@ export default defineAppConfig({
     calendar: largeControl,
     fileUpload: largeControl,
     colorPicker: largeControl,
-    slider: largeControl,
-  },
-});
+    slider: largeControl
+  }
+})
