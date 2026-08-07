@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
+import type { ButtonProps, DropdownMenuItem } from '@nuxt/ui'
 import type { WorkshopType } from '~/types/crm'
+
+const props = defineProps<{
+  size?: ButtonProps['size']
+}>()
 
 const { session, selectWorkshop } = useCrmSession()
 
@@ -56,6 +60,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       trailing-icon="i-lucide-chevrons-up-down"
       color="neutral"
       variant="outline"
+      :size="props.size"
       class="max-w-56 bg-default data-[state=open]:bg-elevated"
       :ui="{
         label: 'hidden max-w-40 truncate xl:block',

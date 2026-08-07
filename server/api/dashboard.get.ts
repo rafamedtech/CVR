@@ -11,8 +11,17 @@ export default defineEventHandler(async (event) => {
   const to = typeof query.to === 'string'
     ? new Date(`${query.to}T23:59:59.999`)
     : now
+  const monthEnd = typeof query.monthEnd === 'string'
+    ? new Date(`${query.monthEnd}T23:59:59.999`)
+    : to
 
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+  if (
+    Number.isNaN(from.getTime())
+    || Number.isNaN(to.getTime())
+    || Number.isNaN(monthEnd.getTime())
+    || from > to
+    || from > monthEnd
+  ) {
     throw createError({ statusCode: 400, statusMessage: 'El rango de fechas no es válido.' })
   }
 
@@ -23,7 +32,7 @@ export default defineEventHandler(async (event) => {
     ...workshopWhere(context),
     ...assignedOrderWhere(context)
   }
-  const [periodOrders, openOrders, allReceivableOrders, expenses, workshops] = await Promise.all([
+  const [periodOrders, upcomingDeliveries, openOrders, allReceivableOrders, expenses, workshops] = await Promise.all([
     prisma.serviceOrder.findMany({
       where: {
         ...where,
@@ -39,6 +48,24 @@ export default defineEventHandler(async (event) => {
         items: true
       },
       orderBy: { createdAt: 'desc' }
+    }),
+    prisma.serviceOrder.findMany({
+      where: {
+        ...where,
+        status: { in: [...openStatuses] },
+        promisedAt: { gte: from, lte: monthEnd }
+      },
+      include: {
+        workshop: true,
+        customer: true,
+        vehicle: true,
+        assignedTo: true,
+        payments: true
+      },
+      orderBy: [
+        { promisedAt: 'asc' },
+        { createdAt: 'desc' }
+      ]
     }),
     prisma.serviceOrder.count({
       where: {
@@ -198,6 +225,7 @@ export default defineEventHandler(async (event) => {
         openOrders: orders.filter(order => openStatuses.includes(order.status as typeof openStatuses[number])).length
       }
     }),
-    recentOrders: periodOrders.slice(0, 6).map(serializeOrderListItem)
+    recentOrders: periodOrders.slice(0, 6).map(serializeOrderListItem),
+    upcomingDeliveries: upcomingDeliveries.map(serializeOrderListItem)
   }
 })

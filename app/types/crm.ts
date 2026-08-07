@@ -235,4 +235,5 @@ export interface DashboardData {
     openOrders: number
   }>
   recentOrders: OrderListItem[]
+  upcomingDeliveries: OrderListItem[]
 }

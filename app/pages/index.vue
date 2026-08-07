@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { parseDate, type CalendarDate } from '@internationalized/date'
+import { parseDate, type DateValue } from '@internationalized/date'
 import type { DashboardData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
@@ -14,30 +14,35 @@ function toDateString(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function formatDateInput(date: CalendarDate) {
-  return new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  }).format(date.toDate('UTC'))
-}
+const currentMonth = parseDate(toDateString(now))
+const selectedMonth = shallowRef<DateValue>(currentMonth)
+const hasSelectedMonth = shallowRef(false)
+const monthRange = computed(() => {
+  const year = selectedMonth.value.year
+  const month = selectedMonth.value.month
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate()
 
-const from = shallowRef<CalendarDate>(parseDate(toDateString(new Date(now.getFullYear(), now.getMonth(), 1))))
-const to = shallowRef<CalendarDate>(parseDate(toDateString(now)))
-const fromOpen = ref(false)
-const toOpen = ref(false)
+  return {
+    from: `${year}-${String(month).padStart(2, '0')}-01`,
+    to: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+    monthEnd: `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
+  }
+})
 const { isAllWorkshops, activeWorkshop } = useCrmSession()
 
 const { data, status, refresh } = await useFetch<DashboardData>('/api/dashboard', {
   query: computed(() => ({
-    from: from.value.toString(),
-    to: to.value.toString()
+    from: monthRange.value.from,
+    to: monthRange.value.to,
+    monthEnd: monthRange.value.monthEnd
   })),
   key: 'crm-dashboard',
   watch: false
 })
 
-async function applyRange() {
+async function selectMonth() {
+  hasSelectedMonth.value = true
   await refresh()
 }
 </script>
@@ -45,67 +50,43 @@ async function applyRange() {
 <template>
   <UDashboardPanel id="dashboard">
     <template #header>
-      <UDashboardNavbar :title="isAllWorkshops ? 'Resumen consolidado' : activeWorkshop?.name ?? 'Resumen'">
+      <UDashboardNavbar
+        :title="isAllWorkshops ? 'Resumen consolidado' : activeWorkshop?.name ?? 'Resumen'"
+        :toggle="{ size: 'xl' }"
+        :ui="{ title: 'text-base lg:text-sm' }"
+      >
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UButton
-            to="/ordenes"
-            label="Ver órdenes"
-            icon="i-lucide-clipboard-list"
-            color="neutral"
-            variant="outline"
-          />
-          <WorkshopSwitcher />
+          <div class="hidden lg:block">
+            <DashboardMonthFilter
+              v-model="selectedMonth"
+              :max-value="currentMonth"
+              :has-selection="hasSelectedMonth"
+              @select="selectMonth"
+            />
+          </div>
+          <div class="lg:hidden">
+            <WorkshopSwitcher size="xl" />
+          </div>
+          <div class="hidden lg:block">
+            <WorkshopSwitcher />
+          </div>
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar class="py-4">
-        <template #left>
-          <div class="flex flex-wrap items-end gap-2">
-            <UFormField label="Desde">
-              <UPopover v-model:open="fromOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar-days"
-                  :label="formatDateInput(from)"
-                  class="w-40 justify-start font-normal"
-                />
-
-                <template #content>
-                  <UCalendar
-                    v-model="from"
-                    locale="es-MX"
-                    @update:model-value="fromOpen = false"
-                  />
-                </template>
-              </UPopover>
-            </UFormField>
-            <UFormField label="Hasta">
-              <UPopover v-model:open="toOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar-days"
-                  :label="formatDateInput(to)"
-                  class="w-40 justify-start font-normal"
-                />
-
-                <template #content>
-                  <UCalendar
-                    v-model="to"
-                    locale="es-MX"
-                    @update:model-value="toOpen = false"
-                  />
-                </template>
-              </UPopover>
-            </UFormField>
-            <UButton label="Aplicar" icon="i-lucide-filter" @click="applyRange" />
-          </div>
-        </template>
+      <UDashboardToolbar class="py-4 lg:hidden">
+        <div class="w-full">
+          <DashboardMonthFilter
+            v-model="selectedMonth"
+            block
+            :max-value="currentMonth"
+            :has-selection="hasSelectedMonth"
+            @select="selectMonth"
+          />
+        </div>
       </UDashboardToolbar>
     </template>
 
@@ -133,6 +114,8 @@ async function applyRange() {
         </div>
 
         <DashboardRecentOrders :orders="data.recentOrders" />
+
+        <DashboardUpcomingDeliveries :orders="data.upcomingDeliveries" />
 
         <DashboardWorkshopPerformance
           v-if="isAllWorkshops && data.canViewFinancials"

@@ -107,6 +107,11 @@ useHead({
           orientation="vertical"
           tooltip
           popover
+          :ui="{
+            link: 'max-lg:gap-2 max-lg:px-3 max-lg:py-2 max-lg:text-base',
+            linkLeadingIcon: 'max-lg:size-6',
+            linkTrailingIcon: 'max-lg:size-6'
+          }"
         />
 
         <div v-if="!collapsed" class="mt-auto px-3 pb-2">

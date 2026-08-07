@@ -8,6 +8,7 @@ defineProps<{
   showCustomer?: boolean
   showVehicle?: boolean
   showCreatedAt?: boolean
+  showPromisedAt?: boolean
 }>()
 </script>
 
@@ -122,6 +123,14 @@ defineProps<{
             </dt>
             <dd class="mt-0.5 text-sm text-default">
               {{ formatDate(order.createdAt) }}
+            </dd>
+          </div>
+          <div v-if="showPromisedAt && order.promisedAt">
+            <dt class="text-xs text-muted">
+              Entrega
+            </dt>
+            <dd class="mt-0.5 text-sm text-default">
+              {{ formatDate(order.promisedAt) }}
             </dd>
           </div>
           <div>
