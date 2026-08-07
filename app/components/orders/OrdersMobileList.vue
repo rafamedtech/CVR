@@ -66,9 +66,19 @@ defineProps<{
             <p class="font-medium text-highlighted">
               {{ order.customerName }}
             </p>
-            <p class="text-xs text-muted">
-              {{ order.vehicleLabel }} · {{ order.licensePlate || 'Sin placas' }}
-            </p>
+            <div class="mt-1 flex items-center gap-2">
+              <p class="text-xs text-primary">
+                {{ order.vehicleLabel }}
+              </p>
+              <UBadge
+                v-if="order.licensePlate"
+                :label="order.licensePlate"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+              <span v-else class="text-xs text-muted">Sin placas</span>
+            </div>
           </template>
           <template v-else-if="showCustomer">
             <p class="font-medium text-highlighted">
@@ -80,7 +90,7 @@ defineProps<{
           </template>
           <template v-else>
             <div class="flex flex-wrap items-center gap-2">
-              <p class="font-medium text-highlighted">
+              <p class="font-medium text-primary">
                 {{ order.vehicleLabel }}
               </p>
               <UBadge
@@ -91,8 +101,16 @@ defineProps<{
                 size="sm"
               />
             </div>
-            <p class="text-xs text-muted">
-              {{ order.licensePlate || 'Sin placas' }}
+            <UBadge
+              v-if="order.licensePlate"
+              :label="order.licensePlate"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              class="mt-1"
+            />
+            <p v-else class="mt-1 text-xs text-muted">
+              Sin placas
             </p>
           </template>
         </div>

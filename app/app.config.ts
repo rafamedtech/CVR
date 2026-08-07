@@ -8,6 +8,8 @@ export default defineAppConfig({
   ui: {
     colors: {
       primary: 'blue',
+      secondary: 'violet',
+      info: 'cyan',
       neutral: 'neutral'
     },
     button: largeControl,

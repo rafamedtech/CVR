@@ -104,9 +104,19 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
             <p class="font-medium text-highlighted">
               {{ row.original.customerName }}
             </p>
-            <p class="text-xs text-muted">
-              {{ row.original.vehicleLabel }} · {{ row.original.licensePlate }}
-            </p>
+            <div class="mt-1 flex items-center gap-2">
+              <p class="text-xs text-primary">
+                {{ row.original.vehicleLabel }}
+              </p>
+              <UBadge
+                v-if="row.original.licensePlate"
+                :label="row.original.licensePlate"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+              <span v-else class="text-xs text-muted">Sin placas</span>
+            </div>
           </div>
           <div v-else-if="showCustomer">
             <p class="font-medium text-highlighted">
@@ -118,7 +128,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           </div>
           <div v-else>
             <div class="flex items-center gap-2">
-              <p class="font-medium text-highlighted">
+              <p class="font-medium text-primary">
                 {{ row.original.vehicleLabel }}
               </p>
               <UBadge
@@ -129,8 +139,16 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
                 size="sm"
               />
             </div>
-            <p class="text-xs text-muted">
-              {{ row.original.licensePlate || 'Sin placas' }}
+            <UBadge
+              v-if="row.original.licensePlate"
+              :label="row.original.licensePlate"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              class="mt-1"
+            />
+            <p v-else class="mt-1 text-xs text-muted">
+              Sin placas
             </p>
           </div>
         </template>

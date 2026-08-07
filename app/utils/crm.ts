@@ -69,11 +69,11 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   CANCELLED: 'Cancelada'
 }
 
-export const orderStatusColors: Record<OrderStatus, 'neutral' | 'warning' | 'info' | 'primary' | 'secondary' | 'success' | 'error'> = {
+export const orderStatusColors: Record<OrderStatus, 'neutral' | 'warning' | 'info' | 'secondary' | 'success' | 'error'> = {
   ESTIMATE: 'neutral',
   AWAITING_APPROVAL: 'warning',
   APPROVED: 'info',
-  IN_PROGRESS: 'primary',
+  IN_PROGRESS: 'info',
   QUALITY_CONTROL: 'secondary',
   READY: 'success',
   DELIVERED: 'success',

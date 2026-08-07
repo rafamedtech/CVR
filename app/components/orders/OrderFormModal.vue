@@ -132,7 +132,7 @@ function formatPromisedDate(date: CalendarDate | undefined) {
 
   return new Intl.DateTimeFormat('es-MX', {
     dateStyle: 'medium'
-  }).format(date.toDate('UTC'))
+  }).format(date.toDate(getLocalTimeZone()))
 }
 
 function initializeForm(order?: OrderDetail | null) {

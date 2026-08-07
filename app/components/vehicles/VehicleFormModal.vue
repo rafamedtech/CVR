@@ -41,6 +41,19 @@ const state = reactive<VehicleSchema>({
   notes: ''
 })
 
+function reset() {
+  Object.assign(state, {
+    customerId: '',
+    licensePlate: '',
+    vin: '',
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    color: '',
+    notes: ''
+  })
+}
+
 const customerOptions = computed(() => props.customers.map(customer => ({
   label: customer.fullName,
   value: customer.id
@@ -52,6 +65,7 @@ async function onSubmit(event: FormSubmitEvent<VehicleSchema>) {
     await $fetch('/api/vehicles', { method: 'POST', body: event.data })
     toast.add({ title: 'Vehículo registrado', color: 'success', icon: 'i-lucide-check' })
     open.value = false
+    reset()
     emit('created')
   } catch (error) {
     toast.add({ title: 'No se pudo registrar el vehículo', description: getApiErrorMessage(error), color: 'error' })
