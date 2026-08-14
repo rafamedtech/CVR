@@ -67,6 +67,8 @@ export default defineEventHandler(async (event) => {
       id: item.id,
       type: item.type,
       description: item.description,
+      currency: item.currency,
+      exchangeRate: Number(item.exchangeRate),
       quantity: Number(item.quantity),
       unitCost: canViewCosts ? Number(item.unitCost) : 0,
       unitPrice: Number(item.unitPrice),
@@ -80,6 +82,9 @@ export default defineEventHandler(async (event) => {
     payments: order.payments.map(payment => ({
       id: payment.id,
       amount: Number(payment.amount),
+      amountMxn: Number(payment.amountMxn),
+      currency: payment.currency,
+      exchangeRate: Number(payment.exchangeRate),
       method: payment.method,
       reference: payment.reference,
       notes: payment.notes,

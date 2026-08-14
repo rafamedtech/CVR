@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { DropdownMenuItem, FormSubmitEvent } from '@nuxt/ui'
 import type { OrderItemDraft, OrderLineItem, TaxRate } from '~/types/crm'
+import { convertFromMxn } from '#shared/currency'
 
 const props = defineProps<{
   orderId: string
@@ -22,6 +23,8 @@ const editingItemId = shallowRef<string | null>(null)
 const schema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
   description: z.string().min(2, 'Describe el concepto.'),
+  currency: z.enum(['MXN', 'USD']),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.'),
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative(),
   unitPrice: z.coerce.number().nonnegative(),
@@ -31,6 +34,8 @@ type ItemSchema = z.output<typeof schema>
 const state = ref<OrderItemDraft>({
   type: 'SERVICE',
   description: '',
+  currency: 'MXN',
+  exchangeRate: 1,
   quantity: 1,
   unitCost: 0,
   unitPrice: 0,
@@ -45,6 +50,8 @@ function resetState() {
   Object.assign(state.value, {
     type: 'SERVICE',
     description: '',
+    currency: 'MXN',
+    exchangeRate: 1,
     quantity: 1,
     unitCost: 0,
     unitPrice: 0,
@@ -64,6 +71,8 @@ function openEditModal(item: OrderLineItem) {
   Object.assign(state.value, {
     type: item.type,
     description: item.description,
+    currency: item.currency,
+    exchangeRate: item.exchangeRate,
     quantity: item.quantity,
     unitCost: item.unitCost,
     unitPrice: item.unitPrice,
@@ -71,6 +80,10 @@ function openEditModal(item: OrderLineItem) {
     taxRate: item.taxRate as TaxRate
   })
   open.value = true
+}
+
+function itemTotalInOriginalCurrency(item: OrderLineItem) {
+  return convertFromMxn(item.total, item.currency, item.exchangeRate)
 }
 
 function getItemActions(item: OrderLineItem): DropdownMenuItem[] {
@@ -162,13 +175,21 @@ async function removeItem(itemId: string) {
             </p>
           </div>
           <p class="text-xs text-muted">
-            {{ item.quantity }} × {{ formatCurrency(item.unitPrice) }}
-            <span v-if="item.discount"> · Descuento {{ formatCurrency(item.discount) }}</span>
+            {{ item.quantity }} × {{ formatCurrency(item.unitPrice, item.currency) }}
+            <span v-if="item.discount"> · Descuento {{ formatCurrency(item.discount, item.currency) }}</span>
+            <span v-if="item.currency === 'USD'"> · TC {{ item.exchangeRate.toFixed(4) }}</span>
             <span v-if="requiresInvoice"> · IVA {{ item.taxRate }}%</span>
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
-          <span class="font-medium text-highlighted">{{ formatCurrency(item.total) }}</span>
+          <div class="text-right">
+            <p class="font-medium text-highlighted">
+              {{ formatCurrency(itemTotalInOriginalCurrency(item), item.currency) }}
+            </p>
+            <p v-if="item.currency === 'USD'" class="text-xs text-muted">
+              {{ formatCurrency(item.total) }} MXN
+            </p>
+          </div>
           <UDropdownMenu
             v-if="canEdit"
             :items="getItemActions(item)"

@@ -4,6 +4,8 @@ import { getOrderTaxRate } from '../../../../../shared/order-tax'
 const itemSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
   description: z.string().trim().min(2, 'Describe el concepto.').max(250),
+  currency: z.enum(['MXN', 'USD']).default('MXN'),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative().default(0),
   unitPrice: z.coerce.number().nonnegative(),

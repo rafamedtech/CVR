@@ -42,6 +42,8 @@ const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Crear 
 const lineSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
   description: z.string().min(2, 'Describe el concepto.'),
+  currency: z.enum(['MXN', 'USD']),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.'),
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative(),
   unitPrice: z.coerce.number().nonnegative(),
@@ -152,6 +154,8 @@ function initializeForm(order?: OrderDetail | null) {
       items: order.items.map(item => ({
         type: item.type,
         description: item.description,
+        currency: item.currency,
+        exchangeRate: item.exchangeRate,
         quantity: item.quantity,
         unitCost: item.unitCost,
         unitPrice: item.unitPrice,

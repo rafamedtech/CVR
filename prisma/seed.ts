@@ -217,6 +217,7 @@ async function upsertDemoOrder(seed: DemoOrder) {
       data: seed.payments.map((payment, index) => ({
         orderId: order.id,
         amount: paymentAmounts[index],
+        amountMxn: paymentAmounts[index],
         method: payment.method,
         reference: payment.reference ?? `DEMO-${seed.orderNumber}-${index + 1}`,
         notes: payment.notes ?? 'Pago de muestra',

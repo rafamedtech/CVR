@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import type { OrderItemDraft } from '~/types/crm'
+import { currencyOptions } from '~/utils/crm'
 
-type OrderItemField = 'type' | 'description' | 'quantity' | 'unitCost' | 'unitPrice'
+type OrderItemField = 'type' | 'description' | 'currency' | 'exchangeRate' | 'quantity' | 'unitCost' | 'unitPrice'
 
 const props = defineProps<{
   namePrefix?: string
 }>()
 const item = defineModel<OrderItemDraft>({ required: true })
 const typeOptions = Object.entries(lineItemTypeLabels).map(([value, label]) => ({ value, label }))
+
+watch(() => item.value.currency, (currency) => {
+  if (currency === 'MXN') item.value.exchangeRate = 1
+})
 
 function fieldName(field: OrderItemField) {
   return props.namePrefix ? `${props.namePrefix}.${field}` : field
@@ -36,10 +41,33 @@ function fieldName(field: OrderItemField) {
         :decrement-disabled="item.quantity === 1"
       />
     </UFormField>
+    <UFormField :name="fieldName('currency')" label="Moneda" class="sm:col-span-2">
+      <USelect
+        v-model="item.currency"
+        :items="currencyOptions"
+        value-key="value"
+        class="w-full"
+      />
+    </UFormField>
+    <UFormField
+      :name="fieldName('exchangeRate')"
+      label="Tipo de cambio"
+      class="sm:col-span-2"
+    >
+      <AppNumberInput
+        v-model="item.exchangeRate"
+        :disabled="item.currency === 'MXN'"
+        :min="0.000001"
+        :step="0.01"
+        :step-snapping="false"
+        :maximum-fraction-digits="6"
+      />
+    </UFormField>
     <UFormField :name="fieldName('unitCost')" label="Costo unitario" class="sm:col-span-2">
       <AppNumberInput
         v-model="item.unitCost"
         format="currency"
+        :currency="item.currency"
         :min="0"
         :step="0.01"
         centered
@@ -49,6 +77,7 @@ function fieldName(field: OrderItemField) {
       <AppNumberInput
         v-model="item.unitPrice"
         format="currency"
+        :currency="item.currency"
         :min="0"
         :step="0.01"
         centered

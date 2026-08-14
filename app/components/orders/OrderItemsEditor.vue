@@ -17,6 +17,8 @@ function addItem() {
   items.value.push({
     type: 'SERVICE',
     description: '',
+    currency: 'MXN',
+    exchangeRate: 1,
     quantity: 1,
     unitCost: 0,
     unitPrice: 0,
@@ -32,6 +34,10 @@ function removeItem(index: number) {
 function lineTotal(item: OrderItemDraft) {
   const subtotal = Math.max(0, Number(item.quantity || 0) * Number(item.unitPrice || 0) - Number(item.discount || 0))
   return subtotal * (1 + Number(item.taxRate || 0) / 100)
+}
+
+function lineTotalMxn(item: OrderItemDraft) {
+  return item.currency === 'USD' ? lineTotal(item) * item.exchangeRate : lineTotal(item)
 }
 </script>
 
@@ -69,7 +75,10 @@ function lineTotal(item: OrderItemDraft) {
             Total del concepto
           </p>
           <p class="font-semibold text-highlighted">
-            {{ formatCurrency(lineTotal(item)) }}
+            {{ formatCurrency(lineTotal(item), item.currency) }}
+          </p>
+          <p v-if="item.currency === 'USD'" class="text-xs text-muted">
+            Equivale a {{ formatCurrency(lineTotalMxn(item)) }} MXN
           </p>
         </div>
       </div>

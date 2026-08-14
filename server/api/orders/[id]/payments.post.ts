@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import { calculatePaymentStatus } from '../../../../shared/payment-status'
+import { convertToMxn, normalizeExchangeRate } from '../../../../shared/currency'
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('El pago debe ser mayor a cero.'),
+  currency: z.enum(['MXN', 'USD']).default('MXN'),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
   method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
   reference: z.string().trim().max(100).optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
@@ -27,10 +30,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró la orden.' })
   }
 
-  const alreadyPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const alreadyPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
   const balance = Number(order.total) - alreadyPaid
+  const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
+  const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
-  if (body.amount > balance + 0.01) {
+  if (amountMxn > balance + 0.01) {
     throw createError({
       statusCode: 400,
       statusMessage: `El pago supera el saldo pendiente de ${balance.toFixed(2)}.`
@@ -42,6 +47,9 @@ export default defineEventHandler(async (event) => {
       data: {
         orderId: order.id,
         amount: body.amount,
+        amountMxn,
+        currency: body.currency,
+        exchangeRate,
         method: body.method,
         reference: body.reference || null,
         notes: body.notes || null,
@@ -51,9 +59,9 @@ export default defineEventHandler(async (event) => {
     })
     const payments = await transaction.payment.findMany({
       where: { orderId: order.id },
-      select: { amount: true }
+      select: { amountMxn: true }
     })
-    const paid = payments.reduce((sum, current) => sum + Number(current.amount), 0)
+    const paid = payments.reduce((sum, current) => sum + Number(current.amountMxn), 0)
 
     await transaction.serviceOrder.update({
       where: { id: order.id },

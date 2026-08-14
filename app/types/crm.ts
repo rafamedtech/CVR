@@ -11,6 +11,7 @@ export type OrderStatus = 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PR
 export type OrderPriority = 'NORMAL' | 'HIGH' | 'URGENT'
 export type LineItemType = 'SERVICE' | 'PART' | 'LABOR' | 'OTHER'
 export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'CHECK' | 'CREDIT' | 'OTHER'
+export type Currency = 'MXN' | 'USD'
 export type ExpenseCategory = 'RENT' | 'PAYROLL' | 'UTILITIES' | 'SUPPLIES' | 'MAINTENANCE' | 'MARKETING' | 'TAXES' | 'OTHER'
 
 export interface WorkshopSummary {
@@ -83,6 +84,8 @@ export interface OrderLineItem {
   id: string
   type: LineItemType
   description: string
+  currency: Currency
+  exchangeRate: number
   quantity: number
   unitCost: number
   unitPrice: number
@@ -97,6 +100,8 @@ export interface OrderLineItem {
 export interface OrderItemDraft {
   type: LineItemType
   description: string
+  currency: Currency
+  exchangeRate: number
   quantity: number
   unitCost: number
   unitPrice: number
@@ -107,6 +112,9 @@ export interface OrderItemDraft {
 export interface OrderPayment {
   id: string
   amount: number
+  amountMxn: number
+  currency: Currency
+  exchangeRate: number
   method: PaymentMethod
   reference: string | null
   notes: string | null

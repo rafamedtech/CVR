@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
   stepSnapping?: boolean
   maximumFractionDigits?: number
   centered?: boolean
+  disabled?: boolean
   decrementDisabled?: boolean
   incrementDisabled?: boolean
 }>(), {
@@ -23,6 +24,7 @@ const props = withDefaults(defineProps<{
   stepSnapping: true,
   maximumFractionDigits: 2,
   centered: false,
+  disabled: false,
   decrementDisabled: false,
   incrementDisabled: false
 })
@@ -51,6 +53,7 @@ const inputUi = computed(() => props.centered ? { base: 'text-center' } : undefi
     :step-snapping="stepSnapping"
     :format-options="formatOptions"
     :locale="locale"
+    :disabled="disabled"
     :decrement-disabled="decrementDisabled"
     :increment-disabled="incrementDisabled"
     :ui="inputUi"

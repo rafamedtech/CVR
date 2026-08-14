@@ -4,6 +4,8 @@ import { getOrderTaxRate } from '../../../shared/order-tax'
 const lineItemSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
   description: z.string().trim().min(2, 'Describe el concepto.').max(250),
+  currency: z.enum(['MXN', 'USD']).default('MXN'),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
   quantity: z.coerce.number().positive(),
   unitCost: z.coerce.number().nonnegative().default(0),
   unitPrice: z.coerce.number().nonnegative(),
@@ -77,23 +79,15 @@ export default defineEventHandler(async (event) => {
   const calculatedItems = itemInputs?.map(item => calculateLineItem({
     type: item.type,
     description: item.description,
+    currency: item.currency,
+    exchangeRate: Number(item.exchangeRate),
     quantity: Number(item.quantity),
     unitCost: Number(item.unitCost),
     unitPrice: Number(item.unitPrice),
     discount: Number(item.discount),
     taxRate
   }))
-  const totals = calculatedItems?.reduce((result, item) => ({
-    subtotal: result.subtotal + item.subtotal,
-    discountTotal: result.discountTotal + item.discount,
-    taxTotal: result.taxTotal + item.taxTotal,
-    total: result.total + item.total
-  }), {
-    subtotal: 0,
-    discountTotal: 0,
-    taxTotal: 0,
-    total: 0
-  })
+  const totals = calculatedItems ? calculateOrderTotals(calculatedItems) : undefined
 
   const updatedOrder = await prisma.serviceOrder.update({
     where: { id: order.id },

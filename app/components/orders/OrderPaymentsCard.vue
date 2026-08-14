@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { OrderPayment } from '~/types/crm'
+import type { Currency, OrderPayment } from '~/types/crm'
+import { convertFromMxn, convertToMxn } from '#shared/currency'
+import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
   orderId: string
@@ -17,8 +19,9 @@ const loading = shallowRef(false)
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
 const schema = z.object({
   amount: z.coerce.number()
-    .positive('Escribe un importe válido.')
-    .refine(amount => amount <= props.balance, 'El importe no puede superar el saldo pendiente.'),
+    .positive('Escribe un importe válido.'),
+  currency: z.enum(['MXN', 'USD']),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.'),
   method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
   reference: z.string().optional(),
   notes: z.string().optional()
@@ -26,16 +29,42 @@ const schema = z.object({
 type PaymentSchema = z.output<typeof schema>
 const state = reactive<PaymentSchema>({
   amount: 0,
+  currency: 'MXN',
+  exchangeRate: 1,
   method: 'CASH',
   reference: '',
   notes: ''
 })
 
+const paymentEquivalentMxn = computed(() => convertToMxn(state.amount, state.currency, state.exchangeRate))
+const maximumPayment = computed(() => state.exchangeRate > 0
+  ? convertFromMxn(props.balance, state.currency, state.exchangeRate)
+  : 0)
+
 watch(open, (value) => {
-  if (value) state.amount = props.balance
+  if (value) {
+    state.currency = 'MXN'
+    state.exchangeRate = 1
+    state.amount = props.balance
+  }
+})
+
+watch(() => state.currency, (currency: Currency) => {
+  if (currency === 'MXN') state.exchangeRate = 1
+  state.amount = maximumPayment.value
+})
+
+watch(() => state.exchangeRate, () => {
+  if (state.currency === 'USD' && state.amount > maximumPayment.value) {
+    state.amount = maximumPayment.value
+  }
 })
 
 async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
+  if (paymentEquivalentMxn.value > props.balance + 0.01) {
+    toast.add({ title: 'El importe no puede superar el saldo pendiente.', color: 'error' })
+    return
+  }
   loading.value = true
   try {
     await $fetch(`/api/orders/${props.orderId}/payments`, { method: 'POST', body: event.data })
@@ -85,7 +114,14 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             Ref. {{ payment.reference }}
           </p>
         </div>
-        <span class="font-semibold text-success">{{ formatCurrency(payment.amount) }}</span>
+        <div class="text-right">
+          <p class="font-semibold text-success">
+            {{ formatCurrency(payment.amount, payment.currency) }}
+          </p>
+          <p v-if="payment.currency === 'USD'" class="text-xs text-muted">
+            TC {{ payment.exchangeRate.toFixed(4) }} · {{ formatCurrency(payment.amountMxn) }} MXN
+          </p>
+        </div>
       </div>
     </div>
     <div v-else class="py-8 text-center text-sm text-muted">
@@ -123,12 +159,35 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             variant="subtle"
           />
           <div class="grid gap-4 sm:grid-cols-2">
+            <UFormField name="currency" label="Moneda" required>
+              <USelect
+                v-model="state.currency"
+                :items="currencyOptions"
+                value-key="value"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField
+              name="exchangeRate"
+              label="Tipo de cambio"
+              required
+            >
+              <AppNumberInput
+                v-model="state.exchangeRate"
+                :disabled="state.currency === 'MXN'"
+                :min="0.000001"
+                :step="0.01"
+                :step-snapping="false"
+                :maximum-fraction-digits="6"
+              />
+            </UFormField>
             <UFormField name="amount" label="Importe" required>
               <AppNumberInput
                 v-model="state.amount"
                 format="currency"
+                :currency="state.currency"
                 :min="0.01"
-                :max="balance"
+                :max="maximumPayment"
                 :step="1"
                 :step-snapping="false"
               />
@@ -142,6 +201,13 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
               />
             </UFormField>
           </div>
+          <UAlert
+            v-if="state.currency === 'USD'"
+            :title="`Equivalente aplicado: ${formatCurrency(paymentEquivalentMxn)} MXN`"
+            icon="i-lucide-arrow-left-right"
+            color="neutral"
+            variant="subtle"
+          />
           <UFormField name="reference" label="Referencia">
             <UInput v-model="state.reference" class="w-full" />
           </UFormField>

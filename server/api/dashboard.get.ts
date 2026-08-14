@@ -103,7 +103,7 @@ export default defineEventHandler(async (event) => {
   const collected = periodOrders.reduce((sum, order) => (
     sum + order.payments
       .filter(payment => payment.paidAt >= from && payment.paidAt <= to)
-      .reduce((paymentSum, payment) => paymentSum + Number(payment.amount), 0)
+      .reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
   ), 0)
   const costs = periodOrders.reduce((sum, order) => (
     sum + order.items.reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
   const expenseTotal = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0)
   const grossProfit = sales - costs
   const receivable = allReceivableOrders.reduce((sum, order) => {
-    const paid = order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amount), 0)
+    const paid = order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
     return sum + Math.max(0, Number(order.total) - paid)
   }, 0)
   const delivered = periodOrders.filter(order => order.status === 'DELIVERED')
@@ -171,7 +171,7 @@ export default defineEventHandler(async (event) => {
     if (canViewFinancials) {
       for (const payment of order.payments) {
         if (payment.paidAt >= from && payment.paidAt <= to) {
-          trendEntry(payment.paidAt).collected += Number(payment.amount)
+          trendEntry(payment.paidAt).collected += Number(payment.amountMxn)
         }
       }
     }
@@ -218,7 +218,7 @@ export default defineEventHandler(async (event) => {
         sales: canViewFinancials ? orders.reduce((sum, order) => sum + Number(order.total), 0) : 0,
         collected: canViewFinancials
           ? orders.reduce((sum, order) => (
-              sum + order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amount), 0)
+              sum + order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
             ), 0)
           : 0,
         expenses: canViewFinancials ? workshopExpenses : 0,

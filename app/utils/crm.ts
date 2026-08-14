@@ -1,5 +1,6 @@
 import type {
   ExpenseCategory,
+  Currency,
   LineItemType,
   OrderPriority,
   OrderStatus,
@@ -16,6 +17,11 @@ import {
 } from '#shared/siigo-mexico-locations'
 
 export const taxRateValues: readonly TaxRate[] = [0, 8, 16]
+
+export const currencyOptions: Array<{ label: string, value: Currency }> = [
+  { label: 'Pesos (MXN)', value: 'MXN' },
+  { label: 'Dólares (USD)', value: 'USD' }
+]
 
 export const taxRateOptions: Array<{ label: string, value: TaxRate }> = [
   { label: 'NO APLICA', value: 0 },
@@ -138,10 +144,10 @@ export const workshopTypeLabels: Record<WorkshopType, string> = {
   PAINT_STORE: 'Tienda de pinturas'
 }
 
-export function formatCurrency(value: number) {
+export function formatCurrency(value: number, currency: Currency = 'MXN') {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency,
     maximumFractionDigits: 2
   }).format(value)
 }

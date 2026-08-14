@@ -1,9 +1,12 @@
 import type { Payment, Profile, ServiceOrder, Vehicle, Customer, Workshop } from '../../generated/prisma/client'
 import { calculatePaymentStatus } from '../../shared/payment-status'
+import { convertToMxn, normalizeExchangeRate, roundMoney, type Currency } from '../../shared/currency'
 
 export interface LineItemInput {
   type: 'SERVICE' | 'PART' | 'LABOR' | 'OTHER'
   description: string
+  currency: Currency
+  exchangeRate: number
   quantity: number
   unitCost: number
   unitPrice: number
@@ -17,22 +20,40 @@ export function calculateLineItem(item: LineItemInput) {
   const unitPrice = Number(item.unitPrice)
   const discount = Number(item.discount ?? 0)
   const taxRate = Number(item.taxRate ?? 16)
-  const subtotal = Math.max(0, quantity * unitPrice - discount)
-  const taxTotal = subtotal * (taxRate / 100)
+  const currency = item.currency
+  const exchangeRate = normalizeExchangeRate(currency, item.exchangeRate)
+  const subtotalInCurrency = Math.max(0, quantity * unitPrice - discount)
+  const taxTotalInCurrency = roundMoney(subtotalInCurrency * (taxRate / 100))
 
   return {
     type: item.type,
     description: item.description.trim(),
+    currency,
+    exchangeRate,
     quantity,
     unitCost,
     unitPrice,
     discount,
     taxRate,
-    subtotal,
-    taxTotal,
-    total: subtotal + taxTotal,
-    totalCost: quantity * unitCost
+    subtotal: convertToMxn(subtotalInCurrency, currency, exchangeRate),
+    taxTotal: convertToMxn(taxTotalInCurrency, currency, exchangeRate),
+    total: convertToMxn(subtotalInCurrency + taxTotalInCurrency, currency, exchangeRate),
+    totalCost: convertToMxn(quantity * unitCost, currency, exchangeRate)
   }
+}
+
+export function calculateOrderTotals(items: Array<ReturnType<typeof calculateLineItem>>) {
+  return items.reduce((result, item) => ({
+    subtotal: roundMoney(result.subtotal + item.subtotal),
+    discountTotal: roundMoney(result.discountTotal + convertToMxn(item.discount, item.currency, item.exchangeRate)),
+    taxTotal: roundMoney(result.taxTotal + item.taxTotal),
+    total: roundMoney(result.total + item.total)
+  }), {
+    subtotal: 0,
+    discountTotal: 0,
+    taxTotal: 0,
+    total: 0
+  })
 }
 
 export async function recalculateOrder(orderId: string) {
@@ -41,21 +62,16 @@ export async function recalculateOrder(orderId: string) {
     prisma.orderItem.findMany({ where: { orderId } }),
     prisma.payment.findMany({
       where: { orderId },
-      select: { amount: true }
+      select: { amountMxn: true }
     })
   ])
   const totals = items.reduce((result, item) => ({
-    subtotal: result.subtotal + Number(item.subtotal),
-    discountTotal: result.discountTotal + Number(item.discount),
-    taxTotal: result.taxTotal + Number(item.taxTotal),
-    total: result.total + Number(item.total)
-  }), {
-    subtotal: 0,
-    discountTotal: 0,
-    taxTotal: 0,
-    total: 0
-  })
-  const paid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+    subtotal: roundMoney(result.subtotal + Number(item.subtotal)),
+    discountTotal: roundMoney(result.discountTotal + convertToMxn(Number(item.discount), item.currency, Number(item.exchangeRate))),
+    taxTotal: roundMoney(result.taxTotal + Number(item.taxTotal)),
+    total: roundMoney(result.total + Number(item.total))
+  }), { subtotal: 0, discountTotal: 0, taxTotal: 0, total: 0 })
+  const paid = payments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
 
   return prisma.serviceOrder.update({
     where: { id: orderId },
@@ -75,7 +91,7 @@ type OrderForList = ServiceOrder & {
 }
 
 export function serializeOrderListItem(order: OrderForList) {
-  const paid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const paid = order.payments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
   const total = Number(order.total)
 
   return {
