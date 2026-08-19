@@ -64,11 +64,8 @@ defineProps<{
 
         <div class="mt-4">
           <template v-if="showCustomer && showVehicle">
-            <p class="font-medium text-highlighted">
-              {{ order.customerName }}
-            </p>
-            <div class="mt-1 flex items-center gap-2">
-              <p class="text-xs text-primary">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-medium text-highlighted">
                 {{ order.vehicleLabel }}
               </p>
               <UBadge
@@ -80,6 +77,9 @@ defineProps<{
               />
               <span v-else class="text-xs text-muted">Sin placas</span>
             </div>
+            <p class="mt-1 text-xs text-muted">
+              {{ order.customerName }}
+            </p>
           </template>
           <template v-else-if="showCustomer">
             <p class="font-medium text-highlighted">
