@@ -6,6 +6,10 @@ defineProps<{
   expenses: ExpenseListItem[]
   loading?: boolean
   showWorkshop?: boolean
+  canEdit?: boolean
+}>()
+const emit = defineEmits<{
+  edit: [expense: ExpenseListItem]
 }>()
 
 const columns: TableColumn<ExpenseListItem>[] = [{
@@ -26,6 +30,8 @@ const columns: TableColumn<ExpenseListItem>[] = [{
 }, {
   accessorKey: 'recordedByName',
   header: 'Registró'
+}, {
+  id: 'actions'
 }]
 </script>
 
@@ -54,6 +60,18 @@ const columns: TableColumn<ExpenseListItem>[] = [{
       <template #workshopName-cell="{ row }">
         <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
         <span v-else>—</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex justify-end gap-1">
+          <UButton
+            label="Editar"
+            icon="i-lucide-pencil"
+            color="neutral"
+            variant="ghost"
+            :disabled="!canEdit"
+            @click="emit('edit', row.original)"
+          />
+        </div>
       </template>
       <template #empty>
         <div class="py-12 text-center">

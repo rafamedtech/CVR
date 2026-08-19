@@ -77,12 +77,12 @@ defineProps<{
               />
               <span v-else class="text-xs text-muted">Sin placas</span>
             </div>
-            <p class="mt-1 text-xs text-muted">
+            <p class="mt-1 text-xs text-primary">
               {{ order.customerName }}
             </p>
           </template>
           <template v-else-if="showCustomer">
-            <p class="font-medium text-highlighted">
+            <p class="font-medium text-primary">
               {{ order.customerName }}
             </p>
             <p class="text-xs text-muted">
