@@ -114,12 +114,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
               />
               <span v-else class="text-xs text-muted">Sin placas</span>
             </div>
-            <p class="mt-1 text-xs text-muted">
+            <p class="mt-1 text-xs text-primary">
               {{ row.original.customerName }}
             </p>
           </div>
           <div v-else-if="showCustomer">
-            <p class="font-medium text-highlighted">
+            <p class="font-medium text-primary">
               {{ row.original.customerName }}
             </p>
             <p class="text-xs text-muted">

@@ -5,6 +5,8 @@ useHead({ title: 'Gastos' })
 
 const search = shallowRef('')
 const createOpen = shallowRef(false)
+const editOpen = shallowRef(false)
+const selectedExpense = shallowRef<ExpenseListItem | null>(null)
 const { canCreateInWorkshop, isAllWorkshops } = useCrmSession()
 const { data: expenses, status, refresh } = await useFetch<ExpenseListItem[]>('/api/expenses', {
   default: () => [],
@@ -24,6 +26,11 @@ const filteredExpenses = computed(() => {
 })
 
 const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum + expense.amount, 0))
+
+function handleEdit(expense: ExpenseListItem) {
+  selectedExpense.value = expense
+  editOpen.value = true
+}
 </script>
 
 <template>
@@ -83,8 +90,15 @@ const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum
         :expenses="filteredExpenses"
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
+        :can-edit="canCreateInWorkshop"
+        @edit="handleEdit"
       />
       <ExpensesExpenseFormModal v-model:open="createOpen" @created="refresh" />
+      <ExpensesExpenseEditModal
+        v-model:open="editOpen"
+        :expense="selectedExpense"
+        @updated="refresh"
+      />
     </template>
   </UDashboardPanel>
 </template>
