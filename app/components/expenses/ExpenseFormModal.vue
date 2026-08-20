@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { z } from 'zod'
+import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
+const defaultExpenseDate = today(getLocalTimeZone())
+const expenseDate = shallowRef<CalendarDate | undefined>(defaultExpenseDate)
+const expenseDateOpen = ref(false)
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
 const schema = z.object({
   category: z.enum(['RENT', 'PAYROLL', 'UTILITIES', 'SUPPLIES', 'MAINTENANCE', 'MARKETING', 'TAXES', 'OTHER']),
@@ -21,8 +25,24 @@ const state = reactive<ExpenseSchema>({
   description: '',
   vendor: '',
   amount: 0,
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: defaultExpenseDate.toString(),
   notes: ''
+})
+
+function formatExpenseDate(date: CalendarDate | undefined) {
+  if (!date) return 'Selecciona una fecha'
+
+  return new Intl.DateTimeFormat('es-MX', {
+    dateStyle: 'medium'
+  }).format(date.toDate(getLocalTimeZone()))
+}
+
+watch(expenseDate, (date) => {
+  state.expenseDate = date ? date.toString() : ''
+})
+
+watch(open, (isOpen) => {
+  if (isOpen) expenseDate.value = state.expenseDate ? parseDate(state.expenseDate) : defaultExpenseDate
 })
 
 async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
@@ -65,11 +85,23 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
             />
           </UFormField>
           <UFormField name="expenseDate" label="Fecha" required>
-            <UInput
-              v-model="state.expenseDate"
-              type="date"
-              class="w-full"
-            />
+            <UPopover v-model:open="expenseDateOpen">
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-calendar-days"
+                :label="formatExpenseDate(expenseDate)"
+                class="w-full justify-start font-normal"
+              />
+
+              <template #content>
+                <UCalendar
+                  v-model="expenseDate"
+                  locale="es-MX"
+                  @update:model-value="expenseDateOpen = false"
+                />
+              </template>
+            </UPopover>
           </UFormField>
         </div>
         <UFormField name="description" label="Descripción" required>

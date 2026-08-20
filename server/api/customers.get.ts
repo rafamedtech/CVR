@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
       type: workshop.type
     })),
     fullName: customer.fullName,
+    type: customer.type,
     phone: customer.phone,
     alternatePhone: customer.alternatePhone,
     email: customer.email,

@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { customerAddressSchema, emptyCustomerAddress } from '#shared/customer-address'
+import { customerTypeSchema } from '#shared/customer-type'
 
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
@@ -10,8 +11,10 @@ const emit = defineEmits<{
 
 const toast = useToast()
 const loading = shallowRef(false)
+const customerTypeOptions = Object.entries(customerTypeLabels).map(([value, label]) => ({ value, label }))
 const schema = z.object({
   fullName: z.string().min(2, 'Escribe el nombre del cliente.'),
+  type: customerTypeSchema,
   phone: z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'),
   alternatePhone: z.union([z.string().regex(/^\d{10}$/, 'Escribe un teléfono de 10 dígitos.'), z.literal('')]),
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]),
@@ -23,6 +26,7 @@ type CustomerSchema = z.output<typeof schema>
 
 const state = reactive<CustomerSchema>({
   fullName: '',
+  type: 'CUSTOMER',
   phone: '',
   alternatePhone: '',
   email: '',
@@ -34,6 +38,7 @@ const state = reactive<CustomerSchema>({
 function reset() {
   Object.assign(state, {
     fullName: '',
+    type: 'CUSTOMER',
     phone: '',
     alternatePhone: '',
     email: '',
@@ -89,13 +94,16 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
           </h3>
         </div>
 
-        <UFormField
-          name="fullName"
-          label="Nombre completo"
-          required
-          class="sm:col-span-2"
-        >
+        <UFormField name="fullName" label="Nombre completo" required>
           <UInput v-model="state.fullName" class="w-full" autofocus />
+        </UFormField>
+        <UFormField name="type" label="Tipo de cliente" required>
+          <USelect
+            v-model="state.type"
+            :items="customerTypeOptions"
+            value-key="value"
+            class="w-full"
+          />
         </UFormField>
         <UFormField name="phone" label="Teléfono" required>
           <PhoneInput v-model="state.phone" />

@@ -1,7 +1,9 @@
 import type { CustomerAddress } from '#shared/customer-address'
+import type { CustomerType } from '#shared/customer-type'
 import type { PaymentStatus } from '#shared/payment-status'
 
 export type { PaymentStatus } from '#shared/payment-status'
+export type { CustomerType } from '#shared/customer-type'
 
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'
@@ -40,6 +42,7 @@ export interface CustomerListItem {
   id: string
   workshops: Array<Pick<WorkshopSummary, 'id' | 'name' | 'type'>>
   fullName: string
+  type: CustomerType
   phone: string
   alternatePhone: string | null
   email: string | null

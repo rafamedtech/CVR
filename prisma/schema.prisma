@@ -20,6 +20,12 @@ enum WorkshopRole {
   CASHIER
 }
 
+enum CustomerType {
+  CUSTOMER
+  SUPPLIER
+  OTHER
+}
+
 enum OrderStatus {
   ESTIMATE
   AWAITING_APPROVAL
@@ -131,6 +137,7 @@ model WorkshopMember {
 model Customer {
   id                    String             @id @default(uuid()) @db.Uuid
   fullName              String
+  type                  CustomerType       @default(CUSTOMER)
   phone                 String
   alternatePhone        String?
   email                 String?

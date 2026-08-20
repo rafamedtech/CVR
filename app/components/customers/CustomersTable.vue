@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { CustomerListItem, WorkshopType } from '~/types/crm'
-import { formatPhone } from '~/utils/crm'
+import { customerTypeLabels, formatPhone } from '~/utils/crm'
 import CustomerMobileList from './CustomersMobileList.vue'
 
 const props = defineProps<{
@@ -92,8 +92,11 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
             >
               {{ row.original.fullName }}
             </NuxtLink>
-            <p v-if="row.original.taxId" class="text-xs text-muted">
-              RFC: {{ row.original.taxId }}
+            <p class="text-xs text-muted">
+              {{ customerTypeLabels[row.original.type] }}
+              <template v-if="row.original.taxId">
+                · RFC: {{ row.original.taxId }}
+              </template>
             </p>
           </div>
         </template>

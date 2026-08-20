@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { customerAddressSchema } from '../../../shared/customer-address'
+import { customerTypeSchema } from '../../../shared/customer-type'
 import { normalizePhone } from '../../utils/phone'
 
 const phoneSchema = z.string()
@@ -10,6 +11,7 @@ const optionalPhoneSchema = phoneSchema.or(z.literal('')).optional().nullable()
 
 const updateCustomerSchema = z.object({
   fullName: z.string().trim().min(2, 'Escribe el nombre del cliente.').max(120),
+  type: customerTypeSchema.default('CUSTOMER'),
   phone: phoneSchema,
   alternatePhone: optionalPhoneSchema,
   email: z.union([z.email('Escribe un correo válido.'), z.literal('')]).optional().nullable(),
@@ -65,6 +67,7 @@ export default defineEventHandler(async (event) => {
     where: { id: customer.id },
     data: {
       fullName: body.fullName,
+      type: body.type,
       phone: body.phone,
       alternatePhone: body.alternatePhone || null,
       email: body.email || null,

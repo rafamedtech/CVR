@@ -1,4 +1,5 @@
 import type { CustomerAddress, CustomerAddressPayload } from '../../shared/customer-address'
+import type { CustomerType } from '../../shared/customer-type'
 
 interface StoredCustomerAddress {
   addressLine: string | null
@@ -15,6 +16,7 @@ interface StoredCustomerAddress {
 interface StoredCustomer extends StoredCustomerAddress {
   id: string
   fullName: string
+  type: CustomerType
   phone: string
   alternatePhone: string | null
   email: string | null
@@ -65,6 +67,7 @@ export function serializeCustomer(customer: StoredCustomer) {
   return {
     id: customer.id,
     fullName: customer.fullName,
+    type: customer.type,
     phone: customer.phone,
     alternatePhone: customer.alternatePhone,
     email: customer.email,

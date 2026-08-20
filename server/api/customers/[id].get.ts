@@ -67,6 +67,7 @@ export default defineEventHandler(async (event) => {
     workshops,
     workshopTypes: workshops.map(workshop => workshop.type),
     fullName: customer.fullName,
+    type: customer.type,
     phone: customer.phone,
     alternatePhone: customer.alternatePhone,
     email: customer.email,
