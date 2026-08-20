@@ -1,4 +1,5 @@
 import type {
+  CustomerType,
   ExpenseCategory,
   Currency,
   LineItemType,
@@ -128,6 +129,12 @@ export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
   MAINTENANCE: 'Mantenimiento',
   MARKETING: 'Marketing',
   TAXES: 'Impuestos',
+  OTHER: 'Otro'
+}
+
+export const customerTypeLabels: Record<CustomerType, string> = {
+  CUSTOMER: 'Cliente',
+  SUPPLIER: 'Proveedor',
   OTHER: 'Otro'
 }
 

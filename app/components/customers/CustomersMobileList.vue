@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CustomerListItem, WorkshopType } from '~/types/crm'
+import { customerTypeLabels } from '~/utils/crm'
 
 defineProps<{
   customers: CustomerListItem[]
@@ -53,8 +54,11 @@ const workshopIcons: Record<WorkshopType, string> = {
             >
               {{ customer.fullName }}
             </NuxtLink>
-            <p v-if="customer.taxId" class="mt-0.5 text-xs text-muted">
-              RFC: {{ customer.taxId }}
+            <p class="mt-0.5 text-xs text-muted">
+              {{ customerTypeLabels[customer.type] }}
+              <template v-if="customer.taxId">
+                · RFC: {{ customer.taxId }}
+              </template>
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CustomerDetail } from '~/types/crm'
-import { formatCurrency, formatCustomerAddress, formatPhone } from '~/utils/crm'
+import { customerTypeLabels, formatCurrency, formatCustomerAddress, formatPhone } from '~/utils/crm'
 
 const props = defineProps<{
   customer: CustomerDetail
@@ -68,6 +68,14 @@ const orderTotals = computed(() => props.customer.orders.reduce((totals, order) 
           </dt>
           <dd class="mt-1.5 text-default">
             {{ customer.fullName }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+            Tipo de cliente
+          </dt>
+          <dd class="mt-1.5 text-default">
+            {{ customerTypeLabels[customer.type] }}
           </dd>
         </div>
         <div>
