@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import type { ExpenseListItem } from '~/types/crm'
+import type { ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 
 useHead({ title: 'Gastos' })
 
+const isMobileViewport = useMobileViewport()
 const search = shallowRef('')
-const createOpen = shallowRef(false)
-const editOpen = shallowRef(false)
+const formOpen = shallowRef(false)
 const selectedExpense = shallowRef<ExpenseListItem | null>(null)
 const { canCreateInWorkshop, isAllWorkshops } = useCrmSession()
 const { data: expenses, status, refresh } = await useFetch<ExpenseListItem[]>('/api/expenses', {
   default: () => [],
   key: 'crm-expenses'
+})
+const { data: orderOptions } = await useFetch<ExpenseOrderOption[]>('/api/expense-order-options', {
+  default: () => [],
+  immediate: canCreateInWorkshop.value,
+  key: 'crm-expense-order-options'
 })
 
 const filteredExpenses = computed(() => {
@@ -21,15 +26,24 @@ const filteredExpenses = computed(() => {
     expense.description,
     expense.vendor,
     expense.workshopName,
+    expense.order?.orderNumber,
+    expense.order?.customerName,
+    expense.order?.vehicleLabel,
     expenseCategoryLabels[expense.category]
   ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
 })
 
 const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum + expense.amount, 0))
+const newExpenseLabel = computed(() => isMobileViewport.value ? 'Nuevo' : 'Registrar gasto')
 
-function handleEdit(expense: ExpenseListItem) {
+function openCreateModal() {
+  selectedExpense.value = null
+  formOpen.value = true
+}
+
+function openEditModal(expense: ExpenseListItem) {
   selectedExpense.value = expense
-  editOpen.value = true
+  formOpen.value = true
 }
 </script>
 
@@ -44,10 +58,10 @@ function handleEdit(expense: ExpenseListItem) {
           <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
-                label="Registrar gasto"
+                :label="newExpenseLabel"
                 icon="i-lucide-receipt-text"
                 :disabled="!canCreateInWorkshop"
-                @click="createOpen = true"
+                @click="openCreateModal"
               />
             </span>
           </UTooltip>
@@ -91,12 +105,13 @@ function handleEdit(expense: ExpenseListItem) {
         :loading="status === 'pending'"
         :show-workshop="isAllWorkshops"
         :can-edit="canCreateInWorkshop"
-        @edit="handleEdit"
+        @edit="openEditModal"
       />
-      <ExpensesExpenseFormModal v-model:open="createOpen" @created="refresh" />
-      <ExpensesExpenseEditModal
-        v-model:open="editOpen"
+      <ExpensesExpenseFormModal
+        v-model:open="formOpen"
         :expense="selectedExpense"
+        :orders="orderOptions"
+        @created="refresh"
         @updated="refresh"
       />
     </template>

@@ -1,32 +1,60 @@
 <script setup lang="ts">
-import { z } from 'zod'
 import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { expenseMutationSchema, type ExpenseAssignmentType, type ExpenseMutation } from '#shared/expense'
+import type { ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 
+const props = defineProps<{
+  expense?: ExpenseListItem | null
+  orders?: ExpenseOrderOption[]
+}>()
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ created: [] }>()
+const emit = defineEmits<{
+  created: []
+  updated: []
+}>()
 const toast = useToast()
 const loading = shallowRef(false)
-const defaultExpenseDate = today(getLocalTimeZone())
-const expenseDate = shallowRef<CalendarDate | undefined>(defaultExpenseDate)
-const expenseDateOpen = ref(false)
+const expenseDate = shallowRef<CalendarDate | undefined>(today(getLocalTimeZone()))
+const expenseDateOpen = shallowRef(false)
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
-const schema = z.object({
-  category: z.enum(['RENT', 'PAYROLL', 'UTILITIES', 'SUPPLIES', 'MAINTENANCE', 'MARKETING', 'TAXES', 'OTHER']),
-  description: z.string().min(2, 'Describe el gasto.'),
-  vendor: z.string().optional(),
-  amount: z.coerce.number().positive('Escribe un importe válido.'),
-  expenseDate: z.string().min(1, 'Selecciona la fecha.'),
-  notes: z.string().optional()
-})
-type ExpenseSchema = z.output<typeof schema>
-const state = reactive<ExpenseSchema>({
-  category: 'OTHER',
-  description: '',
-  vendor: '',
-  amount: 0,
-  expenseDate: defaultExpenseDate.toString(),
-  notes: ''
+const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
+const assignmentOptions: Array<{ label: string, value: ExpenseAssignmentType }> = [{
+  label: 'Taller',
+  value: 'WORKSHOP'
+}, {
+  label: 'Orden de trabajo',
+  value: 'ORDER'
+}]
+const orderOptions = computed(() => (props.orders ?? []).map(order => ({
+  label: `Orden ${order.orderNumber} · ${order.customerName}`,
+  description: order.vehicleLabel,
+  value: order.id
+})))
+const isEditing = computed(() => Boolean(props.expense))
+const modalTitle = computed(() => isEditing.value ? 'Editar gasto' : 'Registrar gasto')
+const modalDescription = computed(() => isEditing.value
+  ? 'Actualiza la información del gasto registrado.'
+  : 'Los gastos se descuentan para calcular la utilidad neta.')
+const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Guardar gasto')
+function emptyExpenseState(): ExpenseMutation {
+  const currentDate = today(getLocalTimeZone())
+
+  return {
+    category: 'OTHER',
+    method: 'CASH',
+    description: '',
+    vendor: '',
+    amount: 0,
+    expenseDate: currentDate.toString(),
+    assignmentType: 'WORKSHOP',
+    orderId: '',
+    notes: ''
+  }
+}
+
+const state = reactive<ExpenseMutation>({
+  ...emptyExpenseState()
 })
 
 function formatExpenseDate(date: CalendarDate | undefined) {
@@ -38,22 +66,64 @@ function formatExpenseDate(date: CalendarDate | undefined) {
 }
 
 watch(expenseDate, (date) => {
-  state.expenseDate = date ? date.toString() : ''
+  state.expenseDate = date?.toString() ?? ''
 })
 
-watch(open, (isOpen) => {
-  if (isOpen) expenseDate.value = state.expenseDate ? parseDate(state.expenseDate) : defaultExpenseDate
+watch(() => state.assignmentType, (assignmentType) => {
+  if (assignmentType === 'WORKSHOP') state.orderId = ''
 })
 
-async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
+watch([open, () => props.expense], ([isOpen, expense]) => {
+  if (!isOpen) return
+
+  const nextState = expense
+    ? {
+        category: expense.category,
+        method: expense.method,
+        description: expense.description,
+        vendor: expense.vendor ?? '',
+        amount: expense.amount,
+        expenseDate: expense.expenseDate.slice(0, 10),
+        assignmentType: expense.order ? 'ORDER' as const : 'WORKSHOP' as const,
+        orderId: expense.order?.id ?? '',
+        notes: expense.notes ?? ''
+      }
+    : emptyExpenseState()
+
+  Object.assign(state, nextState)
+  expenseDate.value = parseDate(nextState.expenseDate)
+  expenseDateOpen.value = false
+}, { immediate: true })
+
+async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
   loading.value = true
   try {
-    await $fetch('/api/expenses', { method: 'POST', body: event.data })
-    toast.add({ title: 'Gasto registrado', color: 'success', icon: 'i-lucide-check' })
+    if (props.expense) {
+      await $fetch(`/api/expenses/${props.expense.id}`, {
+        method: 'PATCH',
+        body: event.data
+      })
+    } else {
+      await $fetch('/api/expenses', { method: 'POST', body: event.data })
+    }
+
+    toast.add({
+      title: props.expense ? 'Gasto actualizado' : 'Gasto registrado',
+      color: 'success',
+      icon: 'i-lucide-check'
+    })
     open.value = false
-    emit('created')
+    if (props.expense) {
+      emit('updated')
+    } else {
+      emit('created')
+    }
   } catch (error) {
-    toast.add({ title: 'No se pudo registrar el gasto', description: getApiErrorMessage(error), color: 'error' })
+    toast.add({
+      title: props.expense ? 'No se pudo actualizar el gasto' : 'No se pudo registrar el gasto',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
   } finally {
     loading.value = false
   }
@@ -63,14 +133,14 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
 <template>
   <UModal
     v-model:open="open"
-    title="Registrar gasto"
-    description="Los gastos se descuentan para calcular la utilidad neta."
+    :title="modalTitle"
+    :description="modalDescription"
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
       <UForm
         id="expense-form"
-        :schema="schema"
+        :schema="expenseMutationSchema"
         :state="state"
         class="space-y-4"
         @submit="onSubmit"
@@ -104,19 +174,52 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
             </UPopover>
           </UFormField>
         </div>
+        <UFormField name="assignmentType" label="Aplicar gasto a" required>
+          <URadioGroup
+            v-model="state.assignmentType"
+            :items="assignmentOptions"
+            value-key="value"
+            variant="card"
+            :ui="{ fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2' }"
+          />
+        </UFormField>
+        <UFormField
+          v-if="state.assignmentType === 'ORDER'"
+          name="orderId"
+          label="Orden de trabajo"
+          required
+        >
+          <USelectMenu
+            v-model="state.orderId"
+            :items="orderOptions"
+            value-key="value"
+            searchable
+            placeholder="Buscar por orden, cliente o vehículo…"
+            class="min-w-0 w-full"
+            :ui="{ value: 'min-w-0 truncate', itemLabel: 'min-w-0 truncate' }"
+          />
+        </UFormField>
         <UFormField name="description" label="Descripción" required>
           <UInput v-model="state.description" class="w-full" />
         </UFormField>
+        <UFormField name="vendor" label="Proveedor">
+          <UInput v-model="state.vendor" class="w-full" />
+        </UFormField>
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField name="vendor" label="Proveedor">
-            <UInput v-model="state.vendor" class="w-full" />
-          </UFormField>
           <UFormField name="amount" label="Importe" required>
             <AppNumberInput
               v-model="state.amount"
               format="currency"
               :min="0.01"
               :step="0.01"
+            />
+          </UFormField>
+          <UFormField name="method" label="Método de pago" required>
+            <USelect
+              v-model="state.method"
+              :items="methodOptions"
+              value-key="value"
+              class="w-full"
             />
           </UFormField>
         </div>
@@ -140,7 +243,7 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
       <UButton
         type="submit"
         form="expense-form"
-        label="Guardar gasto"
+        :label="submitLabel"
         :loading="loading"
       />
     </template>

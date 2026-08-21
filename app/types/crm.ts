@@ -179,12 +179,21 @@ export interface ExpenseListItem {
   workshopId: string
   workshopName: string
   category: ExpenseCategory
+  method: PaymentMethod
   description: string
   vendor: string | null
   amount: number
   expenseDate: string
   notes: string | null
   recordedByName: string
+  order: ExpenseOrderOption | null
+}
+
+export interface ExpenseOrderOption {
+  id: string
+  orderNumber: string
+  customerName: string
+  vehicleLabel: string
 }
 
 export interface MemberListItem {
