@@ -125,6 +125,19 @@ export interface OrderPayment {
   recordedByName: string
 }
 
+export interface PaymentListItem extends OrderPayment {
+  workshopId: string
+  workshopName: string
+  order: {
+    id: string
+    orderNumber: string
+    customerName: string
+    vehicleLabel: string
+    licensePlate: string | null
+    total: number
+  }
+}
+
 export interface OrderListItem {
   id: string
   workshopId: string

@@ -14,7 +14,7 @@ watch(sessionData, value => setSession(value ?? null), { immediate: true })
 const selectedRole = computed(() => sessionData.value?.workshops.find(workshop => (
   workshop.id === sessionData.value?.selectedWorkshopId
 ))?.role)
-const canViewExpenses = computed(() => (
+const canViewFinancials = computed(() => (
   sessionData.value?.profile.isSuperAdmin
   || selectedRole.value === 'MANAGER'
   || selectedRole.value === 'CASHIER'
@@ -46,8 +46,13 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     to: '/ordenes',
     onSelect: () => { open.value = false }
   },
-  ...(canViewExpenses.value
+  ...(canViewFinancials.value
     ? [{
+        label: 'Pagos',
+        icon: 'i-lucide-hand-coins',
+        to: '/pagos',
+        onSelect: () => { open.value = false }
+      }, {
         label: 'Gastos',
         icon: 'i-lucide-receipt-text',
         to: '/gastos',
