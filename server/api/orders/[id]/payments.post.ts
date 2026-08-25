@@ -1,22 +1,12 @@
-import { z } from 'zod'
 import { calculatePaymentStatus } from '../../../../shared/payment-status'
+import { paymentMutationSchema } from '../../../../shared/payment'
 import { convertToMxn, normalizeExchangeRate } from '../../../../shared/currency'
-
-const paymentSchema = z.object({
-  amount: z.coerce.number().positive('El pago debe ser mayor a cero.'),
-  currency: z.enum(['MXN', 'USD']).default('MXN'),
-  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
-  method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
-  reference: z.string().trim().max(100).optional().nullable(),
-  notes: z.string().trim().max(500).optional().nullable(),
-  paidAt: z.string().datetime({ local: true }).optional().nullable()
-})
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   requireSuperAdmin(context)
   const id = getRouterParam(event, 'id')
-  const body = await readCrmBody(event, paymentSchema)
+  const body = await readCrmBody(event, paymentMutationSchema)
   const prisma = usePrisma()
   const order = await prisma.serviceOrder.findFirst({
     where: {

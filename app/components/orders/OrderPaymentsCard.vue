@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { z } from 'zod'
-import { getLocalTimeZone, today, type CalendarDate } from '@internationalized/date'
+import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Currency, OrderPayment } from '~/types/crm'
 import { convertFromMxn, convertToMxn } from '#shared/currency'
+import { paymentFormSchema, type PaymentForm } from '#shared/payment'
 import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
@@ -15,24 +15,18 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ updated: [] }>()
 const toast = useToast()
+const isMobileViewport = useMobileViewport()
 const open = shallowRef(false)
 const loading = shallowRef(false)
+const deleting = shallowRef(false)
+const deleteConfirmationOpen = shallowRef(false)
+const initializing = shallowRef(false)
+const editingPayment = shallowRef<OrderPayment | null>(null)
 const defaultPaymentDate = today(getLocalTimeZone())
 const paymentDate = shallowRef<CalendarDate | undefined>(defaultPaymentDate)
 const paymentDateOpen = shallowRef(false)
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
-const schema = z.object({
-  amount: z.coerce.number()
-    .positive('Escribe un importe válido.'),
-  currency: z.enum(['MXN', 'USD']),
-  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.'),
-  method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
-  paidAt: z.string().min(1, 'Selecciona la fecha del pago.'),
-  reference: z.string().optional(),
-  notes: z.string().optional()
-})
-type PaymentSchema = z.output<typeof schema>
-const state = reactive<PaymentSchema>({
+const state = reactive<PaymentForm>({
   amount: 0,
   currency: 'MXN',
   exchangeRate: 1,
@@ -42,9 +36,19 @@ const state = reactive<PaymentSchema>({
   notes: ''
 })
 
+const isEditing = computed(() => editingPayment.value !== null)
+const modalTitle = computed(() => isEditing.value ? 'Editar pago' : 'Registrar pago')
+const submitLabel = computed(() => isEditing.value
+  ? (isMobileViewport.value ? 'Guardar' : 'Guardar cambios')
+  : 'Registrar pago')
+const deleteLabel = computed(() => isMobileViewport.value ? 'Eliminar' : 'Eliminar pago')
+const deleteConfirmationDescription = computed(() => editingPayment.value
+  ? `Se eliminará el pago de ${formatCurrency(editingPayment.value.amount, editingPayment.value.currency)}. Esta acción no se puede deshacer.`
+  : 'Esta acción no se puede deshacer.')
+const availableBalanceMxn = computed(() => props.balance + (editingPayment.value?.amountMxn ?? 0))
 const paymentEquivalentMxn = computed(() => convertToMxn(state.amount, state.currency, state.exchangeRate))
 const maximumPayment = computed(() => state.exchangeRate > 0
-  ? convertFromMxn(props.balance, state.currency, state.exchangeRate)
+  ? convertFromMxn(availableBalanceMxn.value, state.currency, state.exchangeRate)
   : 0)
 
 function formatPaymentDate(date: CalendarDate | undefined) {
@@ -55,48 +59,122 @@ function formatPaymentDate(date: CalendarDate | undefined) {
   }).format(date.toDate(getLocalTimeZone()))
 }
 
-watch(open, (value) => {
-  if (value) {
-    const currentDate = today(getLocalTimeZone())
-    state.currency = 'MXN'
-    state.exchangeRate = 1
-    state.amount = props.balance
-    state.paidAt = `${currentDate.toString()}T12:00:00`
-    paymentDate.value = currentDate
-    paymentDateOpen.value = false
-  }
-})
+function finishInitialization() {
+  nextTick(() => initializing.value = false)
+}
+
+function openCreateModal() {
+  const currentDate = today(getLocalTimeZone())
+  editingPayment.value = null
+  deleteConfirmationOpen.value = false
+  initializing.value = true
+  Object.assign(state, {
+    amount: props.balance,
+    currency: 'MXN',
+    exchangeRate: 1,
+    method: 'CASH',
+    paidAt: `${currentDate.toString()}T12:00:00`,
+    reference: '',
+    notes: ''
+  })
+  paymentDate.value = currentDate
+  paymentDateOpen.value = false
+  open.value = true
+  finishInitialization()
+}
+
+function openEditModal(payment: OrderPayment) {
+  if (!props.canRecord) return
+
+  const date = parseDate(payment.paidAt.slice(0, 10))
+  editingPayment.value = payment
+  deleteConfirmationOpen.value = false
+  initializing.value = true
+  Object.assign(state, {
+    amount: payment.amount,
+    currency: payment.currency,
+    exchangeRate: payment.exchangeRate,
+    method: payment.method,
+    paidAt: `${date.toString()}T12:00:00`,
+    reference: payment.reference ?? '',
+    notes: payment.notes ?? ''
+  })
+  paymentDate.value = date
+  paymentDateOpen.value = false
+  open.value = true
+  finishInitialization()
+}
 
 watch(paymentDate, (date) => {
   state.paidAt = date ? `${date.toString()}T12:00:00` : ''
 })
 
 watch(() => state.currency, (currency: Currency) => {
+  if (initializing.value) return
   if (currency === 'MXN') state.exchangeRate = 1
   state.amount = maximumPayment.value
 })
 
 watch(() => state.exchangeRate, () => {
+  if (initializing.value) return
   if (state.currency === 'USD' && state.amount > maximumPayment.value) {
     state.amount = maximumPayment.value
   }
 })
 
-async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
-  if (paymentEquivalentMxn.value > props.balance + 0.01) {
-    toast.add({ title: 'El importe no puede superar el saldo pendiente.', color: 'error' })
+async function onSubmit(event: FormSubmitEvent<PaymentForm>) {
+  if (paymentEquivalentMxn.value > availableBalanceMxn.value + 0.01) {
+    toast.add({ title: 'El importe no puede superar el saldo disponible.', color: 'error' })
     return
   }
   loading.value = true
   try {
-    await $fetch(`/api/orders/${props.orderId}/payments`, { method: 'POST', body: event.data })
-    toast.add({ title: 'Pago registrado', color: 'success', icon: 'i-lucide-check' })
+    if (editingPayment.value) {
+      await $fetch(`/api/orders/${props.orderId}/payments/${editingPayment.value.id}`, {
+        method: 'PATCH',
+        body: event.data
+      })
+    } else {
+      await $fetch(`/api/orders/${props.orderId}/payments`, { method: 'POST', body: event.data })
+    }
+    toast.add({
+      title: isEditing.value ? 'Pago actualizado' : 'Pago registrado',
+      color: 'success',
+      icon: 'i-lucide-check'
+    })
     open.value = false
     emit('updated')
   } catch (error) {
-    toast.add({ title: 'No se pudo registrar el pago', description: getApiErrorMessage(error), color: 'error' })
+    toast.add({
+      title: isEditing.value ? 'No se pudo actualizar el pago' : 'No se pudo registrar el pago',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
   } finally {
     loading.value = false
+  }
+}
+
+async function removePayment() {
+  if (!editingPayment.value) return
+
+  deleting.value = true
+  try {
+    await $fetch(`/api/orders/${props.orderId}/payments/${editingPayment.value.id}`, {
+      method: 'DELETE'
+    })
+    toast.add({ title: 'Pago eliminado', color: 'success', icon: 'i-lucide-check' })
+    deleteConfirmationOpen.value = false
+    open.value = false
+    emit('updated')
+  } catch (error) {
+    toast.add({
+      title: 'No se pudo eliminar el pago',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -118,13 +196,20 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
           label="Registrar pago"
           icon="i-lucide-hand-coins"
           :disabled="balance <= 0"
-          @click="open = true"
+          @click="openCreateModal"
         />
       </div>
     </template>
 
     <div v-if="payments.length" class="divide-y divide-default">
-      <div v-for="payment in payments" :key="payment.id" class="flex items-start justify-between gap-3 py-3 first:pt-0">
+      <button
+        v-for="payment in payments"
+        :key="payment.id"
+        type="button"
+        :disabled="!canRecord"
+        class="group flex w-full items-start justify-between gap-3 rounded-lg px-2 py-3 text-left transition-colors first:pt-0 enabled:cursor-pointer enabled:hover:bg-elevated enabled:focus-visible:outline-2 enabled:focus-visible:outline-primary"
+        @click="openEditModal(payment)"
+      >
         <div>
           <p class="font-medium text-highlighted">
             {{ paymentMethodLabels[payment.method] }}
@@ -136,7 +221,7 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             Ref. {{ payment.reference }}
           </p>
         </div>
-        <div class="text-right">
+        <div class="shrink-0 text-right">
           <p class="font-semibold text-success">
             {{ formatCurrency(payment.amount, payment.currency) }}
           </p>
@@ -144,7 +229,7 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             TC {{ payment.exchangeRate.toFixed(4) }} · {{ formatCurrency(payment.amountMxn) }} MXN
           </p>
         </div>
-      </div>
+      </button>
     </div>
     <div v-else class="py-8 text-center text-sm text-muted">
       No hay pagos registrados.
@@ -165,17 +250,24 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
       </div>
     </template>
 
-    <UModal v-model:open="open" title="Registrar pago" :ui="{ footer: 'justify-end' }">
+    <UModal
+      v-model:open="open"
+      :title="modalTitle"
+      :close="isEditing ? false : undefined"
+      :ui="{ footer: 'justify-end' }"
+    >
       <template #body>
         <UForm
           id="payment-form"
-          :schema="schema"
+          :schema="paymentFormSchema"
           :state="state"
           class="space-y-4"
           @submit="onSubmit"
         >
           <UAlert
-            :title="`Saldo pendiente: ${formatCurrency(balance)}`"
+            :title="isEditing
+              ? `Disponible para este pago: ${formatCurrency(availableBalanceMxn)}`
+              : `Saldo pendiente: ${formatCurrency(balance)}`"
             icon="i-lucide-wallet"
             color="info"
             variant="subtle"
@@ -272,13 +364,50 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
           label="Cancelar"
           color="neutral"
           variant="outline"
+          :disabled="loading || deleting"
           @click="close"
+        />
+        <UButton
+          v-if="isEditing"
+          :label="deleteLabel"
+          color="error"
+          variant="soft"
+          :loading="deleting"
+          :disabled="loading"
+          @click="deleteConfirmationOpen = true"
         />
         <UButton
           type="submit"
           form="payment-form"
-          label="Registrar pago"
+          :label="submitLabel"
           :loading="loading"
+          :disabled="deleting"
+        />
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="deleteConfirmationOpen"
+      title="Eliminar pago"
+      :description="deleteConfirmationDescription"
+      :close="false"
+      :dismissible="false"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #footer>
+        <UButton
+          label="Cancelar"
+          color="neutral"
+          variant="outline"
+          :disabled="deleting"
+          @click="deleteConfirmationOpen = false"
+        />
+        <UButton
+          label="Sí, eliminar pago"
+          icon="i-lucide-trash-2"
+          color="error"
+          :loading="deleting"
+          @click="removePayment"
         />
       </template>
     </UModal>
