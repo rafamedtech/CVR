@@ -22,6 +22,7 @@ const updateOrderSchema = z.object({
   internalNotes: z.string().trim().max(2000).optional().nullable(),
   mileageIn: z.coerce.number().int().nonnegative().optional().nullable(),
   fuelLevelIn: z.coerce.number().int().min(0).max(100).optional().nullable(),
+  createdAt: z.string().datetime({ local: true }).optional(),
   promisedAt: z.string().optional().nullable(),
   assignedToId: z.union([z.uuid(), z.literal('')]).optional().nullable(),
   items: z.array(lineItemSchema).optional()
@@ -101,6 +102,7 @@ export default defineEventHandler(async (event) => {
       ...(body.internalNotes !== undefined ? { internalNotes: body.internalNotes || null } : {}),
       ...(body.mileageIn !== undefined ? { mileageIn: body.mileageIn } : {}),
       ...(body.fuelLevelIn !== undefined ? { fuelLevelIn: body.fuelLevelIn } : {}),
+      ...(body.createdAt !== undefined ? { createdAt: new Date(body.createdAt) } : {}),
       ...(body.promisedAt !== undefined ? { promisedAt: body.promisedAt ? new Date(body.promisedAt) : null } : {}),
       ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId || null } : {}),
       ...(calculatedItems && totals

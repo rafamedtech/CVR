@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { z } from 'zod'
+import { getLocalTimeZone, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Currency, OrderPayment } from '~/types/crm'
 import { convertFromMxn, convertToMxn } from '#shared/currency'
@@ -16,6 +17,9 @@ const emit = defineEmits<{ updated: [] }>()
 const toast = useToast()
 const open = shallowRef(false)
 const loading = shallowRef(false)
+const defaultPaymentDate = today(getLocalTimeZone())
+const paymentDate = shallowRef<CalendarDate | undefined>(defaultPaymentDate)
+const paymentDateOpen = shallowRef(false)
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
 const schema = z.object({
   amount: z.coerce.number()
@@ -23,6 +27,7 @@ const schema = z.object({
   currency: z.enum(['MXN', 'USD']),
   exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.'),
   method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
+  paidAt: z.string().min(1, 'Selecciona la fecha del pago.'),
   reference: z.string().optional(),
   notes: z.string().optional()
 })
@@ -32,6 +37,7 @@ const state = reactive<PaymentSchema>({
   currency: 'MXN',
   exchangeRate: 1,
   method: 'CASH',
+  paidAt: `${defaultPaymentDate.toString()}T12:00:00`,
   reference: '',
   notes: ''
 })
@@ -41,12 +47,28 @@ const maximumPayment = computed(() => state.exchangeRate > 0
   ? convertFromMxn(props.balance, state.currency, state.exchangeRate)
   : 0)
 
+function formatPaymentDate(date: CalendarDate | undefined) {
+  if (!date) return 'Selecciona una fecha'
+
+  return new Intl.DateTimeFormat('es-MX', {
+    dateStyle: 'medium'
+  }).format(date.toDate(getLocalTimeZone()))
+}
+
 watch(open, (value) => {
   if (value) {
+    const currentDate = today(getLocalTimeZone())
     state.currency = 'MXN'
     state.exchangeRate = 1
     state.amount = props.balance
+    state.paidAt = `${currentDate.toString()}T12:00:00`
+    paymentDate.value = currentDate
+    paymentDateOpen.value = false
   }
+})
+
+watch(paymentDate, (date) => {
+  state.paidAt = date ? `${date.toString()}T12:00:00` : ''
 })
 
 watch(() => state.currency, (currency: Currency) => {
@@ -108,7 +130,7 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             {{ paymentMethodLabels[payment.method] }}
           </p>
           <p class="text-xs text-muted">
-            {{ formatDate(payment.paidAt, true) }} · {{ payment.recordedByName }}
+            {{ formatDate(payment.paidAt) }} · {{ payment.recordedByName }}
           </p>
           <p v-if="payment.reference" class="text-xs text-muted">
             Ref. {{ payment.reference }}
@@ -159,6 +181,33 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
             variant="subtle"
           />
           <div class="grid gap-4 sm:grid-cols-2">
+            <UFormField name="paidAt" label="Fecha del pago" required>
+              <UPopover v-model:open="paymentDateOpen">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-calendar-days"
+                  :label="formatPaymentDate(paymentDate)"
+                  class="w-full justify-start font-normal"
+                />
+
+                <template #content>
+                  <UCalendar
+                    v-model="paymentDate"
+                    locale="es-MX"
+                    @update:model-value="paymentDateOpen = false"
+                  />
+                </template>
+              </UPopover>
+            </UFormField>
+            <UFormField name="method" label="Método de pago" required>
+              <USelect
+                v-model="state.method"
+                :items="methodOptions"
+                value-key="value"
+                class="w-full"
+              />
+            </UFormField>
             <UFormField name="currency" label="Moneda" required>
               <USelect
                 v-model="state.currency"
@@ -181,7 +230,12 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
                 :maximum-fraction-digits="6"
               />
             </UFormField>
-            <UFormField name="amount" label="Importe" required>
+            <UFormField
+              name="amount"
+              label="Importe"
+              required
+              class="sm:col-span-2"
+            >
               <AppNumberInput
                 v-model="state.amount"
                 format="currency"
@@ -190,14 +244,6 @@ async function onSubmit(event: FormSubmitEvent<PaymentSchema>) {
                 :max="maximumPayment"
                 :step="1"
                 :step-snapping="false"
-              />
-            </UFormField>
-            <UFormField name="method" label="Método de pago" required>
-              <USelect
-                v-model="state.method"
-                :items="methodOptions"
-                value-key="value"
-                class="w-full"
               />
             </UFormField>
           </div>

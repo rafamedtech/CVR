@@ -9,7 +9,7 @@ const paymentSchema = z.object({
   method: z.enum(['CASH', 'CARD', 'TRANSFER', 'CHECK', 'CREDIT', 'OTHER']),
   reference: z.string().trim().max(100).optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
-  paidAt: z.string().optional().nullable()
+  paidAt: z.string().datetime({ local: true }).optional().nullable()
 })
 
 export default defineEventHandler(async (event) => {

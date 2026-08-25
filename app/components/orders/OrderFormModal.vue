@@ -29,9 +29,12 @@ const toast = useToast()
 const loading = shallowRef(false)
 const formId = 'order-form'
 const unassignedMemberValue = '__unassigned__'
+const defaultOrderDate = today(getLocalTimeZone())
 const defaultPromisedDate = today(getLocalTimeZone())
 const promisedDate = shallowRef<CalendarDate | undefined>(defaultPromisedDate)
 const promisedDateOpen = ref(false)
+const orderDate = shallowRef<CalendarDate | undefined>(defaultOrderDate)
+const orderDateOpen = ref(false)
 const isEditing = computed(() => Boolean(props.order))
 const modalTitle = computed(() => isEditing.value ? 'Editar orden de trabajo' : 'Nueva orden de trabajo')
 const modalDescription = computed(() => isEditing.value
@@ -59,6 +62,7 @@ const schema = z.object({
   diagnosis: z.string().optional(),
   intakeNotes: z.string().optional(),
   internalNotes: z.string().optional(),
+  orderDate: z.string().min(1, 'Selecciona la fecha de la orden.'),
   promisedAt: z.string().optional(),
   assignedToId: z.string().optional(),
   items: z.array(lineSchema)
@@ -74,6 +78,7 @@ const state = reactive<{
   diagnosis: string
   intakeNotes: string
   internalNotes: string
+  orderDate: string
   promisedAt: string
   assignedToId: string
   items: OrderItemDraft[]
@@ -86,6 +91,7 @@ const state = reactive<{
   diagnosis: '',
   intakeNotes: '',
   internalNotes: '',
+  orderDate: `${defaultOrderDate.toString()}T12:00:00`,
   promisedAt: `${defaultPromisedDate.toString()}T12:00:00`,
   assignedToId: unassignedMemberValue,
   items: []
@@ -129,7 +135,7 @@ function toLocalDate(value: string | null) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 10)
 }
 
-function formatPromisedDate(date: CalendarDate | undefined) {
+function formatCalendarDate(date: CalendarDate | undefined) {
   if (!date) return 'Selecciona una fecha'
 
   return new Intl.DateTimeFormat('es-MX', {
@@ -139,6 +145,7 @@ function formatPromisedDate(date: CalendarDate | undefined) {
 
 function initializeForm(order?: OrderDetail | null) {
   if (order) {
+    const localOrderDate = toLocalDate(order.createdAt)
     const localPromisedDate = toLocalDate(order.promisedAt)
     Object.assign(state, {
       customerId: order.customerId,
@@ -149,6 +156,7 @@ function initializeForm(order?: OrderDetail | null) {
       diagnosis: order.diagnosis ?? '',
       intakeNotes: order.intakeNotes ?? '',
       internalNotes: order.internalNotes ?? '',
+      orderDate: `${localOrderDate}T12:00:00`,
       promisedAt: localPromisedDate ? `${localPromisedDate}T12:00:00` : '',
       assignedToId: order.assignedToId ?? unassignedMemberValue,
       items: order.items.map(item => ({
@@ -163,10 +171,12 @@ function initializeForm(order?: OrderDetail | null) {
         taxRate: getOrderTaxRate(order.requiresInvoice)
       }))
     })
+    orderDate.value = parseDate(localOrderDate)
     promisedDate.value = localPromisedDate ? parseDate(localPromisedDate) : undefined
     return
   }
 
+  const currentOrderDate = today(getLocalTimeZone())
   Object.assign(state, {
     customerId: '',
     vehicleId: '',
@@ -176,10 +186,12 @@ function initializeForm(order?: OrderDetail | null) {
     diagnosis: '',
     intakeNotes: '',
     internalNotes: '',
+    orderDate: `${currentOrderDate.toString()}T12:00:00`,
     promisedAt: `${defaultPromisedDate.toString()}T12:00:00`,
     assignedToId: unassignedMemberValue,
     items: []
   })
+  orderDate.value = currentOrderDate
   promisedDate.value = defaultPromisedDate
 }
 
@@ -191,6 +203,10 @@ watch(promisedDate, (date) => {
   state.promisedAt = date ? `${date.toString()}T12:00:00` : ''
 })
 
+watch(orderDate, (date) => {
+  state.orderDate = date ? `${date.toString()}T12:00:00` : ''
+})
+
 watch(() => state.customerId, () => {
   if (!vehicleOptions.value.some(vehicle => vehicle.value === state.vehicleId)) {
     state.vehicleId = ''
@@ -198,10 +214,13 @@ watch(() => state.customerId, () => {
 })
 
 async function createOrder(data: OrderSchema) {
+  const { orderDate, ...createData } = data
+
   const result = await $fetch<{ id: string }>('/api/orders', {
     method: 'POST',
     body: {
-      ...data,
+      ...createData,
+      createdAt: orderDate,
       promisedAt: data.promisedAt || null,
       assignedToId: ''
     }
@@ -224,6 +243,7 @@ async function updateOrder(data: OrderSchema) {
       diagnosis: data.diagnosis || null,
       intakeNotes: data.intakeNotes || null,
       internalNotes: data.internalNotes || null,
+      createdAt: data.orderDate,
       promisedAt: data.promisedAt || null,
       assignedToId: data.assignedToId === unassignedMemberValue ? '' : data.assignedToId,
       items: data.items
@@ -307,7 +327,9 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               :disabled="isEditing || !state.customerId"
             />
           </UFormField>
-          <div class="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2 md:grid-cols-3">
+          <div
+            class="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2"
+          >
             <UFormField name="requiresInvoice" label="¿Requiere factura?" class="min-w-0">
               <USelect
                 v-model="invoiceRequirement"
@@ -325,6 +347,30 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               />
             </UFormField>
             <UFormField
+              name="orderDate"
+              label="Fecha de la orden"
+              required
+              class="min-w-0"
+            >
+              <UPopover v-model:open="orderDateOpen">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-calendar-days"
+                  :label="formatCalendarDate(orderDate)"
+                  class="w-full justify-start font-normal"
+                />
+
+                <template #content>
+                  <UCalendar
+                    v-model="orderDate"
+                    locale="es-MX"
+                    @update:model-value="orderDateOpen = false"
+                  />
+                </template>
+              </UPopover>
+            </UFormField>
+            <UFormField
               name="promisedAt"
               label="Entrega prometida"
               class="min-w-0 sm:col-span-2 md:col-span-1"
@@ -334,7 +380,7 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                   color="neutral"
                   variant="outline"
                   icon="i-lucide-calendar-days"
-                  :label="formatPromisedDate(promisedDate)"
+                  :label="formatCalendarDate(promisedDate)"
                   class="w-full justify-start font-normal"
                 />
 

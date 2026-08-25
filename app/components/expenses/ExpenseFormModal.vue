@@ -7,6 +7,7 @@ import type { ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 const props = defineProps<{
   expense?: ExpenseListItem | null
   orders?: ExpenseOrderOption[]
+  fixedOrder?: ExpenseOrderOption | null
 }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
@@ -47,8 +48,8 @@ function emptyExpenseState(): ExpenseMutation {
     vendor: '',
     amount: 0,
     expenseDate: currentDate.toString(),
-    assignmentType: 'WORKSHOP',
-    orderId: '',
+    assignmentType: props.fixedOrder ? 'ORDER' : 'WORKSHOP',
+    orderId: props.fixedOrder?.id ?? '',
     notes: ''
   }
 }
@@ -135,6 +136,8 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
     v-model:open="open"
     :title="modalTitle"
     :description="modalDescription"
+    :close="false"
+    :dismissible="false"
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
@@ -174,7 +177,25 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
             </UPopover>
           </UFormField>
         </div>
-        <UFormField name="assignmentType" label="Aplicar gasto a" required>
+        <UFormField v-if="fixedOrder" label="Aplicar gasto a">
+          <div class="flex items-start gap-3 rounded-lg border border-default bg-elevated p-3">
+            <UIcon name="i-lucide-clipboard-list" class="mt-0.5 size-5 shrink-0 text-primary" />
+            <div class="min-w-0">
+              <p class="font-medium text-highlighted">
+                Orden {{ fixedOrder.orderNumber }} · {{ fixedOrder.customerName }}
+              </p>
+              <p class="truncate text-sm text-muted">
+                {{ fixedOrder.vehicleLabel }}
+              </p>
+            </div>
+          </div>
+        </UFormField>
+        <UFormField
+          v-else
+          name="assignmentType"
+          label="Aplicar gasto a"
+          required
+        >
           <URadioGroup
             v-model="state.assignmentType"
             :items="assignmentOptions"
@@ -184,7 +205,7 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
           />
         </UFormField>
         <UFormField
-          v-if="state.assignmentType === 'ORDER'"
+          v-if="!fixedOrder && state.assignmentType === 'ORDER'"
           name="orderId"
           label="Orden de trabajo"
           required

@@ -24,6 +24,7 @@ const orderSchema = z.object({
   internalNotes: z.string().trim().max(2000).optional().nullable(),
   mileageIn: z.coerce.number().int().nonnegative().optional().nullable(),
   fuelLevelIn: z.coerce.number().int().min(0).max(100).optional().nullable(),
+  createdAt: z.string().datetime({ local: true }).optional(),
   promisedAt: z.string().optional().nullable(),
   assignedToId: z.union([z.uuid(), z.literal('')]).optional().nullable(),
   items: z.array(lineItemSchema).default([])
@@ -95,12 +96,14 @@ export default defineEventHandler(async (event) => {
     assignedToId = defaultMembership?.profileId ?? null
   }
 
-  const year = new Date().getFullYear()
+  const createdAt = body.createdAt ? new Date(body.createdAt) : new Date()
+  const year = createdAt.getFullYear()
   const count = await prisma.serviceOrder.count({
     where: {
       workshopId,
       createdAt: {
-        gte: new Date(`${year}-01-01T00:00:00.000Z`)
+        gte: new Date(`${year}-01-01T00:00:00.000Z`),
+        lt: new Date(`${year + 1}-01-01T00:00:00.000Z`)
       }
     }
   })
@@ -126,6 +129,7 @@ export default defineEventHandler(async (event) => {
       internalNotes: body.internalNotes || null,
       mileageIn: body.mileageIn ?? null,
       fuelLevelIn: body.fuelLevelIn ?? null,
+      createdAt,
       promisedAt: body.promisedAt ? new Date(body.promisedAt) : null,
       assignedToId,
       createdById: context.profile.id,

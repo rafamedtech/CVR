@@ -125,6 +125,18 @@ export interface OrderPayment {
   recordedByName: string
 }
 
+export interface OrderExpense {
+  id: string
+  category: ExpenseCategory
+  method: PaymentMethod
+  description: string
+  vendor: string | null
+  amount: number
+  expenseDate: string
+  notes: string | null
+  recordedByName: string
+}
+
 export interface PaymentListItem extends OrderPayment {
   workshopId: string
   workshopName: string
@@ -178,8 +190,10 @@ export interface OrderDetail extends OrderListItem {
   subtotal: number
   discountTotal: number
   taxTotal: number
+  canViewFinancials: boolean
   items: OrderLineItem[]
   payments: OrderPayment[]
+  expenses: OrderExpense[]
   availableAssignees: Array<{
     id: string
     fullName: string

@@ -19,6 +19,10 @@ export function useCrmSession() {
     canCreateInWorkshop.value
     && (isSuperAdmin.value || ['MANAGER', 'ADVISOR', 'CASHIER'].includes(currentRole.value ?? ''))
   ))
+  const canRecordExpenses = computed(() => (
+    canCreateInWorkshop.value
+    && (isSuperAdmin.value || ['MANAGER', 'CASHIER'].includes(currentRole.value ?? ''))
+  ))
 
   function setSession(value: CrmSession | null) {
     session.value = value
@@ -43,6 +47,7 @@ export function useCrmSession() {
     canManageCustomers,
     canManageOrders,
     canRecordPayments,
+    canRecordExpenses,
     setSession,
     selectWorkshop
   }

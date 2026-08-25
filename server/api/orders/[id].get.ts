@@ -21,6 +21,10 @@ export default defineEventHandler(async (event) => {
         include: { recordedBy: true },
         orderBy: { paidAt: 'desc' }
       },
+      expenses: {
+        include: { recordedBy: true },
+        orderBy: { expenseDate: 'desc' }
+      },
       items: {
         orderBy: { createdAt: 'asc' }
       },
@@ -63,6 +67,7 @@ export default defineEventHandler(async (event) => {
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
     taxTotal: Number(order.taxTotal),
+    canViewFinancials: canViewCosts,
     items: order.items.map(item => ({
       id: item.id,
       type: item.type,
@@ -91,6 +96,19 @@ export default defineEventHandler(async (event) => {
       paidAt: payment.paidAt.toISOString(),
       recordedByName: payment.recordedBy.fullName
     })),
+    expenses: canViewCosts
+      ? order.expenses.map(expense => ({
+          id: expense.id,
+          category: expense.category,
+          method: expense.method,
+          description: expense.description,
+          vendor: expense.vendor,
+          amount: Number(expense.amount),
+          expenseDate: expense.expenseDate.toISOString(),
+          notes: expense.notes,
+          recordedByName: expense.recordedBy.fullName
+        }))
+      : [],
     availableAssignees: context.isSuperAdmin
       ? order.workshop.members.map(member => ({
           id: member.profile.id,

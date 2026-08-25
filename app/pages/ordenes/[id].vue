@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { OrderDetail, OrderStatus } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
@@ -9,17 +10,29 @@ const editOpen = shallowRef(false)
 const deleteOpen = shallowRef(false)
 const deleting = shallowRef(false)
 const orderId = computed(() => route.params.id as string)
-const { isSuperAdmin } = useCrmSession()
+const { isSuperAdmin, canRecordExpenses } = useCrmSession()
 
 const { data: order, status, refresh } = await useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
   key: `crm-order-${orderId.value}`
 })
+
+const totalExpenses = computed(() => order.value?.expenses.reduce((sum, expense) => sum + expense.amount, 0) ?? 0)
 
 useHead({
   title: computed(() => order.value?.orderNumber ?? 'Orden')
 })
 
 const statusOptions = Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
+const orderActionItems: DropdownMenuItem[] = [{
+  label: 'Editar',
+  icon: 'i-lucide-pencil',
+  onSelect: () => editOpen.value = true
+}, {
+  label: 'Eliminar',
+  icon: 'i-lucide-trash-2',
+  color: 'error',
+  onSelect: () => deleteOpen.value = true
+}]
 const statusSelectClasses: Record<OrderStatus, string> = {
   ESTIMATE: 'bg-elevated text-default ring ring-inset ring-accented',
   AWAITING_APPROVAL: 'bg-warning/10 text-warning ring ring-inset ring-warning/25',
@@ -100,21 +113,36 @@ async function deleteOrder() {
           </div>
 
           <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <div class="grid grid-cols-[auto_auto_minmax(10rem,1fr)] items-center gap-2 sm:flex sm:items-center">
+            <div class="grid grid-cols-2 items-center gap-2 sm:flex sm:items-center">
               <UBadge
                 v-if="order.priority !== 'NORMAL'"
                 :label="orderPriorityLabels[order.priority]"
                 :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
                 variant="subtle"
                 size="lg"
-                class="h-9 justify-center md:h-8"
+                class="col-span-2 h-9 w-full justify-center sm:w-auto md:h-8"
               />
+              <UDropdownMenu
+                v-if="isSuperAdmin"
+                :items="orderActionItems"
+                :content="{ align: 'end' }"
+              >
+                <UButton
+                  label="Opciones"
+                  icon="i-lucide-settings-2"
+                  trailing-icon="i-lucide-chevron-down"
+                  color="neutral"
+                  variant="outline"
+                  class="w-full justify-center sm:w-auto"
+                />
+              </UDropdownMenu>
               <UBadge
                 :label="paymentStatusLabels[order.paymentStatus]"
                 :color="paymentStatusColors[order.paymentStatus]"
                 variant="subtle"
-                size="lg"
-                class="h-9 justify-center md:h-8"
+                size="xl"
+                class="h-10 w-full justify-center sm:w-auto"
+                :class="!isSuperAdmin && 'col-span-2'"
               />
               <USelectMenu
                 :model-value="order.status"
@@ -125,7 +153,7 @@ async function deleteOrder() {
                 :search-input="false"
                 :loading="savingStatus"
                 :disabled="!isSuperAdmin"
-                class="col-start-3 min-w-40 w-full sm:min-w-0 sm:w-48"
+                class="col-span-2 min-w-40 w-full sm:min-w-0 sm:w-48"
                 :ui="{
                   base: statusSelectClasses[order.status],
                   trailingIcon: 'text-current',
@@ -133,24 +161,6 @@ async function deleteOrder() {
                   viewport: 'overflow-y-visible'
                 }"
                 @update:model-value="updateStatus($event as OrderStatus)"
-              />
-            </div>
-            <div v-if="isSuperAdmin" class="grid grid-cols-2 gap-2 sm:flex">
-              <UButton
-                label="Editar"
-                icon="i-lucide-pencil"
-                color="neutral"
-                variant="outline"
-                class="w-full justify-center sm:w-auto"
-                @click="editOpen = true"
-              />
-              <UButton
-                label="Eliminar"
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="outline"
-                class="w-full justify-center sm:w-auto"
-                @click="deleteOpen = true"
               />
             </div>
           </div>
@@ -203,39 +213,64 @@ async function deleteOrder() {
           </UCard>
         </div>
 
-        <UCard>
-          <template #header>
-            <h2 class="font-semibold text-highlighted">
-              Recepción
-            </h2>
-          </template>
-          <dl class="grid gap-5 md:grid-cols-2">
-            <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                Servicio solicitado
-              </dt>
-              <dd class="mt-2 whitespace-pre-wrap text-default">
-                {{ order.complaint }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                Condiciones de recepción
-              </dt>
-              <dd class="mt-2 whitespace-pre-wrap text-default">
-                {{ order.intakeNotes || 'Sin observaciones' }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                Notas internas
-              </dt>
-              <dd class="mt-2 whitespace-pre-wrap text-default">
-                {{ order.internalNotes || 'Sin notas internas' }}
-              </dd>
-            </div>
-          </dl>
-        </UCard>
+        <div
+          class="grid gap-6"
+          :class="order.canViewFinancials ? 'xl:grid-cols-[1.4fr_1fr]' : 'grid-cols-1'"
+        >
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="font-semibold text-highlighted">
+                  Recepción
+                </h2>
+                <UIcon name="i-lucide-clipboard-list" class="size-5 shrink-0 text-primary" />
+              </div>
+            </template>
+            <dl class="grid gap-5 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+                  Fecha de la orden
+                </dt>
+                <dd class="mt-2 text-default">
+                  {{ formatDate(order.createdAt) }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+                  Servicio solicitado
+                </dt>
+                <dd class="mt-2 whitespace-pre-wrap text-default">
+                  {{ order.complaint }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+                  Condiciones de recepción
+                </dt>
+                <dd class="mt-2 whitespace-pre-wrap text-default">
+                  {{ order.intakeNotes || 'Sin observaciones' }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
+                  Notas internas
+                </dt>
+                <dd class="mt-2 whitespace-pre-wrap text-default">
+                  {{ order.internalNotes || 'Sin notas internas' }}
+                </dd>
+              </div>
+            </dl>
+          </UCard>
+
+          <OrdersOrderFinancialSummaryCard
+            v-if="order.canViewFinancials"
+            :subtotal="order.subtotal"
+            :discount-total="order.discountTotal"
+            :tax-total="order.taxTotal"
+            :total="order.total"
+            :expense-total="totalExpenses"
+          />
+        </div>
 
         <div class="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
           <OrdersOrderItemsCard
@@ -248,14 +283,28 @@ async function deleteOrder() {
             :can-edit="isSuperAdmin"
             @updated="refresh"
           />
-          <OrdersOrderPaymentsCard
-            :order-id="order.id"
-            :payments="order.payments"
-            :balance="order.balance"
-            :total="order.total"
-            :can-record="isSuperAdmin"
-            @updated="refresh"
-          />
+          <div class="space-y-6">
+            <OrdersOrderPaymentsCard
+              :order-id="order.id"
+              :payments="order.payments"
+              :balance="order.balance"
+              :total="order.total"
+              :can-record="isSuperAdmin"
+              @updated="refresh"
+            />
+            <OrdersOrderExpensesCard
+              v-if="order.canViewFinancials"
+              :expenses="order.expenses"
+              :order="{
+                id: order.id,
+                orderNumber: order.orderNumber,
+                customerName: order.customerName,
+                vehicleLabel: order.vehicleLabel
+              }"
+              :can-record="canRecordExpenses"
+              @updated="refresh"
+            />
+          </div>
         </div>
 
         <OrdersOrderFormModal
@@ -267,7 +316,7 @@ async function deleteOrder() {
         <UModal
           v-model:open="deleteOpen"
           title="Eliminar orden"
-          description="Esta acción eliminará también sus conceptos y pagos, y no se puede deshacer."
+          description="Esta acción eliminará también sus conceptos, pagos y gastos, y no se puede deshacer."
           :ui="{ footer: 'justify-end' }"
         >
           <template #body>

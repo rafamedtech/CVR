@@ -159,8 +159,6 @@ async function removeItem(itemId: string) {
           v-if="canEdit"
           label="Agregar"
           icon="i-lucide-plus"
-          color="neutral"
-          variant="outline"
           @click="openCreateModal"
         />
       </div>
