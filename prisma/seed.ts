@@ -9,6 +9,7 @@ import {
   PrismaClient,
   WorkshopType
 } from '../generated/prisma/client'
+import { formatOrderNumber } from '../shared/order-number'
 import { calculatePaymentStatus } from '../shared/payment-status'
 
 const connectionString = process.env.DATABASE_URL
@@ -185,13 +186,11 @@ async function upsertDemoOrder(seed: DemoOrder) {
     ...totals
   }
   const order = await prisma.serviceOrder.upsert({
-    where: {
-      workshopId_orderNumber: {
-        workshopId: seed.workshopId,
-        orderNumber: seed.orderNumber
-      }
+    where: { id: seed.id },
+    update: {
+      orderNumber: seed.orderNumber,
+      ...orderData
     },
-    update: orderData,
     create: {
       id: seed.id,
       workshopId: seed.workshopId,
@@ -507,13 +506,12 @@ async function main() {
     })
   }
 
-  const orders: DemoOrder[] = [
+  const demoOrders: Omit<DemoOrder, 'orderNumber'>[] = [
     {
       id: ids.orders.bodyEstimate,
       workshopId: bodyWorkshop.id,
       customerId: ids.customers.bodyOne,
       vehicleId: ids.vehicles.bodyOne,
-      orderNumber: 'DEMO-CAR-001',
       status: OrderStatus.ESTIMATE,
       priority: OrderPriority.NORMAL,
       complaint: 'Golpe en fascia y salpicadera delantera derecha.',
@@ -562,7 +560,6 @@ async function main() {
       workshopId: bodyWorkshop.id,
       customerId: ids.customers.bodyTwo,
       vehicleId: ids.vehicles.bodyTwo,
-      orderNumber: 'DEMO-CAR-002',
       status: OrderStatus.AWAITING_APPROVAL,
       priority: OrderPriority.HIGH,
       complaint: 'Daño en caja y defensa trasera por maniobra de carga.',
@@ -603,7 +600,6 @@ async function main() {
       workshopId: bodyWorkshop.id,
       customerId: ids.customers.bodyThree,
       vehicleId: ids.vehicles.bodyThree,
-      orderNumber: 'DEMO-CAR-003',
       status: OrderStatus.QUALITY_CONTROL,
       priority: OrderPriority.URGENT,
       complaint: 'Daño en ambas puertas del lado izquierdo.',
@@ -658,7 +654,6 @@ async function main() {
       workshopId: bodyWorkshop.id,
       customerId: ids.customers.bodyFour,
       vehicleId: ids.vehicles.bodyFour,
-      orderNumber: 'DEMO-CAR-004',
       status: OrderStatus.CANCELLED,
       priority: OrderPriority.NORMAL,
       complaint: 'Solicita cotización para repintado completo.',
@@ -684,7 +679,6 @@ async function main() {
       workshopId: bodyWorkshop.id,
       customerId: ids.customers.bodyOne,
       vehicleId: ids.vehicles.bodyOne,
-      orderNumber: 'DEMO-CAR-H01',
       status: OrderStatus.DELIVERED,
       priority: OrderPriority.NORMAL,
       complaint: 'Rayón profundo en puerta del conductor.',
@@ -723,7 +717,6 @@ async function main() {
       workshopId: mechanicalWorkshop.id,
       customerId: ids.customers.mechanicalOne,
       vehicleId: ids.vehicles.mechanicalOne,
-      orderNumber: 'DEMO-MEC-001',
       status: OrderStatus.APPROVED,
       priority: OrderPriority.HIGH,
       complaint: 'Testigo de motor y pérdida ocasional de potencia.',
@@ -782,7 +775,6 @@ async function main() {
       workshopId: mechanicalWorkshop.id,
       customerId: ids.customers.mechanicalTwo,
       vehicleId: ids.vehicles.mechanicalTwo,
-      orderNumber: 'DEMO-MEC-002',
       status: OrderStatus.IN_PROGRESS,
       priority: OrderPriority.URGENT,
       complaint: 'Ruido al frenar y vibración a velocidad media.',
@@ -835,7 +827,6 @@ async function main() {
       workshopId: mechanicalWorkshop.id,
       customerId: ids.customers.mechanicalThree,
       vehicleId: ids.vehicles.mechanicalThree,
-      orderNumber: 'DEMO-MEC-003',
       status: OrderStatus.READY,
       priority: OrderPriority.NORMAL,
       complaint: 'Golpeteo en suspensión delantera al pasar topes.',
@@ -896,7 +887,6 @@ async function main() {
       workshopId: mechanicalWorkshop.id,
       customerId: ids.customers.mechanicalFour,
       vehicleId: ids.vehicles.mechanicalFour,
-      orderNumber: 'DEMO-MEC-004',
       status: OrderStatus.DELIVERED,
       priority: OrderPriority.NORMAL,
       complaint: 'Servicio preventivo de 60,000 km.',
@@ -966,7 +956,6 @@ async function main() {
       workshopId: mechanicalWorkshop.id,
       customerId: ids.customers.mechanicalThree,
       vehicleId: ids.vehicles.mechanicalThree,
-      orderNumber: 'DEMO-MEC-H01',
       status: OrderStatus.DELIVERED,
       priority: OrderPriority.NORMAL,
       complaint: 'Cambio de batería por arranque lento.',
@@ -1008,6 +997,25 @@ async function main() {
       ]
     }
   ]
+
+  const orderSequenceByWorkshopAndYear = new Map<string, number>()
+  const workshopTypeById = new Map([
+    [bodyWorkshop.id, 'BODY_SHOP'],
+    [mechanicalWorkshop.id, 'MECHANICAL']
+  ] as const)
+  const orders = demoOrders
+    .toSorted((left, right) => left.createdAt.getTime() - right.createdAt.getTime())
+    .map((order): DemoOrder => {
+      const year = order.createdAt.getFullYear()
+      const sequenceKey = `${order.workshopId}-${year}`
+      const sequence = (orderSequenceByWorkshopAndYear.get(sequenceKey) ?? 0) + 1
+      orderSequenceByWorkshopAndYear.set(sequenceKey, sequence)
+
+      return {
+        ...order,
+        orderNumber: formatOrderNumber(workshopTypeById.get(order.workshopId), year, sequence)
+      }
+    })
 
   for (const order of orders) {
     await upsertDemoOrder(order)

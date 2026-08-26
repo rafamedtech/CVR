@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { getDefaultOrderAssigneeName } from '../../../shared/order-assignee'
+import { formatOrderNumber } from '../../../shared/order-number'
 import { getOrderTaxRate } from '../../../shared/order-tax'
 
 const lineItemSchema = z.object({
@@ -107,7 +108,7 @@ export default defineEventHandler(async (event) => {
       }
     }
   })
-  const orderNumber = `OT-${year}-${String(count + 1).padStart(4, '0')}`
+  const orderNumber = formatOrderNumber(context.selectedWorkshop?.type, year, count + 1)
   const taxRate = getOrderTaxRate(body.requiresInvoice)
   const calculatedItems = body.items.map(item => calculateLineItem({
     ...item,
