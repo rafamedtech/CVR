@@ -8,6 +8,8 @@ const baseExpense = {
   description: 'Material de limpieza',
   vendor: '',
   amount: 250,
+  currency: 'MXN' as const,
+  exchangeRate: 1,
   expenseDate: '2026-08-21',
   notes: ''
 }
@@ -53,4 +55,29 @@ test('rechaza un método de pago inválido', () => {
 
   assert.equal(result.success, false)
   assert.equal(result.error?.issues[0]?.path.join('.'), 'method')
+})
+
+test('acepta un gasto en dólares con tipo de cambio', () => {
+  const result = expenseMutationSchema.safeParse({
+    ...baseExpense,
+    currency: 'USD',
+    exchangeRate: 18.75,
+    assignmentType: 'WORKSHOP',
+    orderId: ''
+  })
+
+  assert.equal(result.success, true)
+})
+
+test('rechaza un tipo de cambio no positivo', () => {
+  const result = expenseMutationSchema.safeParse({
+    ...baseExpense,
+    currency: 'USD',
+    exchangeRate: 0,
+    assignmentType: 'WORKSHOP',
+    orderId: ''
+  })
+
+  assert.equal(result.success, false)
+  assert.equal(result.error?.issues[0]?.path.join('.'), 'exchangeRate')
 })

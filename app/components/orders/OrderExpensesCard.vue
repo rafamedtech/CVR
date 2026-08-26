@@ -10,7 +10,7 @@ const props = defineProps<{
 const emit = defineEmits<{ updated: [] }>()
 const open = shallowRef(false)
 
-const totalExpenses = computed(() => props.expenses.reduce((total, expense) => total + expense.amount, 0))
+const totalExpenses = computed(() => props.expenses.reduce((total, expense) => total + expense.amountMxn, 0))
 </script>
 
 <template>
@@ -63,9 +63,14 @@ const totalExpenses = computed(() => props.expenses.reduce((total, expense) => t
             />
           </div>
         </div>
-        <p class="shrink-0 font-semibold text-warning">
-          {{ formatCurrency(expense.amount) }}
-        </p>
+        <div class="shrink-0 text-right">
+          <p class="font-semibold text-warning">
+            {{ formatCurrency(expense.amount, expense.currency) }}
+          </p>
+          <p v-if="expense.currency === 'USD'" class="text-xs text-muted">
+            TC {{ expense.exchangeRate.toFixed(4) }} · {{ formatCurrency(expense.amountMxn) }} MXN
+          </p>
+        </div>
       </div>
     </div>
     <div v-else class="py-8 text-center text-sm text-muted">

@@ -33,7 +33,7 @@ const filteredExpenses = computed(() => {
   ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
 })
 
-const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum + expense.amount, 0))
+const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum + expense.amountMxn, 0))
 const newExpenseLabel = computed(() => isMobileViewport.value ? 'Nuevo' : 'Registrar gasto')
 
 function openCreateModal() {

@@ -76,7 +76,14 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           {{ paymentMethodLabels[row.original.method] }}
         </template>
         <template #amount-cell="{ row }">
-          <span class="font-semibold text-warning">{{ formatCurrency(row.original.amount) }}</span>
+          <div>
+            <p class="font-semibold text-warning">
+              {{ formatCurrency(row.original.amount, row.original.currency) }}
+            </p>
+            <p v-if="row.original.currency === 'USD'" class="text-xs text-muted">
+              TC {{ row.original.exchangeRate.toFixed(4) }} · {{ formatCurrency(row.original.amountMxn) }} MXN
+            </p>
+          </div>
         </template>
         <template #assignment-cell="{ row }">
           <div v-if="row.original.order">

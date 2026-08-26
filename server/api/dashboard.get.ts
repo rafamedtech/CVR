@@ -108,7 +108,7 @@ export default defineEventHandler(async (event) => {
   const costs = periodOrders.reduce((sum, order) => (
     sum + order.items.reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
   ), 0)
-  const expenseTotal = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0)
+  const expenseTotal = expenses.reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
   const grossProfit = sales - costs
   const receivable = allReceivableOrders.reduce((sum, order) => {
     const paid = order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
@@ -179,7 +179,7 @@ export default defineEventHandler(async (event) => {
 
   if (canViewFinancials) {
     for (const expense of expenses) {
-      trendEntry(expense.expenseDate).expenses += Number(expense.amount)
+      trendEntry(expense.expenseDate).expenses += Number(expense.amountMxn)
     }
   }
 
@@ -210,7 +210,7 @@ export default defineEventHandler(async (event) => {
       const orders = periodOrders.filter(order => order.workshopId === workshop.id)
       const workshopExpenses = expenses
         .filter(expense => expense.workshopId === workshop.id)
-        .reduce((sum, expense) => sum + Number(expense.amount), 0)
+        .reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
 
       return {
         id: workshop.id,

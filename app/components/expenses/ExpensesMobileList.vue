@@ -94,7 +94,10 @@ const emit = defineEmits<{
               Total
             </dt>
             <dd class="mt-0.5 font-semibold text-warning">
-              {{ formatCurrency(expense.amount) }}
+              {{ formatCurrency(expense.amount, expense.currency) }}
+            </dd>
+            <dd v-if="expense.currency === 'USD'" class="mt-1 text-xs text-muted">
+              TC {{ expense.exchangeRate.toFixed(4) }} · {{ formatCurrency(expense.amountMxn) }} MXN
             </dd>
           </div>
           <div>

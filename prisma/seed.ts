@@ -1029,6 +1029,7 @@ async function main() {
       description: 'Renta mensual del taller',
       vendor: 'Inmobiliaria Industrial del Norte',
       amount: 28500,
+      amountMxn: 28500,
       expenseDate: thisMonth(1, 9),
       notes: 'Transferencia mensual · muestra',
       recordedById: superAdmin.id
@@ -1040,6 +1041,7 @@ async function main() {
       description: 'Anticipo de nómina quincenal',
       vendor: null,
       amount: 36400,
+      amountMxn: 36400,
       expenseDate: thisMonth(15, 12),
       notes: 'Registro agregado para revisar resultados financieros',
       recordedById: superAdmin.id
@@ -1051,6 +1053,7 @@ async function main() {
       description: 'Lijas, cinta y materiales de enmascarado',
       vendor: 'Suministros de Pintura Baja',
       amount: 6840,
+      amountMxn: 6840,
       expenseDate: thisMonth(8, 11),
       notes: 'Compra de consumibles sin control de inventario',
       recordedById: superAdmin.id
@@ -1062,6 +1065,7 @@ async function main() {
       description: 'Campaña local en redes sociales',
       vendor: 'Agencia Norte Digital',
       amount: 3200,
+      amountMxn: 3200,
       expenseDate: thisMonth(12, 10),
       notes: 'Promoción de reparación de golpes menores',
       recordedById: superAdmin.id
@@ -1073,6 +1077,7 @@ async function main() {
       description: 'Electricidad y agua del mes',
       vendor: 'Servicios públicos',
       amount: 7450,
+      amountMxn: 7450,
       expenseDate: thisMonth(5, 10),
       notes: 'Pago mensual de muestra',
       recordedById: superAdmin.id
@@ -1084,6 +1089,7 @@ async function main() {
       description: 'Servicio preventivo a elevador hidráulico',
       vendor: 'Equipos Automotrices del Pacífico',
       amount: 4950,
+      amountMxn: 4950,
       expenseDate: thisMonth(9, 13),
       notes: 'Mantenimiento programado',
       recordedById: superAdmin.id
@@ -1095,6 +1101,7 @@ async function main() {
       description: 'Pago provisional de impuestos',
       vendor: 'SAT',
       amount: 11800,
+      amountMxn: 11800,
       expenseDate: thisMonth(17, 9),
       notes: 'Importe demostrativo; sin integración contable',
       recordedById: superAdmin.id
@@ -1106,6 +1113,7 @@ async function main() {
       description: 'Uniformes y equipo de protección',
       vendor: 'Seguridad Industrial Tijuana',
       amount: 3850,
+      amountMxn: 3850,
       expenseDate: thisMonth(13, 14),
       notes: 'Gasto operativo diverso',
       recordedById: superAdmin.id

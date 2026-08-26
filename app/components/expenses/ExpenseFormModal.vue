@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { convertToMxn } from '#shared/currency'
 import { expenseMutationSchema, type ExpenseAssignmentType, type ExpenseMutation } from '#shared/expense'
-import type { ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
+import type { Currency, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
+import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
   expense?: ExpenseListItem | null
@@ -47,6 +49,8 @@ function emptyExpenseState(): ExpenseMutation {
     description: '',
     vendor: '',
     amount: 0,
+    currency: 'MXN',
+    exchangeRate: 1,
     expenseDate: currentDate.toString(),
     assignmentType: props.fixedOrder ? 'ORDER' : 'WORKSHOP',
     orderId: props.fixedOrder?.id ?? '',
@@ -57,6 +61,7 @@ function emptyExpenseState(): ExpenseMutation {
 const state = reactive<ExpenseMutation>({
   ...emptyExpenseState()
 })
+const expenseEquivalentMxn = computed(() => convertToMxn(state.amount, state.currency, state.exchangeRate))
 
 function formatExpenseDate(date: CalendarDate | undefined) {
   if (!date) return 'Selecciona una fecha'
@@ -74,6 +79,10 @@ watch(() => state.assignmentType, (assignmentType) => {
   if (assignmentType === 'WORKSHOP') state.orderId = ''
 })
 
+watch(() => state.currency, (currency: Currency) => {
+  if (currency === 'MXN') state.exchangeRate = 1
+})
+
 watch([open, () => props.expense], ([isOpen, expense]) => {
   if (!isOpen) return
 
@@ -84,6 +93,8 @@ watch([open, () => props.expense], ([isOpen, expense]) => {
         description: expense.description,
         vendor: expense.vendor ?? '',
         amount: expense.amount,
+        currency: expense.currency ?? 'MXN',
+        exchangeRate: expense.exchangeRate ?? 1,
         expenseDate: expense.expenseDate.slice(0, 10),
         assignmentType: expense.order ? 'ORDER' as const : 'WORKSHOP' as const,
         orderId: expense.order?.id ?? '',
@@ -227,12 +238,32 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
           <UInput v-model="state.vendor" class="w-full" />
         </UFormField>
         <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField name="currency" label="Tipo de moneda" required>
+            <USelect
+              v-model="state.currency"
+              :items="currencyOptions"
+              value-key="value"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField name="exchangeRate" label="Tipo de cambio" required>
+            <AppNumberInput
+              v-model="state.exchangeRate"
+              :disabled="state.currency === 'MXN'"
+              :min="0.000001"
+              :step="0.01"
+              :step-snapping="false"
+              :maximum-fraction-digits="6"
+            />
+          </UFormField>
           <UFormField name="amount" label="Importe" required>
             <AppNumberInput
               v-model="state.amount"
               format="currency"
+              :currency="state.currency"
               :min="0.01"
               :step="0.01"
+              :step-snapping="false"
             />
           </UFormField>
           <UFormField name="method" label="Método de pago" required>
@@ -244,6 +275,13 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
             />
           </UFormField>
         </div>
+        <UAlert
+          v-if="state.currency === 'USD'"
+          :title="`Equivalente aplicado: ${formatCurrency(expenseEquivalentMxn)} MXN`"
+          icon="i-lucide-arrow-left-right"
+          color="neutral"
+          variant="subtle"
+        />
         <UFormField name="notes" label="Notas">
           <UTextarea
             v-model="state.notes"

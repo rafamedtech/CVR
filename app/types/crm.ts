@@ -132,6 +132,9 @@ export interface OrderExpense {
   description: string
   vendor: string | null
   amount: number
+  amountMxn: number
+  currency: Currency
+  exchangeRate: number
   expenseDate: string
   notes: string | null
   recordedByName: string
@@ -210,6 +213,9 @@ export interface ExpenseListItem {
   description: string
   vendor: string | null
   amount: number
+  amountMxn: number
+  currency: Currency
+  exchangeRate: number
   expenseDate: string
   notes: string | null
   recordedByName: string

@@ -1,4 +1,5 @@
 import { expenseMutationSchema } from '#shared/expense'
+import { convertToMxn, normalizeExchangeRate } from '#shared/currency'
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
@@ -10,6 +11,8 @@ export default defineEventHandler(async (event) => {
     body.assignmentType === 'ORDER' ? body.orderId : '',
     workshopId
   )
+  const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
+  const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
   return prisma.expense.create({
     data: {
@@ -19,6 +22,9 @@ export default defineEventHandler(async (event) => {
       description: body.description,
       vendor: body.vendor || null,
       amount: body.amount,
+      amountMxn,
+      currency: body.currency,
+      exchangeRate,
       expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
       notes: body.notes || null,
       orderId,

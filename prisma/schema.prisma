@@ -307,6 +307,9 @@ model Expense {
   description  String
   vendor       String?
   amount       Decimal         @db.Decimal(12, 2)
+  amountMxn    Decimal         @db.Decimal(12, 2)
+  currency     Currency        @default(MXN)
+  exchangeRate Decimal         @default(1) @db.Decimal(12, 6)
   expenseDate  DateTime        @default(now())
   notes        String?
   orderId      String?         @db.Uuid

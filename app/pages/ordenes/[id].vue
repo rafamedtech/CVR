@@ -16,7 +16,7 @@ const { data: order, status, refresh } = await useFetch<OrderDetail>(() => `/api
   key: `crm-order-${orderId.value}`
 })
 
-const totalExpenses = computed(() => order.value?.expenses.reduce((sum, expense) => sum + expense.amount, 0) ?? 0)
+const totalExpenses = computed(() => order.value?.expenses.reduce((sum, expense) => sum + expense.amountMxn, 0) ?? 0)
 
 useHead({
   title: computed(() => order.value?.orderNumber ?? 'Orden')

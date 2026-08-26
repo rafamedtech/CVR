@@ -6,6 +6,8 @@ export const expenseMutationSchema = z.object({
   description: z.string().trim().min(2, 'Describe el gasto.').max(250),
   vendor: z.string().trim().max(120).optional(),
   amount: z.coerce.number().positive('El importe debe ser mayor a cero.'),
+  currency: z.enum(['MXN', 'USD']).default('MXN'),
+  exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
   expenseDate: z.string().min(1, 'Selecciona la fecha.'),
   assignmentType: z.enum(['WORKSHOP', 'ORDER']),
   orderId: z.union([
