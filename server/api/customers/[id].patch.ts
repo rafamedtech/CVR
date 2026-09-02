@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { customerAddressSchema } from '../../../shared/customer-address'
 import { customerTypeSchema } from '../../../shared/customer-type'
-import { normalizePhone } from '../../utils/phone'
+import { isIdentifyingPhone, normalizePhone } from '../../utils/phone'
 
 const phoneSchema = z.string()
   .trim()
@@ -44,17 +44,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró el cliente.' })
   }
 
-  const duplicateCustomer = await prisma.customer.findFirst({
-    where: {
-      id: { not: customer.id },
-      OR: [
-        { phone: body.phone },
-        ...(body.email ? [{ email: { equals: body.email, mode: 'insensitive' as const } }] : []),
-        ...(body.taxId ? [{ taxId: { equals: body.taxId, mode: 'insensitive' as const } }] : [])
-      ]
-    },
-    select: { id: true }
-  })
+  const duplicateIdentifiers = [
+    ...(isIdentifyingPhone(body.phone) ? [{ phone: body.phone }] : []),
+    ...(body.email ? [{ email: { equals: body.email, mode: 'insensitive' as const } }] : []),
+    ...(body.taxId ? [{ taxId: { equals: body.taxId, mode: 'insensitive' as const } }] : [])
+  ]
+  const duplicateCustomer = duplicateIdentifiers.length
+    ? await prisma.customer.findFirst({
+        where: {
+          id: { not: customer.id },
+          OR: duplicateIdentifiers
+        },
+        select: { id: true }
+      })
+    : null
 
   if (duplicateCustomer) {
     throw createError({

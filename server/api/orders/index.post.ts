@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { getDefaultOrderAssigneeName } from '../../../shared/order-assignee'
-import { formatOrderNumber } from '../../../shared/order-number'
+import {
+  formatOrderNumber,
+  getNextOrderNumberSequence,
+  getOrderNumberPrefix
+} from '../../../shared/order-number'
 import { getOrderTaxRate } from '../../../shared/order-tax'
 
 const lineItemSchema = z.object({
@@ -99,16 +103,8 @@ export default defineEventHandler(async (event) => {
 
   const createdAt = body.createdAt ? new Date(body.createdAt) : new Date()
   const year = createdAt.getFullYear()
-  const count = await prisma.serviceOrder.count({
-    where: {
-      workshopId,
-      createdAt: {
-        gte: new Date(`${year}-01-01T00:00:00.000Z`),
-        lt: new Date(`${year + 1}-01-01T00:00:00.000Z`)
-      }
-    }
-  })
-  const orderNumber = formatOrderNumber(context.selectedWorkshop?.type, year, count + 1)
+  const workshopType = context.selectedWorkshop?.type
+  const orderNumberNamespace = `${getOrderNumberPrefix(workshopType)}-${year}-`
   const taxRate = getOrderTaxRate(body.requiresInvoice)
   const calculatedItems = body.items.map(item => calculateLineItem({
     ...item,
@@ -116,29 +112,52 @@ export default defineEventHandler(async (event) => {
   }))
   const totals = calculateOrderTotals(calculatedItems)
 
-  const order = await prisma.serviceOrder.create({
-    data: {
-      workshopId,
-      customerId: body.customerId,
-      vehicleId: body.vehicleId,
-      orderNumber,
-      priority: body.priority,
-      requiresInvoice: body.requiresInvoice,
-      complaint: body.complaint,
-      diagnosis: body.diagnosis || null,
-      intakeNotes: body.intakeNotes || null,
-      internalNotes: body.internalNotes || null,
-      mileageIn: body.mileageIn ?? null,
-      fuelLevelIn: body.fuelLevelIn ?? null,
-      createdAt,
-      promisedAt: body.promisedAt ? new Date(body.promisedAt) : null,
-      assignedToId,
-      createdById: context.profile.id,
-      ...totals,
-      items: {
-        create: calculatedItems
+  const order = await prisma.$transaction(async (transaction) => {
+    const sequenceLockKey = `${workshopId}:${year}`
+    await transaction.$queryRaw`
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(${sequenceLockKey}, 0::bigint)
+      )::text AS "lockResult"
+    `
+
+    const existingOrders = await transaction.serviceOrder.findMany({
+      where: {
+        workshopId,
+        orderNumber: { startsWith: orderNumberNamespace }
+      },
+      select: { orderNumber: true }
+    })
+    const sequence = getNextOrderNumberSequence(
+      existingOrders.map(existingOrder => existingOrder.orderNumber),
+      workshopType,
+      year
+    )
+    const orderNumber = formatOrderNumber(workshopType, year, sequence)
+
+    return transaction.serviceOrder.create({
+      data: {
+        workshopId,
+        customerId: body.customerId,
+        vehicleId: body.vehicleId,
+        orderNumber,
+        priority: body.priority,
+        requiresInvoice: body.requiresInvoice,
+        complaint: body.complaint,
+        diagnosis: body.diagnosis || null,
+        intakeNotes: body.intakeNotes || null,
+        internalNotes: body.internalNotes || null,
+        mileageIn: body.mileageIn ?? null,
+        fuelLevelIn: body.fuelLevelIn ?? null,
+        createdAt,
+        promisedAt: body.promisedAt ? new Date(body.promisedAt) : null,
+        assignedToId,
+        createdById: context.profile.id,
+        ...totals,
+        items: {
+          create: calculatedItems
+        }
       }
-    }
+    })
   })
 
   return {

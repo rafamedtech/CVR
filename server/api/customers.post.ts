@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { customerAddressSchema } from '../../shared/customer-address'
 import { customerTypeSchema } from '../../shared/customer-type'
-import { normalizePhone } from '../utils/phone'
+import { isIdentifyingPhone, normalizePhone } from '../utils/phone'
 
 const phoneSchema = z.string()
   .trim()
@@ -27,21 +27,22 @@ export default defineEventHandler(async (event) => {
   const body = await readCrmBody(event, customerSchema)
   const prisma = usePrisma()
 
-  const existingCustomer = await prisma.customer.findFirst({
-    where: {
-      OR: [
-        { phone: body.phone },
-        ...(body.email ? [{ email: { equals: body.email, mode: 'insensitive' as const } }] : []),
-        ...(body.taxId ? [{ taxId: { equals: body.taxId, mode: 'insensitive' as const } }] : [])
-      ]
-    },
-    select: {
-      workshops: {
-        where: { workshopId },
-        select: { workshopId: true }
-      }
-    }
-  })
+  const duplicateIdentifiers = [
+    ...(isIdentifyingPhone(body.phone) ? [{ phone: body.phone }] : []),
+    ...(body.email ? [{ email: { equals: body.email, mode: 'insensitive' as const } }] : []),
+    ...(body.taxId ? [{ taxId: { equals: body.taxId, mode: 'insensitive' as const } }] : [])
+  ]
+  const existingCustomer = duplicateIdentifiers.length
+    ? await prisma.customer.findFirst({
+        where: { OR: duplicateIdentifiers },
+        select: {
+          workshops: {
+            where: { workshopId },
+            select: { workshopId: true }
+          }
+        }
+      })
+    : null
 
   if (existingCustomer) {
     throw createError({
