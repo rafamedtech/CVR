@@ -58,8 +58,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'promisedAt',
     header: 'Entrega'
   }, {
-    accessorKey: 'workshopName',
-    header: 'Taller'
+    accessorKey: 'balance',
+    header: 'Saldo pendiente'
   }]
 
   return columns
@@ -165,9 +165,13 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         <template #promisedAt-cell="{ row }">
           <span class="text-sm">{{ formatDayMonth(row.original.promisedAt) }}</span>
         </template>
-        <template #workshopName-cell="{ row }">
-          <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
-          <span v-else>—</span>
+        <template #balance-cell="{ row }">
+          <span
+            class="font-medium"
+            :class="row.original.balance > 0 ? 'text-warning' : 'text-success'"
+          >
+            {{ formatCurrency(row.original.balance) }}
+          </span>
         </template>
         <template #empty>
           <div class="py-12 text-center">

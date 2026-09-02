@@ -19,11 +19,11 @@ const financialCards = computed(() => [{
   icon: 'i-lucide-hand-coins',
   color: 'text-success'
 }, {
-  label: 'Utilidad bruta',
-  value: formatCurrency(props.kpis.grossProfit),
-  description: 'Ventas menos costo de partes',
-  icon: 'i-lucide-trending-up',
-  color: props.kpis.grossProfit >= 0 ? 'text-success' : 'text-error'
+  label: 'Gastos',
+  value: formatCurrency(props.kpis.expenses),
+  description: 'Gastos generados en el periodo',
+  icon: 'i-lucide-receipt',
+  color: 'text-error'
 }, {
   label: 'Utilidad neta',
   value: formatCurrency(props.kpis.netProfit),
