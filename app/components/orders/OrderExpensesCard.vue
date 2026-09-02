@@ -45,7 +45,7 @@ const totalExpenses = computed(() => props.expenses.reduce((total, expense) => t
             {{ expense.description }}
           </p>
           <p class="text-xs text-muted">
-            {{ formatDateOnly(expense.expenseDate) }} · {{ expense.recordedByName }}
+            {{ formatDateOnly(expense.expenseDate) }}
           </p>
           <p v-if="expense.vendor" class="text-xs text-muted">
             {{ expense.vendor }}
