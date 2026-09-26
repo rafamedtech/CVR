@@ -20,6 +20,7 @@ const statusChartColors: Record<OrderStatus, string> = {
   QUALITY_CONTROL: '#8b5cf6',
   READY: '#14b8a6',
   DELIVERED: '#10b981',
+  LIQUIDATED: '#059669',
   CANCELLED: '#ef4444'
 }
 

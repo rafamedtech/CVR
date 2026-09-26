@@ -73,6 +73,7 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   QUALITY_CONTROL: 'Control de calidad',
   READY: 'Lista para entregar',
   DELIVERED: 'Entregada',
+  LIQUIDATED: 'Liquidada',
   CANCELLED: 'Cancelada'
 }
 
@@ -84,6 +85,7 @@ export const orderStatusColors: Record<OrderStatus, 'neutral' | 'warning' | 'inf
   QUALITY_CONTROL: 'secondary',
   READY: 'success',
   DELIVERED: 'success',
+  LIQUIDATED: 'success',
   CANCELLED: 'error'
 }
 

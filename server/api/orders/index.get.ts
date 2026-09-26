@@ -6,6 +6,7 @@ const validStatuses = new Set([
   'QUALITY_CONTROL',
   'READY',
   'DELIVERED',
+  'LIQUIDATED',
   'CANCELLED'
 ])
 
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const search = typeof query.search === 'string' ? query.search.trim() : ''
   const status = typeof query.status === 'string' && validStatuses.has(query.status)
-    ? query.status as 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'CANCELLED'
+    ? query.status as 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'LIQUIDATED' | 'CANCELLED'
     : undefined
   const prisma = usePrisma()
 

@@ -13,7 +13,7 @@ const lineItemSchema = z.object({
 })
 
 const updateOrderSchema = z.object({
-  status: z.enum(['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'CANCELLED']).optional(),
+  status: z.enum(['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'LIQUIDATED', 'CANCELLED']).optional(),
   priority: z.enum(['NORMAL', 'HIGH', 'URGENT']).optional(),
   requiresInvoice: z.boolean().optional(),
   complaint: z.string().trim().min(3).max(2000).optional(),

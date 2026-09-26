@@ -41,6 +41,7 @@ const statusSelectClasses: Record<OrderStatus, string> = {
   QUALITY_CONTROL: 'bg-secondary/10 text-secondary ring ring-inset ring-secondary/25',
   READY: 'bg-success/10 text-success ring ring-inset ring-success/25',
   DELIVERED: 'bg-success/10 text-success ring ring-inset ring-success/25',
+  LIQUIDATED: 'bg-success/10 text-success ring ring-inset ring-success/25',
   CANCELLED: 'bg-error/10 text-error ring ring-inset ring-error/25'
 }
 

@@ -1,5 +1,5 @@
 const openStatuses = ['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY'] as const
-const salesStatuses = ['APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED'] as const
+const salesStatuses = ['APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'LIQUIDATED'] as const
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
