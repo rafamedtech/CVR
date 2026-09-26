@@ -12,7 +12,7 @@ useHead({ title: 'Órdenes' })
 const route = useRoute()
 const isMobileViewport = useMobileViewport()
 const search = shallowRef('')
-const statusFilter = shallowRef<OrderStatus | 'ALL'>('ALL')
+const statusFilter = shallowRef<OrderStatus[] | 'ALL'>('ALL')
 const createdAtRange = shallowRef<{
   start: DateValue | undefined
   end: DateValue | undefined
@@ -33,10 +33,34 @@ const { data: vehicles } = await useFetch<VehicleListItem[]>('/api/vehicles', {
   default: () => [],
   key: 'crm-vehicles-for-orders'
 })
-const statusOptions = [
+type StatusOptionValue = OrderStatus | 'ALL'
+
+const orderStatuses = Object.keys(orderStatusLabels) as OrderStatus[]
+const statusOptions: Array<{ label: string, value: StatusOptionValue }> = [
   { label: 'Todos los estados', value: 'ALL' },
-  ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value, label }))
+  ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value: value as OrderStatus, label }))
 ]
+const statusSelection = computed<StatusOptionValue[]>({
+  get: () => statusFilter.value === 'ALL' ? ['ALL'] : statusFilter.value,
+  set: (selection) => {
+    const wasAllSelected = statusFilter.value === 'ALL'
+    const selectedStatuses = selection.filter((value): value is OrderStatus => value !== 'ALL')
+
+    if (selection.includes('ALL') && !wasAllSelected) {
+      statusFilter.value = 'ALL'
+      return
+    }
+
+    statusFilter.value = !selectedStatuses.length || selectedStatuses.length === orderStatuses.length
+      ? 'ALL'
+      : selectedStatuses
+  }
+})
+const statusFilterLabel = computed(() => {
+  if (statusFilter.value === 'ALL') return 'Todos los estados'
+  if (statusFilter.value.length === 1) return orderStatusLabels[statusFilter.value[0]!]!
+  return `${statusFilter.value.length} estados seleccionados`
+})
 const createdAtBounds = computed(() => ({
   start: createdAtRange.value?.start?.toString(),
   end: createdAtRange.value?.end?.toString()
@@ -86,7 +110,7 @@ const filteredOrders = computed(() => {
 
   return orders.value.filter((order) => {
     if (customerId && order.customerId !== customerId) return false
-    if (statusFilter.value !== 'ALL' && order.status !== statusFilter.value) return false
+    if (statusFilter.value !== 'ALL' && !statusFilter.value.includes(order.status)) return false
     if (start && end) {
       const orderDate = getLocalDateKey(order.createdAt)
       if (orderDate < start || orderDate > end) return false
@@ -140,12 +164,18 @@ const filteredOrders = computed(() => {
             icon="i-lucide-x"
             to="/ordenes"
           />
-          <USelect
-            v-model="statusFilter"
+          <USelectMenu
+            v-model="statusSelection"
             :items="statusOptions"
             value-key="value"
-            class="w-48"
-          />
+            multiple
+            :search-input="false"
+            class="w-full sm:w-56"
+          >
+            <template #default>
+              {{ statusFilterLabel }}
+            </template>
+          </USelectMenu>
           <UPopover v-model:open="dateFilterOpen" class="w-full sm:w-auto">
             <UButton
               color="neutral"
