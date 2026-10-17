@@ -49,6 +49,9 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       ? 'Vehículo y cliente'
       : props.showCustomer ? 'Cliente' : 'Vehículo'
   }, {
+    accessorKey: 'assignedToName',
+    header: 'Responsable'
+  }, {
     accessorKey: 'status',
     header: 'Estado'
   }, {
@@ -57,9 +60,6 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
   }, {
     accessorKey: 'promisedAt',
     header: 'Entrega'
-  }, {
-    accessorKey: 'balance',
-    header: 'Saldo pendiente'
   }]
 
   return columns
@@ -152,6 +152,9 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
             </p>
           </div>
         </template>
+        <template #assignedToName-cell="{ row }">
+          <span class="text-sm">{{ row.original.assignedToName || 'Sin responsable asignado' }}</span>
+        </template>
         <template #status-cell="{ row }">
           <UBadge
             :label="orderStatusLabels[row.original.status]"
@@ -164,14 +167,6 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         </template>
         <template #promisedAt-cell="{ row }">
           <span class="text-sm">{{ formatDayMonth(row.original.promisedAt) }}</span>
-        </template>
-        <template #balance-cell="{ row }">
-          <span
-            class="font-medium"
-            :class="row.original.balance > 0 ? 'text-warning' : 'text-success'"
-          >
-            {{ formatCurrency(row.original.balance) }}
-          </span>
         </template>
         <template #empty>
           <div class="py-12 text-center">
