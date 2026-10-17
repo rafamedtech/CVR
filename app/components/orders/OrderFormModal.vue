@@ -4,6 +4,7 @@ import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internat
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type {
   CustomerListItem,
+  MemberListItem,
   OrderDetail,
   OrderItemDraft,
   OrderPriority,
@@ -12,8 +13,6 @@ import type {
 } from '~/types/crm'
 import { taxRateValues } from '~/utils/crm'
 import { getOrderTaxRate } from '#shared/order-tax'
-
-type InvoiceRequirement = 'required' | 'not-required'
 
 const props = defineProps<{
   customers?: CustomerListItem[]
@@ -41,6 +40,26 @@ const modalDescription = computed(() => isEditing.value
   ? 'Actualiza la información de la orden'
   : 'Captura la información básica de la orden')
 const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Crear cotización')
+const { data: members, status: membersStatus, error: membersError, execute: loadMembers } = useFetch<MemberListItem[]>('/api/members', {
+  immediate: false,
+  watch: false,
+  default: () => []
+})
+const responsibleOptions = computed(() => {
+  const options = members.value
+    .filter(member => member.active && member.memberships.some(membership => membership.workshopId === props.order?.workshopId))
+    .map(member => ({ label: member.fullName, value: member.id, disabled: false }))
+
+  if (props.order?.assignedToId && !options.some(option => option.value === props.order?.assignedToId)) {
+    options.unshift({
+      label: props.order.assignedToName || 'Responsable actual',
+      value: props.order.assignedToId,
+      disabled: true
+    })
+  }
+
+  return [{ label: 'Sin responsable asignado', value: unassignedMemberValue, disabled: false }, ...options]
+})
 
 const lineSchema = z.object({
   type: z.enum(['SERVICE', 'PART', 'LABOR', 'OTHER']),
@@ -97,10 +116,6 @@ const state = reactive<{
   items: []
 })
 
-const invoiceRequirement = computed<InvoiceRequirement>({
-  get: () => state.requiresInvoice ? 'required' : 'not-required',
-  set: value => state.requiresInvoice = value === 'required'
-})
 const invoiceTaxRate = computed<TaxRate>(() => getOrderTaxRate(state.requiresInvoice))
 const selectedCustomer = computed(() => props.order
   ? { id: props.order.customerId, fullName: props.order.customerName }
@@ -123,10 +138,6 @@ const vehicleOptions = computed(() => {
   return options
 })
 const priorityOptions = Object.entries(orderPriorityLabels).map(([value, label]) => ({ value, label }))
-const invoiceRequirementOptions: Array<{ label: string, value: InvoiceRequirement }> = [
-  { label: 'No', value: 'not-required' },
-  { label: 'Sí', value: 'required' }
-]
 
 function toLocalDate(value: string | null) {
   if (!value) return ''
@@ -196,7 +207,10 @@ function initializeForm(order?: OrderDetail | null) {
 }
 
 watch([open, () => props.order], ([isOpen, order]) => {
-  if (isOpen) initializeForm(order)
+  if (isOpen) {
+    initializeForm(order)
+    if (order) void loadMembers()
+  }
 }, { immediate: true })
 
 watch(promisedDate, (date) => {
@@ -283,11 +297,19 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
     :dismissible="false"
     :ui="{
       content: 'w-[calc(100vw-2rem)] min-w-0 sm:max-w-[44.8rem]',
-      wrapper: 'min-w-0',
+      header: 'flex-wrap gap-4',
+      wrapper: 'min-w-0 flex-1',
       body: 'min-w-0 max-h-[72vh] overflow-x-hidden overflow-y-auto',
       footer: 'flex-wrap justify-end'
     }"
   >
+    <template #actions>
+      <USwitch
+        v-model="state.requiresInvoice"
+        label="Requiere factura"
+        class="ml-auto shrink-0"
+      />
+    </template>
     <template #body>
       <UForm
         :id="formId"
@@ -330,13 +352,39 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
           <div
             class="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2"
           >
-            <UFormField name="requiresInvoice" label="¿Requiere factura?" class="min-w-0">
-              <USelect
-                v-model="invoiceRequirement"
-                :items="invoiceRequirementOptions"
+            <UFormField
+              v-if="isEditing"
+              name="assignedToId"
+              label="Responsable"
+              class="min-w-0"
+            >
+              <USelectMenu
+                v-model="state.assignedToId"
+                :items="responsibleOptions"
                 value-key="value"
+                :search-input="{ placeholder: 'Buscar por nombre…' }"
+                :loading="membersStatus === 'pending'"
+                :disabled="membersStatus === 'pending' || Boolean(membersError)"
+                icon="i-lucide-user-round"
+                placeholder="Selecciona un responsable"
                 class="w-full"
-              />
+              >
+                <template #empty>
+                  No se encontraron usuarios disponibles.
+                </template>
+              </USelectMenu>
+              <div v-if="membersError" class="mt-2 flex items-center gap-2" role="alert">
+                <p class="text-sm text-error">
+                  No se pudieron cargar los usuarios.
+                </p>
+                <UButton
+                  label="Reintentar"
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  @click="loadMembers()"
+                />
+              </div>
             </UFormField>
             <UFormField name="priority" label="Prioridad" class="min-w-0">
               <USelect
