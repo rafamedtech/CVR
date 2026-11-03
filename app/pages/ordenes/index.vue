@@ -41,8 +41,8 @@ const statusOptions: Array<{ label: string, value: StatusOptionValue }> = [
   ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value: value as OrderStatus, label }))
 ]
 const statusSelection = computed<StatusOptionValue[]>({
-  get: () => statusFilter.value === 'ALL' ? ['ALL'] : statusFilter.value,
-  set: (selection) => {
+  get: (): StatusOptionValue[] => statusFilter.value === 'ALL' ? ['ALL'] : statusFilter.value,
+  set: (selection: StatusOptionValue[]) => {
     const wasAllSelected = statusFilter.value === 'ALL'
     const selectedStatuses = selection.filter((value): value is OrderStatus => value !== 'ALL')
 
