@@ -91,11 +91,20 @@ async function selectMonth() {
     </template>
 
     <template #body>
-      <div v-if="status === 'pending'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <USkeleton v-for="index in 8" :key="index" class="h-32 rounded-xl" />
+      <div v-if="status === 'pending'" class="space-y-6">
+        <USkeleton class="h-72 rounded-2xl" />
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <USkeleton v-for="index in 4" :key="index" class="h-24 rounded-xl" />
+        </div>
       </div>
 
       <div v-else-if="data" class="space-y-6">
+        <DashboardProfitSummary
+          v-if="data.canViewFinancials"
+          :kpis="data.kpis"
+          :expense-breakdown="data.expenseBreakdown"
+        />
+
         <DashboardKpiGrid
           :kpis="data.kpis"
           :can-view-financials="data.canViewFinancials"
