@@ -25,7 +25,7 @@ function formatPercent(value: number) {
 const topExpenses = computed(() => {
   const top = props.expenseBreakdown.slice(0, 3)
 
-  if (!top.length) return 'Sin gastos registrados en el periodo'
+  if (!top.length) return 'Sin gastos operativos registrados en el periodo'
 
   return top.map(item => expenseCategoryLabels[item.category]).join(' · ')
 })
@@ -33,16 +33,9 @@ const topExpenses = computed(() => {
 const rows = computed(() => [{
   key: 'material',
   label: 'Compras de material',
-  hint: 'Refacciones y partes cargadas a las órdenes',
+  hint: 'Gastos registrados en la categoría Insumos',
   value: props.kpis.materialCosts,
   swatch: 'swatch-cost-1',
-  tone: 'text-highlighted'
-}, {
-  key: 'direct',
-  label: 'Otros costos directos',
-  hint: 'Mano de obra y servicios subcontratados',
-  value: props.kpis.otherDirectCosts,
-  swatch: 'swatch-cost-2',
   tone: 'text-highlighted'
 }, {
   key: 'expenses',
@@ -54,11 +47,11 @@ const rows = computed(() => [{
 }, {
   key: 'margin',
   label: 'Margen de ganancia',
-  hint: 'Ventas menos costos y gastos del periodo',
+  hint: 'Ventas menos material y gastos del periodo',
   value: margin.value,
   swatch: 'swatch-margin',
   tone: margin.value < 0 ? 'text-error' : 'text-primary'
-}].filter(row => row.key !== 'direct' || row.value > 0))
+}])
 
 const segments = computed(() => rows.value
   .filter(row => row.value > 0)
@@ -102,8 +95,8 @@ const segments = computed(() => rows.value
         </div>
         <p class="mt-2 max-w-xs text-sm text-muted" style="text-wrap: pretty">
           {{ margin < 0
-            ? 'Los costos y gastos del periodo superan lo facturado.'
-            : 'Queda después de material, costos directos y gastos operativos.' }}
+            ? 'El material y los gastos del periodo superan lo facturado.'
+            : 'Queda después de las compras de material y los gastos operativos.' }}
         </p>
       </div>
     </div>
@@ -178,10 +171,6 @@ const segments = computed(() => rows.value
 
 .swatch-cost-1 {
   background-color: color-mix(in srgb, var(--ui-bg-inverted) 24%, var(--ui-bg-accented));
-}
-
-.swatch-cost-2 {
-  background-color: color-mix(in srgb, var(--ui-bg-inverted) 48%, var(--ui-bg-accented));
 }
 
 .swatch-cost-3 {
