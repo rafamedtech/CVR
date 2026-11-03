@@ -271,7 +271,6 @@ export interface DashboardData {
     collected: number
     costs: number
     materialCosts: number
-    otherDirectCosts: number
     grossProfit: number
     expenses: number
     netProfit: number
