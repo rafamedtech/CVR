@@ -261,6 +261,7 @@ export interface DashboardData {
     date: string
     sales: number
     collected: number
+    materialCosts: number
     expenses: number
     orders: number
     delivered: number
@@ -269,6 +270,8 @@ export interface DashboardData {
     sales: number
     collected: number
     costs: number
+    materialCosts: number
+    otherDirectCosts: number
     grossProfit: number
     expenses: number
     netProfit: number
@@ -278,6 +281,7 @@ export interface DashboardData {
     averageTicket: number
     averageDays: number
   }
+  expenseBreakdown: Array<{ category: ExpenseCategory, amount: number }>
   statusCounts: Array<{ status: OrderStatus, count: number }>
   workshops: Array<{
     id: string

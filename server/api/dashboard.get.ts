@@ -105,10 +105,25 @@ export default defineEventHandler(async (event) => {
       .filter(payment => payment.paidAt >= from && payment.paidAt <= to)
       .reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
   ), 0)
-  const costs = periodOrders.reduce((sum, order) => (
-    sum + order.items.reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
+  const materialCosts = periodOrders.reduce((sum, order) => (
+    sum + order.items
+      .filter(item => item.type === 'PART')
+      .reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
   ), 0)
+  const otherDirectCosts = periodOrders.reduce((sum, order) => (
+    sum + order.items
+      .filter(item => item.type !== 'PART')
+      .reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
+  ), 0)
+  const costs = materialCosts + otherDirectCosts
   const expenseTotal = expenses.reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
+  const expenseByCategory = new Map<string, number>()
+  for (const expense of expenses) {
+    expenseByCategory.set(
+      expense.category,
+      (expenseByCategory.get(expense.category) ?? 0) + Number(expense.amountMxn)
+    )
+  }
   const grossProfit = sales - costs
   const receivable = allReceivableOrders.reduce((sum, order) => {
     const paid = order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
@@ -123,6 +138,7 @@ export default defineEventHandler(async (event) => {
     date: string
     sales: number
     collected: number
+    materialCosts: number
     expenses: number
     orders: number
     delivered: number
@@ -145,6 +161,7 @@ export default defineEventHandler(async (event) => {
       date: `${key}T12:00:00.000Z`,
       sales: 0,
       collected: 0,
+      materialCosts: 0,
       expenses: 0,
       orders: 0,
       delivered: 0
@@ -165,6 +182,11 @@ export default defineEventHandler(async (event) => {
     statusMap.set(order.status, (statusMap.get(order.status) ?? 0) + 1)
     const orderEntry = trendEntry(order.createdAt)
     orderEntry.sales += canViewFinancials ? Number(order.total) : 0
+    orderEntry.materialCosts += canViewFinancials
+      ? order.items
+          .filter(item => item.type === 'PART')
+          .reduce((itemSum, item) => itemSum + Number(item.totalCost), 0)
+      : 0
     orderEntry.orders += 1
     orderEntry.delivered += order.status === 'DELIVERED' ? 1 : 0
 
@@ -194,6 +216,8 @@ export default defineEventHandler(async (event) => {
       sales: canViewFinancials ? sales : 0,
       collected: canViewFinancials ? collected : 0,
       costs: canViewFinancials ? costs : 0,
+      materialCosts: canViewFinancials ? materialCosts : 0,
+      otherDirectCosts: canViewFinancials ? otherDirectCosts : 0,
       grossProfit: canViewFinancials ? grossProfit : 0,
       expenses: canViewFinancials ? expenseTotal : 0,
       netProfit: canViewFinancials ? grossProfit - expenseTotal : 0,
@@ -205,6 +229,11 @@ export default defineEventHandler(async (event) => {
         ? completedDurations.reduce((sum, days) => sum + days, 0) / completedDurations.length
         : 0
     },
+    expenseBreakdown: canViewFinancials
+      ? [...expenseByCategory.entries()]
+          .map(([category, amount]) => ({ category, amount }))
+          .sort((a, b) => b.amount - a.amount)
+      : [],
     statusCounts: [...statusMap.entries()].map(([status, count]) => ({ status, count })),
     workshops: workshops.map((workshop) => {
       const orders = periodOrders.filter(order => order.workshopId === workshop.id)

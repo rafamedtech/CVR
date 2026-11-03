@@ -17,19 +17,19 @@ const props = defineProps<{
 }>()
 
 const hasActivity = computed(() => props.items.some(item => (
-  item.sales || item.collected || item.expenses || item.orders || item.delivered
+  item.sales || item.collected || item.materialCosts || item.expenses || item.orders || item.delivered
 )))
 const x = (datum: TrendDatum) => new Date(datum.date).getTime()
 const sales = (datum: TrendDatum) => datum.sales
-const collected = (datum: TrendDatum) => datum.collected
+const materialCosts = (datum: TrendDatum) => datum.materialCosts
 const expenses = (datum: TrendDatum) => datum.expenses
 const orders = (datum: TrendDatum) => datum.orders
 const delivered = (datum: TrendDatum) => datum.delivered
-const salesColor = '#2563eb'
-const collectedColor = '#059669'
-const expensesColor = '#f59e0b'
-const ordersColor = '#2563eb'
-const deliveredColor = '#10b981'
+const salesColor = 'var(--ui-primary)'
+const materialColor = 'color-mix(in srgb, var(--ui-bg-inverted) 24%, var(--ui-bg-accented))'
+const expensesColor = 'color-mix(in srgb, var(--ui-bg-inverted) 76%, var(--ui-bg-accented))'
+const ordersColor = 'var(--ui-primary)'
+const deliveredColor = 'color-mix(in srgb, var(--ui-bg-inverted) 55%, var(--ui-bg-accented))'
 
 function formatAxisDate(value: number | Date) {
   return new Intl.DateTimeFormat('es-MX', {
@@ -68,12 +68,15 @@ function tooltipTemplate(datum: TrendDatum) {
     `
   }
 
+  const margin = datum.sales - datum.materialCosts - datum.expenses
+
   return `
     <div class="dashboard-chart-tooltip">
       <strong>${date}</strong>
       <span>Ventas <b>${formatCurrency(datum.sales)}</b></span>
-      <span>Cobrado <b>${formatCurrency(datum.collected)}</b></span>
-      <span>Gastos <b>${formatCurrency(datum.expenses)}</b></span>
+      <span>Material <b>${formatCurrency(datum.materialCosts)}</b></span>
+      <span>Gastos operativos <b>${formatCurrency(datum.expenses)}</b></span>
+      <span>Margen <b>${formatCurrency(margin)}</b></span>
     </div>
   `
 }
@@ -85,25 +88,31 @@ function tooltipTemplate(datum: TrendDatum) {
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 class="font-semibold text-highlighted">
-            {{ canViewFinancials ? 'Movimiento del periodo' : 'Ritmo de trabajo' }}
+            {{ canViewFinancials ? 'Ventas contra costos' : 'Ritmo de trabajo' }}
           </h2>
           <p class="text-sm text-muted">
-            {{ canViewFinancials ? 'Ventas, cobros y gastos por día' : 'Órdenes registradas y entregadas por día' }}
+            {{ canViewFinancials
+              ? 'Lo facturado frente al material y los gastos operativos de cada día'
+              : 'Órdenes registradas y entregadas por día' }}
           </p>
         </div>
 
         <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted" aria-label="Leyenda de la gráfica">
           <span class="inline-flex items-center gap-1.5">
-            <span class="size-2.5 rounded-full bg-blue-600" />
+            <span class="legend-sales size-2.5 rounded-full" />
             {{ canViewFinancials ? 'Ventas' : 'Órdenes' }}
           </span>
-          <span class="inline-flex items-center gap-1.5">
-            <span class="size-2.5 rounded-full bg-emerald-500" />
-            {{ canViewFinancials ? 'Cobrado' : 'Entregadas' }}
+          <span v-if="canViewFinancials" class="inline-flex items-center gap-1.5">
+            <span class="legend-material size-2.5 rounded-sm" />
+            Compras de material
           </span>
           <span v-if="canViewFinancials" class="inline-flex items-center gap-1.5">
-            <span class="size-2.5 rounded-sm bg-amber-500" />
-            Gastos
+            <span class="legend-expenses size-2.5 rounded-sm" />
+            Gastos operativos
+          </span>
+          <span v-else class="inline-flex items-center gap-1.5">
+            <span class="legend-delivered size-2.5 rounded-full" />
+            Entregadas
           </span>
         </div>
       </div>
@@ -113,15 +122,15 @@ function tooltipTemplate(datum: TrendDatum) {
       v-if="hasActivity"
       class="h-80"
       role="img"
-      :aria-label="canViewFinancials ? 'Gráfica de ventas, cobros y gastos del periodo' : 'Gráfica de órdenes y entregas del periodo'"
+      :aria-label="canViewFinancials ? 'Gráfica de ventas, compras de material y gastos operativos del periodo' : 'Gráfica de órdenes y entregas del periodo'"
     >
       <ClientOnly>
         <VisXYContainer :data="items" :y-domain="[0, undefined]">
           <VisStackedBar
             v-if="canViewFinancials"
             :x="x"
-            :y="expenses"
-            :color="expensesColor"
+            :y="[materialCosts, expenses]"
+            :color="[materialColor, expensesColor]"
             :bar-padding="0.45"
             :bar-max-width="18"
             :rounded-corners="4"
@@ -134,9 +143,10 @@ function tooltipTemplate(datum: TrendDatum) {
             :line-width="3"
           />
           <VisLine
+            v-if="!canViewFinancials"
             :x="x"
-            :y="canViewFinancials ? collected : delivered"
-            :color="canViewFinancials ? collectedColor : deliveredColor"
+            :y="delivered"
+            :color="deliveredColor"
             :curve-type="CurveType.MonotoneX"
             :line-width="3"
           />
@@ -157,8 +167,8 @@ function tooltipTemplate(datum: TrendDatum) {
           />
           <VisCrosshair
             :x="x"
-            :y="canViewFinancials ? [sales, collected, expenses] : [orders, delivered]"
-            :color="canViewFinancials ? [salesColor, collectedColor, expensesColor] : [ordersColor, deliveredColor]"
+            :y="canViewFinancials ? [sales, materialCosts, expenses] : [orders, delivered]"
+            :color="canViewFinancials ? [salesColor, materialColor, expensesColor] : [ordersColor, deliveredColor]"
             :template="tooltipTemplate"
           />
         </VisXYContainer>
@@ -197,6 +207,22 @@ function tooltipTemplate(datum: TrendDatum) {
   --vis-tooltip-padding: 0;
   --vis-tooltip-box-shadow: var(--shadow-lg);
   --vis-tooltip-backdrop-filter: blur(12px);
+}
+
+.legend-sales {
+  background-color: var(--ui-primary);
+}
+
+.legend-material {
+  background-color: color-mix(in srgb, var(--ui-bg-inverted) 24%, var(--ui-bg-accented));
+}
+
+.legend-expenses {
+  background-color: color-mix(in srgb, var(--ui-bg-inverted) 76%, var(--ui-bg-accented));
+}
+
+.legend-delivered {
+  background-color: color-mix(in srgb, var(--ui-bg-inverted) 55%, var(--ui-bg-accented));
 }
 
 :global(.dashboard-chart-tooltip) {
