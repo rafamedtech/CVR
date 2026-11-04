@@ -59,7 +59,7 @@ const statusSelection = computed<StatusOptionValue[]>({
 const statusFilterLabel = computed(() => {
   if (statusFilter.value === 'ALL') return 'Todos los estados'
   if (statusFilter.value.length === 1) return orderStatusLabels[statusFilter.value[0]!]!
-  return `${statusFilter.value.length} estados seleccionados`
+  return `${statusFilter.value.length} seleccionados`
 })
 const createdAtBounds = computed(() => ({
   start: createdAtRange.value?.start?.toString(),
@@ -173,7 +173,7 @@ const filteredOrders = computed(() => {
             class="w-full sm:w-56"
           >
             <template #default>
-              {{ statusFilterLabel }}
+              <span class="min-w-0 truncate">{{ statusFilterLabel }}</span>
             </template>
           </USelectMenu>
           <UPopover v-model:open="dateFilterOpen" class="w-full sm:w-auto">
