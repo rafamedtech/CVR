@@ -208,6 +208,7 @@ export interface ExpenseListItem {
   id: string
   workshopId: string
   workshopName: string
+  workshopType: WorkshopType
   category: ExpenseCategory
   method: PaymentMethod
   description: string

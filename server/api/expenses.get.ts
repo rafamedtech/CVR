@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
     id: expense.id,
     workshopId: expense.workshopId,
     workshopName: expense.workshop.name,
+    workshopType: expense.workshop.type,
     category: expense.category,
     method: expense.method,
     description: expense.description,

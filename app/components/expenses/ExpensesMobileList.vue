@@ -11,6 +11,7 @@ defineProps<{
 
 const emit = defineEmits<{
   edit: [expense: ExpenseListItem]
+  duplicate: [expense: ExpenseListItem]
 }>()
 </script>
 
@@ -100,14 +101,6 @@ const emit = defineEmits<{
               TC {{ expense.exchangeRate.toFixed(4) }} · {{ formatCurrency(expense.amountMxn) }} MXN
             </dd>
           </div>
-          <div>
-            <dt class="text-xs text-muted">
-              Registró
-            </dt>
-            <dd class="mt-0.5 text-sm text-default">
-              {{ expense.recordedByName }}
-            </dd>
-          </div>
           <div v-if="showWorkshop" class="col-span-2">
             <dt class="text-xs text-muted">
               Taller
@@ -118,16 +111,26 @@ const emit = defineEmits<{
           </div>
         </dl>
 
-        <UButton
-          label="Editar gasto"
-          icon="i-lucide-pencil"
-          color="neutral"
-          variant="outline"
-          block
-          class="mt-4"
-          :disabled="!canEdit"
-          @click="emit('edit', expense)"
-        />
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <UButton
+            label="Editar"
+            icon="i-lucide-pencil"
+            color="neutral"
+            variant="outline"
+            block
+            :disabled="!canEdit"
+            @click="emit('edit', expense)"
+          />
+          <UButton
+            label="Duplicar"
+            icon="i-lucide-copy"
+            color="neutral"
+            variant="outline"
+            block
+            :disabled="!canEdit"
+            @click="emit('duplicate', expense)"
+          />
+        </div>
       </article>
     </UCard>
   </div>

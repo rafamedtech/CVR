@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { formatDateOnly } from '#shared/date'
-import type { ExpenseListItem } from '~/types/crm'
+import type { ExpenseListItem, WorkshopType } from '~/types/crm'
 import ExpensesMobileList from './ExpensesMobileList.vue'
 
 defineProps<{
@@ -12,7 +12,14 @@ defineProps<{
 }>()
 const emit = defineEmits<{
   edit: [expense: ExpenseListItem]
+  duplicate: [expense: ExpenseListItem]
 }>()
+
+const workshopIndicators: Record<WorkshopType, { icon: string, label: string }> = {
+  BODY_SHOP: { icon: 'i-lucide-paintbrush', label: 'TC' },
+  MECHANICAL: { icon: 'i-lucide-wrench', label: 'TM' },
+  PAINT_STORE: { icon: 'i-lucide-palette', label: 'TP' }
+}
 
 const columns: TableColumn<ExpenseListItem>[] = [{
   accessorKey: 'expenseDate',
@@ -36,9 +43,6 @@ const columns: TableColumn<ExpenseListItem>[] = [{
   accessorKey: 'workshopName',
   header: 'Taller'
 }, {
-  accessorKey: 'recordedByName',
-  header: 'Registró'
-}, {
   id: 'actions'
 }]
 </script>
@@ -52,6 +56,7 @@ const columns: TableColumn<ExpenseListItem>[] = [{
       :show-workshop="showWorkshop"
       :can-edit="canEdit"
       @edit="emit('edit', $event)"
+      @duplicate="emit('duplicate', $event)"
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
@@ -106,11 +111,24 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           />
         </template>
         <template #workshopName-cell="{ row }">
-          <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
-          <span v-else>—</span>
+          <UTooltip :text="row.original.workshopName">
+            <div
+              class="inline-flex min-w-10 flex-col items-center gap-1 text-muted"
+              role="img"
+              :aria-label="row.original.workshopName"
+            >
+              <UIcon
+                :name="workshopIndicators[row.original.workshopType].icon"
+                class="size-4"
+              />
+              <span class="text-xs font-medium">
+                {{ workshopIndicators[row.original.workshopType].label }}
+              </span>
+            </div>
+          </UTooltip>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-1">
             <UButton
               label="Editar"
               icon="i-lucide-pencil"
@@ -119,6 +137,15 @@ const columns: TableColumn<ExpenseListItem>[] = [{
               size="sm"
               :disabled="!canEdit"
               @click="emit('edit', row.original)"
+            />
+            <UButton
+              label="Duplicar"
+              icon="i-lucide-copy"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :disabled="!canEdit"
+              @click="emit('duplicate', row.original)"
             />
           </div>
         </template>

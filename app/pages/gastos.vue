@@ -7,6 +7,7 @@ const isMobileViewport = useMobileViewport()
 const search = shallowRef('')
 const formOpen = shallowRef(false)
 const selectedExpense = shallowRef<ExpenseListItem | null>(null)
+const duplicateExpense = shallowRef<ExpenseListItem | null>(null)
 const { canCreateInWorkshop, isAllWorkshops } = useCrmSession()
 const { data: expenses, status, refresh } = await useFetch<ExpenseListItem[]>('/api/expenses', {
   default: () => [],
@@ -38,11 +39,19 @@ const newExpenseLabel = computed(() => isMobileViewport.value ? 'Nuevo' : 'Regis
 
 function openCreateModal() {
   selectedExpense.value = null
+  duplicateExpense.value = null
   formOpen.value = true
 }
 
 function openEditModal(expense: ExpenseListItem) {
   selectedExpense.value = expense
+  duplicateExpense.value = null
+  formOpen.value = true
+}
+
+function openDuplicateModal(expense: ExpenseListItem) {
+  selectedExpense.value = null
+  duplicateExpense.value = expense
   formOpen.value = true
 }
 </script>
@@ -106,10 +115,12 @@ function openEditModal(expense: ExpenseListItem) {
         :show-workshop="isAllWorkshops"
         :can-edit="canCreateInWorkshop"
         @edit="openEditModal"
+        @duplicate="openDuplicateModal"
       />
       <ExpensesExpenseFormModal
         v-model:open="formOpen"
         :expense="selectedExpense"
+        :duplicate-expense="duplicateExpense"
         :orders="orderOptions"
         @created="refresh"
         @updated="refresh"

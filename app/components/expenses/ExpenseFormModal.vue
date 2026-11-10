@@ -8,6 +8,7 @@ import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
   expense?: ExpenseListItem | null
+  duplicateExpense?: ExpenseListItem | null
   orders?: ExpenseOrderOption[]
   fixedOrder?: ExpenseOrderOption | null
 }>()
@@ -38,10 +39,14 @@ const orderOptions = computed(() => (props.orders ?? []).map(order => ({
   value: order.id
 })))
 const isEditing = computed(() => Boolean(props.expense))
-const modalTitle = computed(() => isEditing.value ? 'Editar gasto' : 'Registrar gasto')
+const modalTitle = computed(() => isEditing.value
+  ? 'Editar gasto'
+  : props.duplicateExpense ? 'Duplicar gasto' : 'Registrar gasto')
 const modalDescription = computed(() => isEditing.value
   ? 'Actualiza la información del gasto registrado.'
-  : 'Los gastos se descuentan para calcular la utilidad neta.')
+  : props.duplicateExpense
+    ? 'Revisa los datos y guarda una copia como un nuevo gasto.'
+    : 'Los gastos se descuentan para calcular la utilidad neta.')
 const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Guardar gasto')
 function emptyExpenseState(): ExpenseMutation {
   const currentDate = today(getLocalTimeZone())
@@ -86,11 +91,12 @@ watch(() => state.currency, (currency: Currency) => {
   if (currency === 'MXN') state.exchangeRate = 1
 })
 
-watch([open, () => props.expense], ([isOpen, expense]) => {
+watch([open, () => props.expense, () => props.duplicateExpense], ([isOpen, editingExpense, duplicateExpense]) => {
   if (!isOpen) return
 
   deleteConfirmationOpen.value = false
 
+  const expense = editingExpense ?? duplicateExpense
   const nextState = expense
     ? {
         category: expense.category,
