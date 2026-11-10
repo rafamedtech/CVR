@@ -2,7 +2,7 @@
 import type { BusinessReportSummary } from '~/types/reports'
 import type { ExpenseCategory, LineItemType, PaymentMethod } from '~/types/crm'
 
-const props = defineProps<{ report: BusinessReportSummary, consolidated: boolean }>()
+const props = defineProps<{ report: BusinessReportSummary, consolidated: boolean, allBusinesses?: boolean }>()
 const annual = computed(() => props.report.period.mode === 'annual')
 const lines = computed(() => props.report.salesByLine.map(item => ({ ...item, label: lineItemTypeLabels[item.key as LineItemType] ?? item.label })))
 const categories = computed(() => props.report.operatingExpenseCategories.map(item => ({ ...item, label: expenseCategoryLabels[item.key as ExpenseCategory] ?? item.label })))
@@ -18,15 +18,21 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           Resultado del {{ annual ? 'año' : 'mes' }}
         </h2>
         <p class="text-xs text-muted">
-          {{ report.period.label }} · MXN · ventas con IVA cuando aplica
+          {{ report.period.label }} · MXN · {{ report.taxBasis === 'before-tax' ? 'ventas antes de IVA' : 'ventas con IVA cuando aplica' }}
         </p>
       </div>
       <p class="text-xs text-muted">
-        Órdenes aprobadas y posteriores, según su fecha de creación. Comparación con el {{ annual ? 'año' : 'mes' }} anterior completo.
+        {{ allBusinesses ? 'Talleres: órdenes aprobadas y posteriores por fecha de creación. Carolina: pedidos vigentes por fecha del pedido. Operaciones internas incluidas.' : 'Órdenes aprobadas y posteriores, según su fecha de creación.' }} Comparación con el {{ annual ? 'año' : 'mes' }} anterior completo.
       </p>
-      <ReportsSummaryCards :metrics="report.metrics" :annual="annual" />
+      <ReportsSummaryCards :metrics="report.metrics" :annual="annual" :before-tax="report.taxBasis === 'before-tax'" />
+      <slot name="businesses" />
       <div class="grid gap-4 xl:grid-cols-3">
-        <ReportsProfitStatement :metrics="report.metrics" :annual="annual" class="xl:col-span-2" />
+        <ReportsProfitStatement
+          :metrics="report.metrics"
+          :annual="annual"
+          :before-tax="report.taxBasis === 'before-tax'"
+          class="xl:col-span-2"
+        />
         <ReportsMonthPace :report="report" />
       </div>
       <ReportsCashFlowChart :data="report.dailyMovements" :annual="annual" />
@@ -35,14 +41,14 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
     <section aria-labelledby="report-sales" class="space-y-4">
       <ReportsSectionHeading
         id="report-sales"
-        title="Órdenes y servicios"
+        :title="allBusinesses ? 'Ventas, productos y servicios' : 'Órdenes y servicios'"
         marker="bg-primary"
         :amount="report.metrics.sales"
       />
       <ReportsBreakdownCard
         v-if="consolidated"
-        title="Ventas por taller"
-        description="Participación de cada taller en las ventas del periodo."
+        :title="allBusinesses ? 'Ventas por negocio' : 'Ventas por taller'"
+        description="Participación de cada negocio en las ventas del periodo."
         icon="i-lucide-building-2"
         color="primary"
         :items="report.salesByWorkshop"
@@ -52,8 +58,8 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
       />
       <div class="grid gap-4 xl:grid-cols-3">
         <ReportsBreakdownCard
-          title="Ventas por tipo de trabajo"
-          description="Servicios, refacciones y mano de obra de las órdenes."
+          :title="allBusinesses ? 'Ventas por línea o tipo de trabajo' : 'Ventas por tipo de trabajo'"
+          :description="allBusinesses ? 'Líneas de productos de Carolina y trabajos de los talleres.' : 'Servicios, refacciones y mano de obra de las órdenes.'"
           icon="i-lucide-wrench"
           color="primary"
           :items="lines"
@@ -62,7 +68,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           :count-label="count => `${count} ${count === 1 ? 'partida' : 'partidas'}`"
         />
         <ReportsRankingCard
-          title="Trabajos destacados"
+          :title="allBusinesses ? 'Productos y trabajos destacados' : 'Trabajos destacados'"
           description="Conceptos con mayor venta en el periodo."
           icon="i-lucide-clipboard-list"
           empty="Sin trabajos registrados"
@@ -119,7 +125,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         <template #footer>
           <UButton
             to="/gastos"
-            label="Ver gastos a detalle"
+            :label="allBusinesses ? 'Ver gastos de talleres' : 'Ver gastos a detalle'"
             trailing-icon="i-lucide-arrow-up-right"
             color="neutral"
             variant="link"
@@ -174,7 +180,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           <template #footer>
             <UButton
               to="/pagos"
-              label="Ver pagos a detalle"
+              :label="allBusinesses ? 'Ver pagos de talleres' : 'Ver pagos a detalle'"
               trailing-icon="i-lucide-arrow-up-right"
               color="neutral"
               variant="link"

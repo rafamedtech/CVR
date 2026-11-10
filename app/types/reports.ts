@@ -8,6 +8,7 @@ export interface ReportPeriod {
 }
 
 export interface ReportMetrics {
+  billedSales: number
   sales: number
   previousSales: number
   salesChangePercentage: number | null
@@ -64,6 +65,7 @@ export interface ReportRankingItem {
 }
 
 export interface BusinessReportSummary {
+  taxBasis?: 'before-tax' | 'as-recorded'
   period: ReportPeriod
   metrics: ReportMetrics
   dailyMovements: ReportDailyMovement[]
@@ -75,4 +77,17 @@ export interface BusinessReportSummary {
   topServices: ReportRankingItem[]
   salesByLine: ReportBreakdownItem[]
   salesByWorkshop: ReportBreakdownItem[]
+}
+
+export interface ConsolidationInfo {
+  status: 'connected' | 'not-configured' | 'unavailable'
+  businesses: Array<{ id: string, name: string, metrics: ReportMetrics }>
+  internalOperations: {
+    sales: number
+    previousSales: number
+    orderCount: number
+    collections: number
+    outstandingBalance: number
+    workshopMaterialPurchases: number
+  } | null
 }

@@ -4,7 +4,7 @@ import { reportCurrency } from '~/utils/reportPeriods'
 import type { ReportMetrics } from '~/types/reports'
 import { dashboardNumber } from '~/utils/dashboardFormatters'
 
-const props = defineProps<{ metrics: ReportMetrics, annual?: boolean }>()
+const props = defineProps<{ metrics: ReportMetrics, annual?: boolean, beforeTax?: boolean }>()
 
 interface StatementRow {
   key: string
@@ -21,7 +21,7 @@ interface StatementRow {
 const rows = computed<StatementRow[]>(() => {
   const m = props.metrics
   return [
-    { key: 'sales', label: 'Ventas de órdenes', sign: '', amount: m.sales, previous: m.previousSales, bar: 'bg-primary' },
+    { key: 'sales', label: props.beforeTax ? 'Ventas netas' : 'Ventas de órdenes', sign: '', amount: m.sales, previous: m.previousSales, bar: 'bg-primary' },
     { key: 'materials', label: 'Compras de material', sign: '−', amount: m.materialPurchases, previous: m.previousMaterialPurchases, bar: 'bg-violet-500', inverse: true },
     { key: 'gross', label: 'Utilidad bruta', sign: '=', amount: m.grossProfit, previous: m.previousGrossProfit, bar: 'bg-success/60', total: true },
     { key: 'operating', label: 'Gastos operativos', sign: '−', amount: m.operatingExpenses, previous: m.previousOperatingExpenses, bar: 'bg-warning', inverse: true },
@@ -94,7 +94,7 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
       :data="rows"
       :columns="columns"
       :get-row-id="row => row.key"
-      :caption="`Estado de resultados del ${annual ? 'año' : 'mes'} en pesos mexicanos, con IVA cuando aplica`"
+      :caption="`Estado de resultados del ${annual ? 'año' : 'mes'} en pesos mexicanos, ${beforeTax ? 'ventas antes de IVA' : 'con IVA cuando aplica'}`"
       :ui="{ thead: 'sr-only', caption: 'sr-only', td: 'align-top py-3' }"
     >
       <template #label-cell="{ row }">

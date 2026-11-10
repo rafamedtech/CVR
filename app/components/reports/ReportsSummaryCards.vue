@@ -5,6 +5,7 @@ import { dashboardNumber } from '~/utils/dashboardFormatters'
 
 const props = defineProps<{
   annual?: boolean
+  beforeTax?: boolean
   metrics: ReportMetrics
 }>()
 
@@ -45,7 +46,7 @@ const cards = computed(() => {
   const m = props.metrics
   return [{
     key: 'sales',
-    title: 'Ventas de órdenes',
+    title: props.beforeTax ? 'Ventas netas' : 'Ventas de órdenes',
     value: reportCurrency.format(m.sales),
     previous: reportCurrency.format(m.previousSales),
     marker: 'bg-primary',

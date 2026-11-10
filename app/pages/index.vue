@@ -6,6 +6,12 @@ useHead({ title: 'Resumen' })
 
 const route = useRoute()
 const router = useRouter()
+const { isAllWorkshops, isSuperAdmin } = useCrmSession()
+const reportScope = shallowRef<'current' | 'all-businesses'>(isSuperAdmin.value && route.query.scope !== 'current' ? 'all-businesses' : 'current')
+const scopeOptions = [
+  { label: 'Todos los negocios', value: 'all-businesses' },
+  { label: 'Taller seleccionado', value: 'current' }
+]
 const annual = shallowRef(route.query.view === 'annual')
 const now = new Date()
 
@@ -26,14 +32,14 @@ const monthRange = computed(() => {
     monthEnd: annual.value ? `${year}-12-31` : `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
   }
 })
-const { isAllWorkshops } = useCrmSession()
 
 const { data, status, error, refresh } = await useFetch<DashboardData>('/api/dashboard', {
   query: computed(() => ({
     from: monthRange.value.from,
     to: monthRange.value.to,
     monthEnd: monthRange.value.monthEnd,
-    view: annual.value ? 'annual' : 'monthly'
+    view: annual.value ? 'annual' : 'monthly',
+    scope: reportScope.value
   })),
   key: 'crm-dashboard',
   watch: false
@@ -41,7 +47,7 @@ const { data, status, error, refresh } = await useFetch<DashboardData>('/api/das
 
 async function selectMonth() {
   hasSelectedMonth.value = true
-  await router.replace({ query: { ...route.query, month: `${selectedMonth.value.year}-${String(selectedMonth.value.month).padStart(2, '0')}`, view: annual.value ? 'annual' : undefined } })
+  await router.replace({ query: { ...route.query, month: `${selectedMonth.value.year}-${String(selectedMonth.value.month).padStart(2, '0')}`, view: annual.value ? 'annual' : undefined, scope: reportScope.value } })
   await refresh()
 }
 </script>
@@ -68,7 +74,7 @@ async function selectMonth() {
               @select="selectMonth"
             />
           </div>
-          <div class="lg:hidden">
+          <div v-if="reportScope === 'current'" class="lg:hidden">
             <WorkshopSwitcher size="xl" />
           </div>
           <UButton
@@ -80,11 +86,26 @@ async function selectMonth() {
             aria-label="Cambiar entre reporte mensual y anual"
             @click="annual = !annual; selectMonth()"
           />
-          <div class="hidden lg:block">
+          <div v-if="reportScope === 'current'" class="hidden lg:block">
             <WorkshopSwitcher />
           </div>
         </template>
       </UDashboardNavbar>
+
+      <UDashboardToolbar v-if="isSuperAdmin" class="py-3">
+        <div class="flex w-full flex-wrap items-center gap-3">
+          <USelect
+            v-model="reportScope"
+            :items="scopeOptions"
+            aria-label="Negocios incluidos en el reporte"
+            class="w-full sm:w-64"
+            @update:model-value="selectMonth"
+          />
+          <p class="text-xs text-muted">
+            {{ reportScope === 'all-businesses' ? 'Carolina Pinturas + todos los talleres' : 'Datos del taller o grupo seleccionado' }}
+          </p>
+        </div>
+      </UDashboardToolbar>
 
       <UDashboardToolbar class="py-4 lg:hidden">
         <div class="w-full">
@@ -126,21 +147,48 @@ async function selectMonth() {
       </UAlert>
 
       <div v-else-if="data" class="space-y-6">
+        <UAlert
+          v-if="data.consolidation && data.consolidation.status !== 'connected'"
+          color="warning"
+          icon="i-lucide-unplug"
+          title="Reporte parcial: solo talleres"
+          :description="data.consolidation.status === 'not-configured' ? 'Falta configurar la conexión de reportes de Carolina Pinturas en este entorno.' : 'No se pudo consultar Carolina Pinturas. Sus importes no están incluidos en los totales mostrados.'"
+        >
+          <template #actions>
+            <UButton
+              label="Reintentar"
+              color="warning"
+              variant="soft"
+              @click="refresh()"
+            />
+          </template>
+        </UAlert>
+
         <ReportsDashboard
           v-if="data.canViewFinancials && data.report"
           :report="data.report"
-          :consolidated="isAllWorkshops"
-        />
+          :consolidated="isAllWorkshops || reportScope === 'all-businesses'"
+          :all-businesses="reportScope === 'all-businesses'"
+        >
+          <template #businesses>
+            <ReportsConsolidationSummary
+              v-if="data.consolidation"
+              :info="data.consolidation"
+              :month="`${selectedMonth.year}-${String(selectedMonth.month).padStart(2, '0')}`"
+              :annual="annual"
+            />
+          </template>
+        </ReportsDashboard>
 
         <section aria-labelledby="dashboard-operation" class="space-y-4">
           <h2 id="dashboard-operation" class="font-semibold text-highlighted">
-            Operación del taller
+            {{ reportScope === 'all-businesses' ? 'Operación de los talleres' : 'Operación del taller' }}
           </h2>
           <DashboardKpiGrid :kpis="data.kpis" :can-view-financials="false" />
           <div class="grid gap-4 xl:grid-cols-2">
             <DashboardStatusBreakdown :items="data.statusCounts" />
             <DashboardTrend v-if="!data.canViewFinancials" :items="data.trend" :can-view-financials="false" />
-            <DashboardWorkshopPerformance v-else-if="isAllWorkshops" :workshops="data.workshops" />
+            <DashboardWorkshopPerformance v-else-if="isAllWorkshops && !data.consolidation" :workshops="data.workshops" />
           </div>
         </section>
 

@@ -1,12 +1,30 @@
 import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem } from '../../app/types/reports'
-import type { Expense, Payment, ServiceOrder, OrderItem } from '../../generated/prisma/client'
 import { reportChange, reportPercentage, reportDateKey, reportNextDay } from '../../shared/report'
 
-type ReportOrder = ServiceOrder & {
+type Numeric = number | { toString(): string }
+interface ReportSale {
+  total: Numeric
+  taxTotal?: Numeric
+}
+interface ReportExpense {
+  category: string
+  amountMxn: Numeric
+  expenseDate: Date
+  vendor: string | null
+}
+interface ReportPayment {
+  amountMxn: Numeric
+  paidAt: Date
+  method: string
+}
+interface ReportOrder extends ReportSale {
+  createdAt: Date
+  customerId: string
+  workshopId: string
   customer: { fullName: string }
   workshop: { name: string }
-  payments: Payment[]
-  items: OrderItem[]
+  payments: Array<{ amountMxn: Numeric }>
+  items: Array<{ description: string, type: string, total: Numeric, taxTotal?: Numeric, quantity: Numeric }>
 }
 
 type GroupEntry = { key: string, label: string, amount: number, count: number }
@@ -24,8 +42,8 @@ function breakdown(groups: Map<string, GroupEntry>): ReportBreakdownItem[] {
 function ranking(groups: Map<string, GroupEntry>, detail: string): ReportRankingItem[] {
   return breakdown(groups).slice(0, 5).map(entry => ({ ...entry, id: entry.key, detail }))
 }
-function summarize(orders: Pick<ServiceOrder, 'total'>[], expenses: Pick<Expense, 'category' | 'amountMxn'>[]) {
-  const sales = orders.reduce((sum, order) => sum + Number(order.total), 0)
+function summarize(orders: ReportSale[], expenses: Pick<ReportExpense, 'category' | 'amountMxn'>[], beforeTax: boolean) {
+  const sales = orders.reduce((sum, order) => sum + Number(order.total) - (beforeTax ? Number(order.taxTotal ?? 0) : 0), 0)
   const material = expenses.filter(e => e.category === 'SUPPLIES').reduce((sum, e) => sum + Number(e.amountMxn), 0)
   const operating = expenses.filter(e => e.category !== 'SUPPLIES').reduce((sum, e) => sum + Number(e.amountMxn), 0)
   return { sales, material, operating, gross: sales - material, net: sales - material - operating }
@@ -39,14 +57,16 @@ export function buildBusinessReport(input: {
   annual: boolean
   timeZone: string
   orders: ReportOrder[]
-  previousOrders: Pick<ServiceOrder, 'total'>[]
-  expenses: Expense[]
-  previousExpenses: Pick<Expense, 'category' | 'amountMxn'>[]
-  payments: Payment[]
+  previousOrders: ReportSale[]
+  expenses: ReportExpense[]
+  previousExpenses: Pick<ReportExpense, 'category' | 'amountMxn'>[]
+  payments: ReportPayment[]
+  beforeTax?: boolean
 }): BusinessReportSummary {
   const { start, end, fullEnd, annual, timeZone, orders, expenses, payments } = input
-  const current = summarize(orders, expenses)
-  const previous = summarize(input.previousOrders, input.previousExpenses)
+  const beforeTax = input.beforeTax === true
+  const current = summarize(orders, expenses, beforeTax)
+  const previous = summarize(input.previousOrders, input.previousExpenses, beforeTax)
   const days = (last: string) => Math.round((Date.parse(last) - Date.parse(start)) / 86400000) + 1
   const daily = new Map<string, BusinessReportSummary['dailyMovements'][number]>()
   for (let day = start; day <= end; day = reportNextDay(day)) {
@@ -63,7 +83,8 @@ export function buildBusinessReport(input: {
   const dayOf = (date: Date) => daily.get(reportDateKey(date, timeZone))
   let outstanding = 0
   for (const order of orders) {
-    const amount = Number(order.total)
+    const grossAmount = Number(order.total)
+    const amount = grossAmount - (beforeTax ? Number(order.taxTotal ?? 0) : 0)
     const day = dayOf(order.createdAt)
     if (day) {
       day.sales += amount
@@ -72,12 +93,15 @@ export function buildBusinessReport(input: {
     add(customers, order.customerId, order.customer.fullName, amount)
     add(workshops, order.workshopId, order.workshop.name, amount)
     const paid = order.payments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
-    const balance = Math.max(0, amount - paid)
+    const balance = Math.max(0, grossAmount - paid)
     outstanding += balance
     if (balance > 0) add(debtors, order.customerId, order.customer.fullName, balance)
+    const itemTotal = order.items.reduce((sum, item) => sum + Number(item.total) - (beforeTax ? Number(item.taxTotal ?? 0) : 0), 0)
     for (const item of order.items) {
-      add(lines, item.type, item.type, Number(item.total))
-      add(services, item.description, item.description, Number(item.total), Number(item.quantity))
+      const value = Number(item.total) - (beforeTax ? Number(item.taxTotal ?? 0) : 0)
+      const itemAmount = itemTotal ? value * amount / itemTotal : 0
+      add(lines, item.type, item.type, itemAmount)
+      add(services, item.description, item.description, itemAmount, Number(item.quantity))
     }
   }
   for (const expense of expenses) {
@@ -98,17 +122,19 @@ export function buildBusinessReport(input: {
     if (day) day.collections += Number(payment.amountMxn)
     add(methods, payment.method, payment.method, Number(payment.amountMxn))
   }
+  const billedSales = orders.reduce((sum, order) => sum + Number(order.total), 0)
   return {
+    taxBasis: beforeTax ? 'before-tax' : 'as-recorded',
     period: { mode: annual ? 'annual' : 'monthly', start, end, label: `${start.split('-').reverse().join('/')} – ${end.split('-').reverse().join('/')}`, elapsedDays: days(end), totalDays: days(fullEnd) },
     metrics: {
-      sales: current.sales, previousSales: previous.sales, salesChangePercentage: reportChange(current.sales, previous.sales),
+      billedSales, sales: current.sales, previousSales: previous.sales, salesChangePercentage: reportChange(current.sales, previous.sales),
       materialPurchases: current.material, previousMaterialPurchases: previous.material, materialPurchasesChangePercentage: reportChange(current.material, previous.material),
       operatingExpenses: current.operating, previousOperatingExpenses: previous.operating, operatingExpensesChangePercentage: reportChange(current.operating, previous.operating),
       grossProfit: current.gross, previousGrossProfit: previous.gross, grossMarginPercentage: reportPercentage(current.gross, current.sales),
       netProfit: current.net, previousNetProfit: previous.net, netMarginPercentage: reportPercentage(current.net, current.sales), previousNetMarginPercentage: reportPercentage(previous.net, previous.sales),
       previousDays: input.previousDays, collections, netCashFlow: collections - current.material - current.operating,
       orderCount: orders.length, averageTicket: orders.length ? current.sales / orders.length : 0,
-      outstandingBalance: outstanding, collectionCoveragePercentage: reportPercentage(current.sales - outstanding, current.sales) ?? 0
+      outstandingBalance: outstanding, collectionCoveragePercentage: reportPercentage(billedSales - outstanding, billedSales) ?? 0
     },
     dailyMovements: [...daily.values()].map(day => ({ ...day, netCashFlow: day.collections - day.expenses, netProfit: day.sales - day.expenses })),
     salesByWorkshop: breakdown(workshops), salesByLine: breakdown(lines), paymentMethods: breakdown(methods), operatingExpenseCategories: breakdown(categories),

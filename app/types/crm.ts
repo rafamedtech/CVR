@@ -252,6 +252,7 @@ export interface MemberAccessPreset {
 }
 
 export interface DashboardData {
+  consolidation: import('./reports').ConsolidationInfo | null
   report: import('./reports').BusinessReportSummary | null
   canViewFinancials: boolean
   period: {

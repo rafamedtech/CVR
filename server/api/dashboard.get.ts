@@ -1,3 +1,6 @@
+import type { ConsolidationInfo } from '../../app/types/reports'
+import { combineBusinessReports } from '../../shared/combine-reports'
+import { readCarolinaReport, isCarolinaReportsConfigured } from '../utils/carolina-reports'
 import { buildBusinessReport } from '../utils/business-report'
 import { reportDateKey, reportDayStart, reportNextDay, reportPreviousPeriod } from '../../shared/report'
 
@@ -7,6 +10,12 @@ const salesStatuses = ['APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'D
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   const query = getQuery(event)
+  if (query.scope !== undefined && query.scope !== 'current' && query.scope !== 'all-businesses') {
+    throw createError({ statusCode: 400, statusMessage: 'El alcance del reporte no es válido.' })
+  }
+  const allBusinesses = query.scope === 'all-businesses'
+  if (allBusinesses) requireSuperAdmin(context)
+  const scopedWorkshopWhere = allBusinesses ? {} : workshopWhere(context)
   const now = new Date()
   const timeZone = context.selectedWorkshop?.timezone ?? 'America/Tijuana'
   const today = reportDateKey(now, timeZone)
@@ -39,7 +48,7 @@ export default defineEventHandler(async (event) => {
   const role = currentWorkshopRole(context)
   const canViewFinancials = context.isSuperAdmin || role === 'MANAGER' || role === 'CASHIER'
   const where = {
-    ...workshopWhere(context),
+    ...scopedWorkshopWhere,
     ...assignedOrderWhere(context)
   }
   const [periodOrders, upcomingDeliveries, openOrders, allReceivableOrders, expenses, workshops, previousOrders, previousExpenses, periodPayments] = await Promise.all([
@@ -95,28 +104,28 @@ export default defineEventHandler(async (event) => {
     canViewFinancials
       ? prisma.expense.findMany({
           where: {
-            ...workshopWhere(context),
+            ...scopedWorkshopWhere,
             expenseDate: { gte: expenseFrom, lte: expenseTo }
           }
         })
       : Promise.resolve([]),
     prisma.workshop.findMany({
       where: {
-        active: true,
-        ...(context.workshopId ? { id: context.workshopId } : {})
+        active: allBusinesses ? undefined : true,
+        ...(!allBusinesses && context.workshopId ? { id: context.workshopId } : {})
       },
       orderBy: { name: 'asc' }
     }),
     canViewFinancials
       ? prisma.serviceOrder.findMany({
           where: { ...where, status: { in: [...salesStatuses] }, createdAt: { gte: previousFrom, lte: previousTo } },
-          select: { total: true }
+          select: { total: true, taxTotal: true, workshopId: true }
         })
       : Promise.resolve([]),
     canViewFinancials
       ? prisma.expense.findMany({
-          where: { ...workshopWhere(context), expenseDate: { gte: previousExpenseFrom, lte: previousExpenseTo } },
-          select: { category: true, amountMxn: true }
+          where: { ...scopedWorkshopWhere, expenseDate: { gte: previousExpenseFrom, lte: previousExpenseTo } },
+          select: { category: true, amountMxn: true, workshopId: true }
         })
       : Promise.resolve([]),
     canViewFinancials
@@ -213,15 +222,47 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const reportInput = {
+    start: startKey, end: endKey, fullEnd: fullEndKey, annual, timeZone,
+    previousDays: Math.round((Date.parse(startKey) - Date.parse(previousStartKey)) / 86400000),
+    orders: periodOrders, previousOrders, expenses, previousExpenses, payments: periodPayments,
+    beforeTax: allBusinesses
+  }
+  let report = canViewFinancials ? buildBusinessReport(reportInput) : null
+  let consolidation: ConsolidationInfo | null = null
+  if (allBusinesses && report) {
+    const sources = workshops.map(workshop => ({
+      id: workshop.id, name: workshop.name,
+      report: buildBusinessReport({
+        ...reportInput,
+        orders: periodOrders.filter(order => order.workshopId === workshop.id),
+        previousOrders: previousOrders.filter(order => order.workshopId === workshop.id),
+        expenses: expenses.filter(expense => expense.workshopId === workshop.id),
+        previousExpenses: previousExpenses.filter(expense => expense.workshopId === workshop.id),
+        payments: periodPayments.filter(payment => payment.order.workshopId === workshop.id)
+      })
+    }))
+    consolidation = { status: 'not-configured', businesses: sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })), internalOperations: null }
+    if (isCarolinaReportsConfigured()) {
+      try {
+        const carolina = await readCarolinaReport(report.period)
+        carolina.internalOperations.workshopMaterialPurchases = expenses
+          .filter(expense => expense.category === 'SUPPLIES' && /carolina\s+pinturas/i.test(expense.vendor ?? ''))
+          .reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
+        sources.push({ id: 'carolina-pinturas', name: 'Carolina Pinturas', report: carolina.report })
+        report = combineBusinessReports(sources)
+        consolidation = { status: 'connected', businesses: sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })), internalOperations: carolina.internalOperations }
+      } catch {
+        consolidation.status = 'unavailable'
+        console.warn('[carolina-reports] No se pudo consultar el reporte de Carolina Pinturas.')
+      }
+    }
+  }
+
   return {
     canViewFinancials,
-    report: canViewFinancials
-      ? buildBusinessReport({
-          start: startKey, end: endKey, fullEnd: fullEndKey, annual, timeZone,
-          previousDays: Math.round((Date.parse(startKey) - Date.parse(previousStartKey)) / 86400000),
-          orders: periodOrders, previousOrders, expenses, previousExpenses, payments: periodPayments
-        })
-      : null,
+    report,
+    consolidation,
     period: {
       from: from.toISOString(),
       to: to.toISOString()
