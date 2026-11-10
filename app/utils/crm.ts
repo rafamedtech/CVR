@@ -144,7 +144,8 @@ export const workshopRoleLabels: Record<WorkshopRole, string> = {
   MANAGER: 'Gerente',
   ADVISOR: 'Asesor / recepción',
   TECHNICIAN: 'Técnico',
-  CASHIER: 'Caja / contabilidad'
+  CASHIER: 'Caja / contabilidad',
+  READ_ONLY: 'Sólo lectura'
 }
 
 export const workshopTypeLabels: Record<WorkshopType, string> = {

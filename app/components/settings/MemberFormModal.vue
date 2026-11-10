@@ -29,7 +29,7 @@ const schema = z.object({
   phone: z.string().optional(),
   accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN']),
   workshopId: z.string(),
-  role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER'])
+  role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER', 'READ_ONLY'])
 }).superRefine((value, context) => {
   if (value.accessType === 'WORKSHOP' && !value.workshopId) {
     context.addIssue({
@@ -55,7 +55,7 @@ function resetForm() {
   ))
 
   state.fullName = props.preset?.fullName ?? ''
-  state.email = ''
+  state.email = props.preset?.email ?? ''
   state.phone = ''
   state.accessType = props.preset?.accessType ?? 'WORKSHOP'
   state.workshopId = presetWorkshop?.id
@@ -163,10 +163,12 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
           />
         </UFormField>
         <UAlert
-          :title="state.accessType === 'SUPER_ADMIN' ? 'Acceso global' : 'Permisos por taller'"
+          :title="state.accessType === 'SUPER_ADMIN' ? 'Acceso global' : state.role === 'READ_ONLY' ? 'Sólo lectura' : 'Permisos por taller'"
           :description="state.accessType === 'SUPER_ADMIN'
             ? 'Este usuario podrá ver y administrar ambos talleres.'
-            : 'El usuario sólo tendrá acceso al taller y las funciones de su rol.'"
+            : state.role === 'READ_ONLY'
+              ? 'Podrá consultar la información del taller seleccionado, sin crear, modificar ni eliminar registros.'
+              : 'El usuario sólo tendrá acceso al taller y las funciones de su rol.'"
           icon="i-lucide-shield-check"
           color="info"
           variant="subtle"

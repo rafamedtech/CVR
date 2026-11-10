@@ -18,6 +18,7 @@ const canViewFinancials = computed(() => (
   sessionData.value?.profile.isSuperAdmin
   || selectedRole.value === 'MANAGER'
   || selectedRole.value === 'CASHIER'
+  || selectedRole.value === 'READ_ONLY'
 ))
 
 const links = computed<NavigationMenuItem[][]>(() => [[

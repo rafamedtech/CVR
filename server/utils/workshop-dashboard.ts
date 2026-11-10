@@ -40,7 +40,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
 
   const prisma = usePrisma()
   const role = currentWorkshopRole(context)
-  const canViewFinancials = context.isSuperAdmin || role === 'MANAGER' || role === 'CASHIER'
+  const canViewFinancials = context.isSuperAdmin || role === 'MANAGER' || role === 'CASHIER' || role === 'READ_ONLY'
   const where = {
     ...scopedWorkshopWhere,
     ...assignedOrderWhere(context)

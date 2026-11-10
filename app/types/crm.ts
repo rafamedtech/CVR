@@ -6,7 +6,7 @@ export type { PaymentStatus } from '#shared/payment-status'
 export type { CustomerType } from '#shared/customer-type'
 
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
-export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'
+export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER' | 'READ_ONLY'
 export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN'
 export type TaxRate = 0 | 8 | 16
 export type OrderStatus = 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'LIQUIDATED' | 'CANCELLED'
@@ -245,9 +245,10 @@ export interface MemberListItem {
 }
 
 export interface MemberAccessPreset {
-  key: 'javier-mechanical' | 'paulo-body-shop' | 'second-admin'
+  key: 'javier-mechanical' | 'paulo-body-shop' | 'second-admin' | 'third-body-shop' | 'consultation'
   fullName: string
   accessType: MemberAccessType
+  email?: string
   workshopSlug?: string
   role?: WorkshopRole
 }

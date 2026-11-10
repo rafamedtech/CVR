@@ -31,6 +31,22 @@ const presets: MemberAccessPreset[] = [
     role: 'MANAGER'
   },
   {
+    key: 'third-body-shop',
+    fullName: 'Carrocero 3',
+    email: 'c3@cvrtransportinc.com',
+    accessType: 'WORKSHOP',
+    workshopSlug: 'carroceria',
+    role: 'TECHNICIAN'
+  },
+  {
+    key: 'consultation',
+    fullName: 'Consulta',
+    email: 'consulta@cvrtransportinc.com',
+    accessType: 'WORKSHOP',
+    workshopSlug: 'carroceria',
+    role: 'READ_ONLY'
+  },
+  {
     key: 'second-admin',
     fullName: '',
     accessType: 'SUPER_ADMIN'
@@ -52,7 +68,11 @@ function assignedMember(preset: MemberAccessPreset) {
   const expectedName = preset.fullName.toLocaleLowerCase('es-MX')
 
   return props.members.find(member => (
-    member.fullName.toLocaleLowerCase('es-MX').includes(expectedName)
+    (preset.email
+      ? member.email.toLowerCase() === preset.email.toLowerCase()
+      : member.fullName.toLocaleLowerCase('es-MX').includes(expectedName))
+    && member.active
+    && !member.isSuperAdmin
     && member.memberships.some(membership => (
       membership.workshopId === workshop?.id && membership.role === preset.role
     ))
@@ -71,7 +91,7 @@ const accessCards = computed(() => presets.map((preset) => {
       : preset.fullName,
     description: preset.accessType === 'SUPER_ADMIN'
       ? 'Vista global y administración de ambos talleres'
-      : `${workshop?.name ?? 'Taller'} · Encargado`
+      : `${workshop?.name ?? 'Taller'} · ${workshopRoleLabels[preset.role ?? 'MANAGER']}`
   }
 }))
 </script>
@@ -116,8 +136,8 @@ const accessCards = computed(() => presets.map((preset) => {
           <p class="mt-1 text-sm text-muted">
             {{ card.description }}
           </p>
-          <p v-if="card.member" class="mt-2 truncate text-xs text-muted">
-            {{ card.member.email }}
+          <p v-if="card.member || card.preset.email" class="mt-2 truncate text-xs text-muted">
+            {{ card.member?.email ?? card.preset.email }}
           </p>
         </div>
 

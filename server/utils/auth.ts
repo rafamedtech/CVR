@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { serverSupabaseUser } from '#supabase/server'
-import type { Profile, Workshop, WorkshopMember } from '../../generated/prisma/client'
+import type { Profile, Workshop, WorkshopMember, WorkshopRole } from '../../generated/prisma/client'
 
 type ProfileWithMemberships = Profile & {
   memberships: Array<WorkshopMember & { workshop: Workshop }>
@@ -135,6 +135,14 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
     selectedWorkshop = membership.workshop
   }
 
+  const role = profile.memberships.find(item => item.workshopId === selectedWorkshop?.id)?.role
+  if (!profile.isSuperAdmin && role === 'READ_ONLY' && !['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Tu usuario tiene permisos de sólo lectura.'
+    })
+  }
+
   return {
     profile,
     workshopId: selectedWorkshop?.id ?? null,
@@ -163,7 +171,7 @@ export function requireSuperAdmin(context: CrmRequestContext) {
   }
 }
 
-export function requireWorkshopRole(context: CrmRequestContext, roles: Array<'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER'>) {
+export function requireWorkshopRole(context: CrmRequestContext, roles: WorkshopRole[]) {
   if (context.isSuperAdmin) return
 
   const membership = context.profile.memberships.find(item => item.workshopId === context.workshopId)

@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
 
   const base = serializeOrderListItem(order)
   const role = currentWorkshopRole(context)
-  const canViewCosts = context.isSuperAdmin || role === 'MANAGER' || role === 'CASHIER'
+  const canViewCosts = context.isSuperAdmin || role === 'MANAGER' || role === 'CASHIER' || role === 'READ_ONLY'
 
   return {
     ...base,

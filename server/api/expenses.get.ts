@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
-  requireWorkshopRole(context, ['MANAGER', 'CASHIER'])
+  requireWorkshopRole(context, ['MANAGER', 'CASHIER', 'READ_ONLY'])
   const prisma = usePrisma()
 
   const expenses = await prisma.expense.findMany({

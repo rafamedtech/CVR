@@ -18,6 +18,7 @@ enum WorkshopRole {
   ADVISOR
   TECHNICIAN
   CASHIER
+  READ_ONLY
 }
 
 enum CustomerType {

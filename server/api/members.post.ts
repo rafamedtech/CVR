@@ -7,7 +7,7 @@ const memberSchema = z.object({
   phone: z.string().trim().max(30).optional().nullable(),
   accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN']),
   workshopId: z.string(),
-  role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER'])
+  role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER', 'READ_ONLY'])
 }).superRefine((value, context) => {
   if (value.accessType === 'WORKSHOP' && !z.uuid().safeParse(value.workshopId).success) {
     context.addIssue({
