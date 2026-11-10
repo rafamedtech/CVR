@@ -15,9 +15,12 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
   created: []
   updated: []
+  deleted: []
 }>()
 const toast = useToast()
 const loading = shallowRef(false)
+const deleting = shallowRef(false)
+const deleteConfirmationOpen = shallowRef(false)
 const expenseDate = shallowRef<CalendarDate | undefined>(today(getLocalTimeZone()))
 const expenseDateOpen = shallowRef(false)
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
@@ -86,6 +89,8 @@ watch(() => state.currency, (currency: Currency) => {
 watch([open, () => props.expense], ([isOpen, expense]) => {
   if (!isOpen) return
 
+  deleteConfirmationOpen.value = false
+
   const nextState = expense
     ? {
         category: expense.category,
@@ -108,6 +113,8 @@ watch([open, () => props.expense], ([isOpen, expense]) => {
 }, { immediate: true })
 
 async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
+  if (loading.value || deleting.value || deleteConfirmationOpen.value) return
+
   loading.value = true
   try {
     if (props.expense) {
@@ -140,6 +147,27 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
     loading.value = false
   }
 }
+
+async function removeExpense() {
+  if (!props.expense || loading.value || deleting.value) return
+
+  deleting.value = true
+  try {
+    await $fetch(`/api/expenses/${props.expense.id}`, { method: 'DELETE' })
+    toast.add({ title: 'Gasto eliminado', color: 'success', icon: 'i-lucide-check' })
+    deleteConfirmationOpen.value = false
+    open.value = false
+    emit('deleted')
+  } catch (error) {
+    toast.add({
+      title: 'No se pudo eliminar el gasto',
+      description: getApiErrorMessage(error),
+      color: 'error'
+    })
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -149,7 +177,7 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
     :description="modalDescription"
     :close="false"
     :dismissible="false"
-    :ui="{ footer: 'justify-end' }"
+    :ui="{ footer: 'flex-wrap justify-end' }"
   >
     <template #body>
       <UForm
@@ -294,9 +322,20 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
     </template>
     <template #footer="{ close }">
       <UButton
+        v-if="isEditing"
+        label="Eliminar gasto"
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="soft"
+        class="mr-auto"
+        :disabled="loading || deleting"
+        @click="deleteConfirmationOpen = true"
+      />
+      <UButton
         label="Cancelar"
         color="neutral"
         variant="outline"
+        :disabled="loading || deleting"
         @click="close"
       />
       <UButton
@@ -304,6 +343,33 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
         form="expense-form"
         :label="submitLabel"
         :loading="loading"
+        :disabled="deleting || deleteConfirmationOpen"
+      />
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="deleteConfirmationOpen"
+    title="Eliminar gasto"
+    :description="`¿Deseas eliminar el gasto «${expense?.description}»? Esta acción no se puede deshacer.`"
+    :close="false"
+    :dismissible="false"
+    :ui="{ footer: 'justify-end' }"
+  >
+    <template #footer>
+      <UButton
+        label="Cancelar"
+        color="neutral"
+        variant="outline"
+        :disabled="deleting"
+        @click="deleteConfirmationOpen = false"
+      />
+      <UButton
+        label="Sí, eliminar gasto"
+        icon="i-lucide-trash-2"
+        color="error"
+        :loading="deleting"
+        @click="removeExpense"
       />
     </template>
   </UModal>

@@ -113,6 +113,7 @@ function openEditModal(expense: ExpenseListItem) {
         :orders="orderOptions"
         @created="refresh"
         @updated="refresh"
+        @deleted="refresh"
       />
     </template>
   </UDashboardPanel>
