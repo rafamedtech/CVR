@@ -1,3 +1,6 @@
+import { buildBusinessReport } from '../utils/business-report'
+import { reportDateKey, reportDayStart, reportNextDay, reportPreviousPeriod } from '../../shared/report'
+
 const openStatuses = ['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY'] as const
 const salesStatuses = ['APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'LIQUIDATED'] as const
 
@@ -5,25 +8,32 @@ export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   const query = getQuery(event)
   const now = new Date()
-  const from = typeof query.from === 'string'
-    ? new Date(`${query.from}T00:00:00`)
-    : new Date(now.getFullYear(), now.getMonth(), 1)
-  const to = typeof query.to === 'string'
-    ? new Date(`${query.to}T23:59:59.999`)
-    : now
-  const monthEnd = typeof query.monthEnd === 'string'
-    ? new Date(`${query.monthEnd}T23:59:59.999`)
-    : to
-
-  if (
-    Number.isNaN(from.getTime())
-    || Number.isNaN(to.getTime())
-    || Number.isNaN(monthEnd.getTime())
-    || from > to
-    || from > monthEnd
-  ) {
+  const timeZone = context.selectedWorkshop?.timezone ?? 'America/Tijuana'
+  const today = reportDateKey(now, timeZone)
+  const annual = query.view === 'annual'
+  const startKey = typeof query.from === 'string' ? query.from : annual ? `${today.slice(0, 4)}-01-01` : `${today.slice(0, 7)}-01`
+  const endKey = typeof query.to === 'string' ? query.to : today
+  const defaultMonthEnd = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0)).toISOString().slice(0, 10)
+  const fullEndKey = typeof query.monthEnd === 'string' ? query.monthEnd : annual ? `${today.slice(0, 4)}-12-31` : defaultMonthEnd
+  const validDate = (key: string) => /^\d{4}-\d{2}-\d{2}$/.test(key)
+    && !Number.isNaN(Date.parse(key)) && new Date(key).toISOString().slice(0, 10) === key
+  if (![startKey, endKey, fullEndKey].every(validDate)
+    || startKey > endKey || endKey > fullEndKey || endKey > today
+    || !startKey.endsWith('-01')
+    || (annual ? !startKey.endsWith('-01-01') || fullEndKey !== `${startKey.slice(0, 4)}-12-31` : startKey.slice(0, 7) !== fullEndKey.slice(0, 7))) {
     throw createError({ statusCode: 400, statusMessage: 'El rango de fechas no es válido.' })
   }
+  const from = reportDayStart(startKey, timeZone)
+  const to = new Date(reportDayStart(reportNextDay(endKey), timeZone).getTime() - 1)
+  const monthEnd = new Date(reportDayStart(reportNextDay(fullEndKey), timeZone).getTime() - 1)
+  const previousStartKey = reportPreviousPeriod(startKey, annual)
+  const previousFrom = reportDayStart(previousStartKey, timeZone)
+  const previousTo = new Date(from.getTime() - 1)
+  // Expense dates are stored as calendar dates at UTC midnight.
+  const expenseFrom = new Date(`${startKey}T00:00:00Z`)
+  const expenseTo = new Date(`${endKey}T23:59:59.999Z`)
+  const previousExpenseFrom = new Date(`${previousStartKey}T00:00:00Z`)
+  const previousExpenseTo = new Date(expenseFrom.getTime() - 1)
 
   const prisma = usePrisma()
   const role = currentWorkshopRole(context)
@@ -32,7 +42,7 @@ export default defineEventHandler(async (event) => {
     ...workshopWhere(context),
     ...assignedOrderWhere(context)
   }
-  const [periodOrders, upcomingDeliveries, openOrders, allReceivableOrders, expenses, workshops] = await Promise.all([
+  const [periodOrders, upcomingDeliveries, openOrders, allReceivableOrders, expenses, workshops, previousOrders, previousExpenses, periodPayments] = await Promise.all([
     prisma.serviceOrder.findMany({
       where: {
         ...where,
@@ -44,7 +54,8 @@ export default defineEventHandler(async (event) => {
         customer: true,
         vehicle: true,
         assignedTo: true,
-        payments: true
+        payments: true,
+        items: true
       },
       orderBy: { createdAt: 'desc' }
     }),
@@ -85,7 +96,7 @@ export default defineEventHandler(async (event) => {
       ? prisma.expense.findMany({
           where: {
             ...workshopWhere(context),
-            expenseDate: { gte: from, lte: to }
+            expenseDate: { gte: expenseFrom, lte: expenseTo }
           }
         })
       : Promise.resolve([]),
@@ -95,15 +106,29 @@ export default defineEventHandler(async (event) => {
         ...(context.workshopId ? { id: context.workshopId } : {})
       },
       orderBy: { name: 'asc' }
-    })
+    }),
+    canViewFinancials
+      ? prisma.serviceOrder.findMany({
+          where: { ...where, status: { in: [...salesStatuses] }, createdAt: { gte: previousFrom, lte: previousTo } },
+          select: { total: true }
+        })
+      : Promise.resolve([]),
+    canViewFinancials
+      ? prisma.expense.findMany({
+          where: { ...workshopWhere(context), expenseDate: { gte: previousExpenseFrom, lte: previousExpenseTo } },
+          select: { category: true, amountMxn: true }
+        })
+      : Promise.resolve([]),
+    canViewFinancials
+      ? prisma.payment.findMany({
+          where: { paidAt: { gte: from, lte: to }, order: { ...where, status: { in: [...salesStatuses] } } },
+          include: { order: { select: { workshopId: true } } }
+        })
+      : Promise.resolve([])
   ])
 
   const sales = periodOrders.reduce((sum, order) => sum + Number(order.total), 0)
-  const collected = periodOrders.reduce((sum, order) => (
-    sum + order.payments
-      .filter(payment => payment.paidAt >= from && payment.paidAt <= to)
-      .reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
-  ), 0)
+  const collected = periodPayments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
   const materialCosts = expenses
     .filter(expense => expense.category === 'SUPPLIES')
     .reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
@@ -139,13 +164,7 @@ export default defineEventHandler(async (event) => {
     delivered: number
   }>()
 
-  const trendKey = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-
-    return `${year}-${month}-${day}`
-  }
+  const trendKey = (date: Date) => reportDateKey(date, timeZone)
   const trendEntry = (date: Date) => {
     const key = trendKey(date)
     const current = trendMap.get(key)
@@ -166,11 +185,8 @@ export default defineEventHandler(async (event) => {
     return entry
   }
 
-  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
-  const lastDay = new Date(to.getFullYear(), to.getMonth(), to.getDate())
-  while (cursor <= lastDay) {
-    trendEntry(cursor)
-    cursor.setDate(cursor.getDate() + 1)
+  for (let day = startKey; day <= endKey; day = reportNextDay(day)) {
+    trendEntry(reportDayStart(day, timeZone))
   }
 
   for (const order of periodOrders) {
@@ -179,19 +195,15 @@ export default defineEventHandler(async (event) => {
     orderEntry.sales += canViewFinancials ? Number(order.total) : 0
     orderEntry.orders += 1
     orderEntry.delivered += order.status === 'DELIVERED' ? 1 : 0
+  }
 
-    if (canViewFinancials) {
-      for (const payment of order.payments) {
-        if (payment.paidAt >= from && payment.paidAt <= to) {
-          trendEntry(payment.paidAt).collected += Number(payment.amountMxn)
-        }
-      }
-    }
+  for (const payment of periodPayments) {
+    trendEntry(payment.paidAt).collected += Number(payment.amountMxn)
   }
 
   if (canViewFinancials) {
     for (const expense of expenses) {
-      const entry = trendEntry(expense.expenseDate)
+      const entry = trendEntry(reportDayStart(expense.expenseDate.toISOString().slice(0, 10), timeZone))
 
       if (expense.category === 'SUPPLIES') {
         entry.materialCosts += Number(expense.amountMxn)
@@ -203,6 +215,13 @@ export default defineEventHandler(async (event) => {
 
   return {
     canViewFinancials,
+    report: canViewFinancials
+      ? buildBusinessReport({
+          start: startKey, end: endKey, fullEnd: fullEndKey, annual, timeZone,
+          previousDays: Math.round((Date.parse(startKey) - Date.parse(previousStartKey)) / 86400000),
+          orders: periodOrders, previousOrders, expenses, previousExpenses, payments: periodPayments
+        })
+      : null,
     period: {
       from: from.toISOString(),
       to: to.toISOString()
@@ -241,9 +260,8 @@ export default defineEventHandler(async (event) => {
         name: workshop.name,
         sales: canViewFinancials ? orders.reduce((sum, order) => sum + Number(order.total), 0) : 0,
         collected: canViewFinancials
-          ? orders.reduce((sum, order) => (
-              sum + order.payments.reduce((paymentSum, payment) => paymentSum + Number(payment.amountMxn), 0)
-            ), 0)
+          ? periodPayments.filter(payment => payment.order.workshopId === workshop.id)
+              .reduce((sum, payment) => sum + Number(payment.amountMxn), 0)
           : 0,
         expenses: canViewFinancials ? workshopExpenses : 0,
         openOrders: orders.filter(order => openStatuses.includes(order.status as typeof openStatuses[number])).length

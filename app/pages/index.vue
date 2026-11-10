@@ -4,38 +4,36 @@ import type { DashboardData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
 
+const route = useRoute()
+const router = useRouter()
+const annual = shallowRef(route.query.view === 'annual')
 const now = new Date()
 
-function toDateString(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-const currentMonth = parseDate(toDateString(now))
-const selectedMonth = shallowRef<DateValue>(currentMonth)
-const hasSelectedMonth = shallowRef(false)
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Tijuana', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+const currentMonth = parseDate(today)
+const routeMonth = typeof route.query.month === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(route.query.month) && route.query.month <= today.slice(0, 7) ? parseDate(`${route.query.month}-01`) : currentMonth
+const selectedMonth = shallowRef<DateValue>(routeMonth)
+const hasSelectedMonth = shallowRef(true)
 const monthRange = computed(() => {
   const year = selectedMonth.value.year
   const month = selectedMonth.value.month
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
-  const lastDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate()
+  const isCurrentMonth = year === currentMonth.year && month === currentMonth.month
+  const lastDay = isCurrentMonth ? currentMonth.day : new Date(year, month, 0).getDate()
 
   return {
-    from: `${year}-${String(month).padStart(2, '0')}-01`,
-    to: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-    monthEnd: `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
+    from: annual.value ? `${year}-01-01` : `${year}-${String(month).padStart(2, '0')}-01`,
+    to: annual.value ? (year === currentMonth.year ? today : `${year}-12-31`) : `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+    monthEnd: annual.value ? `${year}-12-31` : `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
   }
 })
-const { isAllWorkshops, activeWorkshop } = useCrmSession()
+const { isAllWorkshops } = useCrmSession()
 
-const { data, status, refresh } = await useFetch<DashboardData>('/api/dashboard', {
+const { data, status, error, refresh } = await useFetch<DashboardData>('/api/dashboard', {
   query: computed(() => ({
     from: monthRange.value.from,
     to: monthRange.value.to,
-    monthEnd: monthRange.value.monthEnd
+    monthEnd: monthRange.value.monthEnd,
+    view: annual.value ? 'annual' : 'monthly'
   })),
   key: 'crm-dashboard',
   watch: false
@@ -43,6 +41,7 @@ const { data, status, refresh } = await useFetch<DashboardData>('/api/dashboard'
 
 async function selectMonth() {
   hasSelectedMonth.value = true
+  await router.replace({ query: { ...route.query, month: `${selectedMonth.value.year}-${String(selectedMonth.value.month).padStart(2, '0')}`, view: annual.value ? 'annual' : undefined } })
   await refresh()
 }
 </script>
@@ -51,7 +50,7 @@ async function selectMonth() {
   <UDashboardPanel id="dashboard">
     <template #header>
       <UDashboardNavbar
-        :title="isAllWorkshops ? 'Resumen consolidado' : activeWorkshop?.name ?? 'Resumen'"
+        :title="annual ? 'Resumen anual' : 'Resumen mensual'"
         :toggle="{ size: 'xl' }"
         :ui="{ title: 'text-base lg:text-sm' }"
       >
@@ -64,6 +63,7 @@ async function selectMonth() {
             <DashboardMonthFilter
               v-model="selectedMonth"
               :max-value="currentMonth"
+              :annual="annual"
               :has-selection="hasSelectedMonth"
               @select="selectMonth"
             />
@@ -71,6 +71,15 @@ async function selectMonth() {
           <div class="lg:hidden">
             <WorkshopSwitcher size="xl" />
           </div>
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-calendar-range"
+            :label="annual ? 'Anual' : 'Mensual'"
+            :aria-pressed="annual"
+            aria-label="Cambiar entre reporte mensual y anual"
+            @click="annual = !annual; selectMonth()"
+          />
           <div class="hidden lg:block">
             <WorkshopSwitcher />
           </div>
@@ -83,6 +92,7 @@ async function selectMonth() {
             v-model="selectedMonth"
             block
             :max-value="currentMonth"
+            :annual="annual"
             :has-selection="hasSelectedMonth"
             @select="selectMonth"
           />
@@ -98,38 +108,45 @@ async function selectMonth() {
         </div>
       </div>
 
+      <UAlert
+        v-else-if="error"
+        title="No se pudo cargar el resumen"
+        description="Intenta cargar el reporte de nuevo."
+        color="error"
+        icon="i-lucide-circle-alert"
+      >
+        <template #actions>
+          <UButton
+            label="Reintentar"
+            color="error"
+            variant="soft"
+            @click="refresh()"
+          />
+        </template>
+      </UAlert>
+
       <div v-else-if="data" class="space-y-6">
-        <DashboardProfitSummary
-          v-if="data.canViewFinancials"
-          :kpis="data.kpis"
-          :expense-breakdown="data.expenseBreakdown"
+        <ReportsDashboard
+          v-if="data.canViewFinancials && data.report"
+          :report="data.report"
+          :consolidated="isAllWorkshops"
         />
 
-        <DashboardKpiGrid
-          :kpis="data.kpis"
-          :can-view-financials="data.canViewFinancials"
-        />
-
-        <div class="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-          <DashboardTrend
-            class="h-full"
-            :items="data.trend"
-            :can-view-financials="data.canViewFinancials"
-          />
-          <DashboardStatusBreakdown
-            class="h-full"
-            :items="data.statusCounts"
-          />
-        </div>
+        <section aria-labelledby="dashboard-operation" class="space-y-4">
+          <h2 id="dashboard-operation" class="font-semibold text-highlighted">
+            Operación del taller
+          </h2>
+          <DashboardKpiGrid :kpis="data.kpis" :can-view-financials="false" />
+          <div class="grid gap-4 xl:grid-cols-2">
+            <DashboardStatusBreakdown :items="data.statusCounts" />
+            <DashboardTrend v-if="!data.canViewFinancials" :items="data.trend" :can-view-financials="false" />
+            <DashboardWorkshopPerformance v-else-if="isAllWorkshops" :workshops="data.workshops" />
+          </div>
+        </section>
 
         <DashboardRecentOrders :orders="data.recentOrders" />
 
-        <DashboardUpcomingDeliveries :orders="data.upcomingDeliveries" />
-
-        <DashboardWorkshopPerformance
-          v-if="isAllWorkshops && data.canViewFinancials"
-          :workshops="data.workshops"
-        />
+        <DashboardUpcomingDeliveries :orders="data.upcomingDeliveries" :annual="annual" />
       </div>
     </template>
   </UDashboardPanel>

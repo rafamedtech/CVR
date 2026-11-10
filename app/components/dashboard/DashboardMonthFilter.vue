@@ -5,6 +5,7 @@ const props = defineProps<{
   maxValue: DateValue
   hasSelection: boolean
   block?: boolean
+  annual?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,10 +18,8 @@ const open = shallowRef(false)
 const buttonLabel = computed(() => {
   if (!props.hasSelection) return 'Resumen del mes actual'
 
-  const monthName = new Intl.DateTimeFormat('es-MX', { month: 'long' })
+  return new Intl.DateTimeFormat('es-MX', { month: props.annual ? undefined : 'long', year: 'numeric', timeZone: 'UTC' })
     .format(selectedMonth.value.toDate('UTC'))
-
-  return `Resumen del mes de ${monthName}`
 })
 
 function isDateValue(value: unknown): value is DateValue {
@@ -53,7 +52,7 @@ function selectMonth(month: unknown) {
 
     <template #content>
       <UCalendar
-        type="month"
+        :type="annual ? 'year' : 'month'"
         locale="es-MX"
         prevent-deselect
         :model-value="props.hasSelection ? selectedMonth : undefined"
