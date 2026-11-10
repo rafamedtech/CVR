@@ -91,3 +91,11 @@ export interface ConsolidationInfo {
     workshopMaterialPurchases: number
   } | null
 }
+
+export interface BusinessReportData {
+  business: string
+  businessName: string
+  report: BusinessReportSummary | null
+  consolidation: ConsolidationInfo | null
+  status: 'connected' | 'not-configured' | 'unavailable'
+}

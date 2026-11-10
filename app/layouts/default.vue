@@ -28,6 +28,14 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     exact: true,
     onSelect: () => { open.value = false }
   },
+  ...(sessionData.value?.profile.isSuperAdmin
+    ? [{
+        label: 'Reportes',
+        icon: 'i-lucide-chart-no-axes-combined',
+        to: '/reportes',
+        onSelect: () => { open.value = false }
+      }]
+    : []),
   {
     label: 'Clientes',
     icon: 'i-lucide-users',

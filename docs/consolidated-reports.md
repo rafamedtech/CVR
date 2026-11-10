@@ -1,9 +1,14 @@
 # Reporte de todos los negocios
 
-En **Resumen**, el administrador general puede elegir **Todos los negocios**
-para sumar todos los talleres de CVR y Carolina Pinturas. También puede volver
-al taller seleccionado. Los periodos mensual y anual y el alcance se conservan
-como parámetros de la URL.
+**Resumen** muestra exclusivamente el taller seleccionado en la sesión. Su
+selector no ofrece la opción de sumar talleres. Si todavía no hay un taller
+seleccionado, solicita elegir uno y no consulta información consolidada.
+
+En **Reportes** (`/reportes`), el administrador general puede elegir Carolina
+Pinturas, cada taller por separado o **Todos los negocios**. Este selector es
+independiente del taller operativo de la sesión. El periodo mensual o anual y
+el negocio se conservan en la URL. Los reportes individuales y la suma usan la
+misma base de ventas antes de IVA.
 
 ## Conexión de Carolina
 

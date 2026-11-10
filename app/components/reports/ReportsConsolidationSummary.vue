@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { ConsolidationInfo } from '~/types/reports'
 
-const props = defineProps<{ info: ConsolidationInfo, month: string, annual: boolean }>()
+const props = defineProps<{ info: ConsolidationInfo, month: string, annual: boolean, carolinaOnly?: boolean }>()
 type Business = ConsolidationInfo['businesses'][number]
 const columns: TableColumn<Business>[] = [
   { accessorKey: 'name', header: 'Negocio' },
@@ -20,7 +20,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 id="report-businesses" class="font-semibold text-highlighted">
-          Resultados por negocio
+          {{ carolinaOnly ? 'Detalle de Carolina Pinturas' : 'Resultados por negocio' }}
         </h2>
         <p class="mt-1 text-xs text-muted">
           Ventas antes de IVA. Cobros y saldos conservan los importes registrados.
@@ -35,7 +35,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
         label="Reporte de Carolina"
       />
     </div>
-    <DetailCard :ui="{ container: 'min-w-0 p-0 sm:p-0' }">
+    <DetailCard v-if="!carolinaOnly" :ui="{ container: 'min-w-0 p-0 sm:p-0' }">
       <DetailTable
         :data="info.businesses"
         :columns="columns"
@@ -66,7 +66,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
           Operaciones internas incluidas
         </h3>
         <p class="mt-1 text-xs text-muted">
-          Se muestran por separado y permanecen en los totales. Los clientes internos usan la clasificación de Carolina; los insumos se identifican por el proveedor registrado en los talleres.
+          Se muestran por separado y permanecen en los totales. {{ carolinaOnly ? 'Se usa la clasificación de clientes internos de Carolina.' : 'Los clientes internos usan la clasificación de Carolina; los insumos se identifican por el proveedor registrado en los talleres.' }}
         </p>
       </div>
       <DetailFields
@@ -75,7 +75,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
           { key: 'sales', label: 'Ventas a clientes internos', value: formatCurrency(info.internalOperations.sales) },
           { key: 'count', label: 'Pedidos internos', value: info.internalOperations.orderCount },
           { key: 'collections', label: 'Cobros a clientes internos', value: formatCurrency(info.internalOperations.collections) },
-          { key: 'material', label: 'Insumos de talleres pagados a Carolina', value: formatCurrency(info.internalOperations.workshopMaterialPurchases) }
+          carolinaOnly ? { key: 'balance', label: 'Saldo de clientes internos', value: formatCurrency(info.internalOperations.outstandingBalance) } : { key: 'material', label: 'Insumos de talleres pagados a Carolina', value: formatCurrency(info.internalOperations.workshopMaterialPurchases) }
         ]"
       />
     </DetailCard>
