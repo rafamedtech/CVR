@@ -34,7 +34,6 @@ const filteredExpenses = computed(() => {
   ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
 })
 
-const total = computed(() => filteredExpenses.value.reduce((sum, expense) => sum + expense.amountMxn, 0))
 const newExpenseLabel = computed(() => isMobileViewport.value ? 'Nuevo' : 'Registrar gasto')
 
 function openCreateModal() {
@@ -85,16 +84,6 @@ function openDuplicateModal(expense: ExpenseListItem) {
             placeholder="Buscar descripción, proveedor o categoría…"
             class="w-full sm:w-96"
           />
-        </template>
-        <template #right>
-          <div class="text-right">
-            <p class="text-xs text-muted">
-              Total visible
-            </p>
-            <p class="font-semibold text-highlighted">
-              {{ formatCurrency(total) }}
-            </p>
-          </div>
         </template>
       </UDashboardToolbar>
     </template>
