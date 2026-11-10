@@ -64,6 +64,13 @@ export interface ReportRankingItem {
   percentage: number
 }
 
+export type ReportSalesChannelKey = 'counter' | 'seller' | 'internal' | 'workshop'
+
+export interface ReportSalesChannel extends ReportBreakdownItem {
+  key: ReportSalesChannelKey
+  previousAmount: number
+}
+
 export interface BusinessReportSummary {
   taxBasis?: 'before-tax' | 'as-recorded'
   period: ReportPeriod
@@ -77,6 +84,7 @@ export interface BusinessReportSummary {
   topServices: ReportRankingItem[]
   salesByLine: ReportBreakdownItem[]
   salesByWorkshop: ReportBreakdownItem[]
+  salesChannels?: ReportSalesChannel[]
 }
 
 export interface ConsolidationInfo {

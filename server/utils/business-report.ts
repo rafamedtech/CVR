@@ -1,10 +1,11 @@
-import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem } from '../../app/types/reports'
+import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem, ReportSalesChannelKey } from '../../app/types/reports'
 import { reportChange, reportPercentage, reportDateKey, reportNextDay } from '../../shared/report'
 
 type Numeric = number | { toString(): string }
 interface ReportSale {
   total: Numeric
   taxTotal?: Numeric
+  salesChannel?: ReportSalesChannelKey
 }
 interface ReportExpense {
   category: string
@@ -62,6 +63,7 @@ export function buildBusinessReport(input: {
   previousExpenses: Pick<ReportExpense, 'category' | 'amountMxn'>[]
   payments: ReportPayment[]
   beforeTax?: boolean
+  channelKeys?: ReportSalesChannelKey[]
 }): BusinessReportSummary {
   const { start, end, fullEnd, annual, timeZone, orders, expenses, payments } = input
   const beforeTax = input.beforeTax === true
@@ -123,6 +125,16 @@ export function buildBusinessReport(input: {
     add(methods, payment.method, payment.method, Number(payment.amountMxn))
   }
   const billedSales = orders.reduce((sum, order) => sum + Number(order.total), 0)
+  const channelLabels = { counter: 'Mostrador', seller: 'Vendedor', internal: 'Clientes internos', workshop: 'Talleres' }
+  const salesChannels = (input.channelKeys ?? ['workshop'] as ReportSalesChannelKey[]).map((key) => {
+    const channelOrders = orders.filter(order => (order.salesChannel ?? 'workshop') === key)
+    const amount = summarize(channelOrders, [], beforeTax).sales
+    return {
+      key, label: channelLabels[key], amount, count: channelOrders.length,
+      percentage: reportPercentage(amount, current.sales) ?? 0,
+      previousAmount: summarize(input.previousOrders.filter(order => (order.salesChannel ?? 'workshop') === key), [], beforeTax).sales
+    }
+  })
   return {
     taxBasis: beforeTax ? 'before-tax' : 'as-recorded',
     period: { mode: annual ? 'annual' : 'monthly', start, end, label: `${start.split('-').reverse().join('/')} – ${end.split('-').reverse().join('/')}`, elapsedDays: days(end), totalDays: days(fullEnd) },
@@ -138,6 +150,7 @@ export function buildBusinessReport(input: {
     },
     dailyMovements: [...daily.values()].map(day => ({ ...day, netCashFlow: day.collections - day.expenses, netProfit: day.sales - day.expenses })),
     salesByWorkshop: breakdown(workshops), salesByLine: breakdown(lines), paymentMethods: breakdown(methods), operatingExpenseCategories: breakdown(categories),
+    salesChannels,
     topCustomers: ranking(customers, 'Cliente'), topDebtors: ranking(debtors, 'Saldo pendiente'), topServices: ranking(services, 'Concepto de orden'), topMaterialProviders: ranking(providers, 'Proveedor')
   }
 }

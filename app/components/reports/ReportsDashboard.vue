@@ -12,7 +12,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
 
 <template>
   <div class="flex min-w-0 flex-col gap-6">
-    <section aria-labelledby="report-summary" class="space-y-4">
+    <section aria-labelledby="report-summary" class="space-y-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="report-summary" class="font-semibold text-highlighted">
           Resultado del {{ annual ? 'año' : 'mes' }}
@@ -25,7 +25,6 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         {{ allBusinesses ? 'Talleres: órdenes aprobadas y posteriores por fecha de creación. Carolina: pedidos vigentes por fecha del pedido. Operaciones internas incluidas.' : carolina ? 'Pedidos vigentes de Carolina Pinturas, según la fecha del pedido.' : 'Órdenes aprobadas y posteriores, según su fecha de creación.' }} Comparación con el {{ annual ? 'año' : 'mes' }} anterior completo.
       </p>
       <ReportsSummaryCards :metrics="report.metrics" :annual="annual" :before-tax="report.taxBasis === 'before-tax'" />
-      <slot name="businesses" />
       <div class="grid gap-4 xl:grid-cols-3">
         <ReportsProfitStatement
           :metrics="report.metrics"
@@ -38,13 +37,19 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
       <ReportsCashFlowChart :data="report.dailyMovements" :annual="annual" />
     </section>
 
-    <section aria-labelledby="report-sales" class="space-y-4">
+    <section aria-labelledby="report-sales" class="space-y-3">
       <ReportsSectionHeading
         id="report-sales"
-        :title="allBusinesses ? 'Ventas, productos y servicios' : carolina ? 'Ventas y productos' : 'Órdenes y servicios'"
+        title="Ventas"
         marker="bg-primary"
         :amount="report.metrics.sales"
       />
+      <ReportsSalesChannels
+        v-if="(carolina || allBusinesses) && report.salesChannels?.length"
+        :channels="report.salesChannels"
+        :all-businesses="allBusinesses"
+      />
+      <slot name="businesses" />
       <ReportsBreakdownCard
         v-if="consolidated"
         :title="allBusinesses ? 'Ventas por negocio' : 'Ventas por taller'"
@@ -86,7 +91,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
       </div>
     </section>
 
-    <section aria-labelledby="report-materials" class="space-y-4">
+    <section aria-labelledby="report-materials" class="space-y-3">
       <ReportsSectionHeading
         id="report-materials"
         title="Compras de material"
@@ -105,7 +110,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
       />
     </section>
 
-    <section aria-labelledby="report-operating" class="space-y-4">
+    <section aria-labelledby="report-operating" class="space-y-3">
       <ReportsSectionHeading
         id="report-operating"
         title="Gastos operativos"
@@ -135,7 +140,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
       </ReportsBreakdownCard>
     </section>
 
-    <section aria-labelledby="report-collections" class="space-y-4">
+    <section aria-labelledby="report-collections" class="space-y-3">
       <ReportsSectionHeading
         id="report-collections"
         title="Cobranza y flujo"

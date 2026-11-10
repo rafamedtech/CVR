@@ -33,7 +33,7 @@ async function updateReport() {
 <template>
   <UDashboardPanel id="business-reports">
     <template #header>
-      <UDashboardNavbar title="Reportes" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
+      <UDashboardNavbar :title="annual ? 'Reporte anual' : 'Reporte mensual'" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -67,8 +67,8 @@ async function updateReport() {
             class="w-full sm:w-72"
             @update:model-value="updateReport"
           />
-          <p class="text-xs text-muted">
-            {{ isCombined ? 'Suma de Carolina Pinturas, Carrocería y Mecánica' : selectedBusinessName }}
+          <p v-if="!isCombined" class="text-xs text-muted">
+            {{ selectedBusinessName }}
           </p>
           <div class="w-full lg:hidden">
             <DashboardMonthFilter

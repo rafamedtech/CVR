@@ -62,6 +62,31 @@ test('combined report recomputes margins and coverage from summed amounts', () =
   assert.equal(combined.metrics.averageTicket, 1500)
   assert.equal(combined.dailyMovements.reduce((sum, day) => sum + day.netProfit, 0), 2300)
   assert.equal(combined.salesByWorkshop.reduce((sum, item) => sum + item.amount, 0), 3000)
+  assert.equal(combined.salesChannels?.reduce((sum, item) => sum + item.amount, 0), 3000)
+  assert.equal(combined.salesChannels?.find(item => item.key === 'workshop')?.amount, 1000)
+  assert.equal(combined.salesChannels?.find(item => item.key === 'internal')?.previousAmount, 1000)
+})
+
+test('Carolina channels match customer classification and compare net sales with the previous period', () => {
+  const order = { id: 'sale', date: '2026-09-10', total: '116', tax: '16', customerId: 'customer', customer: 'Cliente', internal: false, paid: '0', items: [] }
+  const { report } = buildCarolinaReport(period, {
+    orders: [
+      { ...order, customer: 'mostrador .' },
+      { ...order, customer: 'MOSTRADOR' },
+      { ...order, customer: 'MOSTRADOR', internal: true },
+      { ...order },
+      { ...order, date: '2026-08-10', customer: 'MOSTRADOR', total: '232', tax: '32' },
+      { ...order, date: '2026-08-10', internal: true }
+    ], expenses: [], payments: []
+  })
+  assert.deepEqual(report.salesChannels?.map(({ key, amount, count, percentage, previousAmount }) => ({ key, amount, count, percentage, previousAmount })), [
+    { key: 'counter', amount: 200, count: 2, percentage: 50, previousAmount: 200 },
+    { key: 'seller', amount: 100, count: 1, percentage: 25, previousAmount: 0 },
+    { key: 'internal', amount: 100, count: 1, percentage: 25, previousAmount: 100 }
+  ])
+  const empty = buildCarolinaReport(period, { orders: [], expenses: [], payments: [] }).report
+  assert.equal(empty.salesChannels?.length, 3)
+  assert.ok(empty.salesChannels?.every(channel => channel.amount === 0 && channel.percentage === 0))
 })
 
 test('internal sales remain in the total and equal customer IDs from different databases remain distinct', () => {

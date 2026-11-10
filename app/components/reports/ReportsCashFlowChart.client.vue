@@ -16,7 +16,9 @@ const movements = computed<ChartMovement[]>(() => props.annual
   : reportWeeks(props.data).map(week => ({
       ...week,
       date: week.start,
-      label: formatDateRange(week.start, week.end)
+      label: week.start === week.end
+        ? new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${week.start}T12:00:00Z`))
+        : formatDateRange(week.start, week.end)
     })))
 
 const totals = computed(() => movements.value.reduce((result, day) => ({
@@ -77,8 +79,8 @@ function dayLabel(day: ChartMovement) {
 </script>
 
 <template>
-  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0' }">
-    <div class="space-y-3">
+  <DetailCard id="reports-weekly-sales" class="min-w-0" :ui="{ container: 'min-w-0', body: 'w-full', title: 'font-normal' }">
+    <template #title>
       <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div>
           <DetailSectionHeading :title="`Venta y costo por ${annual ? 'mes' : 'semana'}`" :ui="{ title: 'text-base' }" />
@@ -106,7 +108,7 @@ function dayLabel(day: ChartMovement) {
           </template>
         </DetailFields>
       </div>
-    </div>
+    </template>
 
     <p v-if="!annual && hasMovements" class="mb-3 flex items-center gap-2 text-xs text-muted">
       <span class="relative h-0.5 w-6 bg-primary" aria-hidden="true">

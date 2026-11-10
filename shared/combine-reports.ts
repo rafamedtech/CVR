@@ -1,4 +1,4 @@
-import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem } from '../app/types/reports'
+import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem, ReportSalesChannel } from '../app/types/reports'
 import { reportChange, reportPercentage } from './report'
 
 export function combineBusinessReports(sources: Array<{ id: string, name: string, report: BusinessReportSummary }>): BusinessReportSummary {
@@ -20,6 +20,16 @@ export function combineBusinessReports(sources: Array<{ id: string, name: string
   const billed = sum('billedSales')
   const outstanding = sum('outstandingBalance')
   const count = sum('orderCount')
+  const channels = new Map<string, ReportSalesChannel>()
+  for (const { report } of sources) {
+    for (const channel of report.salesChannels ?? []) {
+      const group = channels.get(channel.key) ?? { ...channel, amount: 0, count: 0, previousAmount: 0 }
+      group.amount += channel.amount
+      group.count += channel.count
+      group.previousAmount += channel.previousAmount
+      channels.set(channel.key, group)
+    }
+  }
   function breakdown(key: 'paymentMethods' | 'operatingExpenseCategories' | 'salesByLine' | 'salesByWorkshop'): ReportBreakdownItem[] {
     const groups = new Map<string, ReportBreakdownItem>()
     for (const source of sources) {
@@ -63,6 +73,9 @@ export function combineBusinessReports(sources: Array<{ id: string, name: string
     dailyMovements: [...movements.values()].sort((a, b) => a.date.localeCompare(b.date)),
     paymentMethods: breakdown('paymentMethods'), operatingExpenseCategories: breakdown('operatingExpenseCategories'),
     salesByLine: breakdown('salesByLine'), salesByWorkshop: breakdown('salesByWorkshop'),
+    salesChannels: [...channels.values()]
+      .sort((a, b) => ['counter', 'seller', 'internal', 'workshop'].indexOf(a.key) - ['counter', 'seller', 'internal', 'workshop'].indexOf(b.key))
+      .map(channel => ({ ...channel, percentage: reportPercentage(channel.amount, sales) ?? 0 })),
     topCustomers: ranking('topCustomers', sales), topDebtors: ranking('topDebtors', outstanding),
     topServices: ranking('topServices', sales), topMaterialProviders: ranking('topMaterialProviders', material)
   }

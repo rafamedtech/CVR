@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { readReportPages } from './report-pagination'
-import type { BusinessReportSummary, ConsolidationInfo, ReportPeriod } from '../../app/types/reports'
+import type { BusinessReportSummary, ConsolidationInfo, ReportPeriod, ReportSalesChannelKey } from '../../app/types/reports'
 import { buildBusinessReport } from './business-report'
 import { reportPreviousPeriod } from '../../shared/report'
 
@@ -50,9 +50,12 @@ export function buildCarolinaReport(period: ReportPeriod, rows: {
   expenses: CarolinaExpenseRow[]
   payments: CarolinaPaymentRow[]
 }): { report: BusinessReportSummary, internalOperations: NonNullable<ConsolidationInfo['internalOperations']> } {
+  const salesChannel = (order: CarolinaOrderRow): ReportSalesChannelKey => order.internal
+    ? 'internal'
+    : ['MOSTRADOR', 'MOSTRADOR .'].includes(order.customer.toUpperCase()) ? 'counter' : 'seller'
   const currentOrders = rows.orders.filter(order => order.date >= period.start)
   const orders = currentOrders.map(order => ({
-    total: Number(order.total), taxTotal: Number(order.tax),
+    total: Number(order.total), taxTotal: Number(order.tax), salesChannel: salesChannel(order),
     createdAt: new Date(`${order.date}T12:00:00Z`),
     customerId: order.customerId, customer: { fullName: order.customer },
     workshopId: 'carolina-pinturas', workshop: { name: 'Carolina Pinturas' },
@@ -68,8 +71,9 @@ export function buildCarolinaReport(period: ReportPeriod, rows: {
     fullEnd: new Date(Date.parse(period.start) + (period.totalDays - 1) * 86400000).toISOString().slice(0, 10),
     previousDays: Math.round((Date.parse(period.start) - Date.parse(previousStart)) / 86400000),
     annual: period.mode === 'annual', timeZone: 'UTC', beforeTax: true,
+    channelKeys: ['counter', 'seller', 'internal'],
     orders,
-    previousOrders: rows.orders.filter(order => order.date < period.start).map(order => ({ total: Number(order.total), taxTotal: Number(order.tax) })),
+    previousOrders: rows.orders.filter(order => order.date < period.start).map(order => ({ total: Number(order.total), taxTotal: Number(order.tax), salesChannel: salesChannel(order) })),
     expenses: expenses.filter(expense => expense.expenseDate.toISOString().slice(0, 10) >= period.start),
     previousExpenses: expenses.filter(expense => expense.expenseDate.toISOString().slice(0, 10) < period.start),
     payments: rows.payments.map(payment => ({
