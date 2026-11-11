@@ -9,7 +9,7 @@ const source = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }
 ).outputText
 
-function fixture({ userId = 'consulta', existingId = '', fail = 0, isReadOnly = true } = {}) {
+function fixture({ userId = 'consulta', sessionUserId = userId, existingId = '', fail = 0, isReadOnly = true } = {}) {
   const session = { value: existingId ? { profile: { id: existingId, isReadOnly } } : null }
   const redirects: Array<{ path: string, replace: boolean }> = []
   let requests = 0
@@ -19,17 +19,46 @@ function fixture({ userId = 'consulta', existingId = '', fail = 0, isReadOnly = 
     navigateTo: (path: string, options: { replace: boolean }) => { redirects.push({ path, replace: options.replace }) },
     defineNuxtRouteMiddleware: (handler: unknown) => handler,
     useSupabaseUser: () => ({ value: userId ? { sub: userId } : null }),
+    useSupabaseSession: () => ({ value: sessionUserId ? { access_token: 'session-token' } : null }),
     useCrmSession: () => ({ session, setSession: (value: typeof session.value) => { session.value = value } }),
     useRequestFetch: () => async () => {
       requests += 1
       if (fail) throw Object.assign(new Error('Session failed'), { statusCode: fail })
       await Promise.resolve()
-      return { profile: { id: userId, isReadOnly }, selectedWorkshopId: null, canViewAll: true }
+      return { profile: { id: sessionUserId || userId, isReadOnly }, selectedWorkshopId: null, canViewAll: true }
     },
     createError: (error: { statusCode: number, statusMessage: string }) => Object.assign(new Error(error.statusMessage), error)
   })
   return { run: exports.default!, session, redirects, requests: () => requests }
 }
+
+test('carga los talleres al iniciar sesión aunque los claims todavía no estén listos', async () => {
+  const app = fixture({ userId: '', sessionUserId: 'rafael', isReadOnly: false })
+  await app.run({ path: '/elegir-taller' })
+  assert.equal(app.session.value?.profile.id, 'rafael')
+  assert.equal(app.requests(), 1)
+  assert.deepEqual(app.redirects, [])
+})
+
+test('al cambiar de cuenta usa la sesión nueva aunque los claims sigan mostrando la anterior', async () => {
+  const app = fixture({ userId: 'admin', sessionUserId: 'rafael', existingId: 'admin', isReadOnly: false })
+  await app.run({ path: '/elegir-taller' })
+  assert.equal(app.session.value?.profile.id, 'rafael')
+  assert.equal(app.requests(), 1)
+})
+
+test('actualiza los permisos y talleres al entrar al selector aunque exista un perfil en memoria', async () => {
+  const app = fixture({ userId: 'rafael', existingId: 'rafael', isReadOnly: false })
+  await app.run({ path: '/elegir-taller' })
+  assert.equal(app.requests(), 1)
+})
+
+test('sin una identidad autenticada vuelve al login antes de mostrar talleres vacíos', async () => {
+  const app = fixture({ userId: '', existingId: 'admin' })
+  await app.run({ path: '/elegir-taller' })
+  assert.equal(app.session.value, null)
+  assert.deepEqual(app.redirects, [{ path: '/login', replace: true }])
+})
 
 test('espera la sesión de consulta antes de montar la página de datos', async () => {
   const app = fixture()

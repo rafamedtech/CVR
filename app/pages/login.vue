@@ -79,11 +79,16 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
           :schema="schema"
           :fields="fields"
           :submit="{ label: loading ? 'Ingresando…' : 'Iniciar sesión', loading, block: true }"
-          title="Bienvenido"
           description="Ingresa con el usuario asignado por el administrador."
-          icon="i-lucide-lock-keyhole"
           @submit="onSubmit"
         >
+          <template #leading>
+            <img
+              src="/brand/cvr-transport-logo.png"
+              alt="CVR Transport Inc · Fletes y transporte"
+              class="mx-auto h-24 w-56 max-w-full rounded-lg bg-white p-3 object-contain"
+            >
+          </template>
           <template #password-hint>
             <ULink to="/forgot-password" class="font-medium text-primary">
               ¿Olvidaste tu contraseña?

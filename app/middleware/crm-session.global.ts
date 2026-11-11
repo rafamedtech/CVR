@@ -4,14 +4,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (['/login', '/forgot-password', '/confirm'].includes(to.path)) return
 
   const user = useSupabaseUser()
+  const authSession = useSupabaseSession()
   const { session, setSession } = useCrmSession()
   const userId = user.value?.sub
 
-  if (!userId) {
+  if (!userId && !authSession.value) {
     setSession(null)
-    return
+    return navigateTo('/login', { replace: true })
   }
-  if (session.value?.profile.id !== userId) {
+  // Auth updates the session before its asynchronous getClaims() updates the user.
+  // With a session but no claims, let the API validate identity and load access.
+  if (!userId || session.value?.profile.id !== userId || to.path === '/elegir-taller') {
     setSession(null)
     try {
       const requestFetch = useRequestFetch()
