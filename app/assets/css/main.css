@@ -4,6 +4,18 @@
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 
+  --color-brand-50: #f5f9fb;
+  --color-brand-100: #e6f0f5;
+  --color-brand-200: #c4dae8;
+  --color-brand-300: #90bad3;
+  --color-brand-400: #4d91b9;
+  --color-brand-500: #08669e;
+  --color-brand-600: #075a8b;
+  --color-brand-700: #064c76;
+  --color-brand-800: #053d5f;
+  --color-brand-900: #042e47;
+  --color-brand-950: #021d2c;
+
   --color-green-50: #EFFDF5;
   --color-green-100: #D9FBE8;
   --color-green-200: #B3F5D1;
@@ -15,4 +27,10 @@
   --color-green-800: #016538;
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
+}
+
+:root,
+.light,
+.dark {
+  --ui-primary: var(--color-brand-500);
 }

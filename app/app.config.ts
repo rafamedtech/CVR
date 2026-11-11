@@ -7,7 +7,7 @@ const largeControl = {
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'blue',
+      primary: 'brand',
       secondary: 'violet',
       info: 'cyan',
       neutral: 'neutral'
