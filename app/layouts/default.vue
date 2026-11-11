@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import type { CommandPaletteGroup, NavigationMenuItem } from '@nuxt/ui'
-import type { CrmSession } from '~/types/crm'
 
 const open = shallowRef(false)
-const { setSession } = useCrmSession()
-
-const { data: sessionData } = await useFetch<CrmSession>('/api/session', {
-  key: 'crm-session-data'
-})
-
-watch(sessionData, value => setSession(value ?? null), { immediate: true })
+const { session: sessionData } = useCrmSession()
 
 const selectedRole = computed(() => sessionData.value?.workshops.find(workshop => (
   workshop.id === sessionData.value?.selectedWorkshopId
