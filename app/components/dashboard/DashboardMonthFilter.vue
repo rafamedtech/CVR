@@ -6,6 +6,7 @@ const props = defineProps<{
   hasSelection: boolean
   block?: boolean
   annual?: boolean
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,6 +18,14 @@ const open = shallowRef(false)
 
 const buttonLabel = computed(() => {
   if (!props.hasSelection) return 'Resumen del mes actual'
+
+  if (props.compact && !props.annual) {
+    const parts = new Intl.DateTimeFormat('es-MX', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+      .formatToParts(selectedMonth.value.toDate('UTC'))
+    const month = parts.find(part => part.type === 'month')!.value.slice(0, 3).toUpperCase()
+    const year = parts.find(part => part.type === 'year')!.value
+    return `${month} ${year}`
+  }
 
   return new Intl.DateTimeFormat('es-MX', { month: props.annual ? undefined : 'long', year: 'numeric', timeZone: 'UTC' })
     .format(selectedMonth.value.toDate('UTC'))

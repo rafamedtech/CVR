@@ -64,16 +64,16 @@ async function updateReport() {
         </template>
       </UDashboardNavbar>
       <UDashboardToolbar v-if="canViewReports" class="py-3 lg:py-0">
-        <div class="flex w-full flex-wrap items-center gap-3">
+        <div class="flex w-full min-w-0 items-center gap-3">
           <ReportsBusinessSelector
             v-model="business"
             :options="businessOptions"
             @change="updateReport"
           />
-          <div class="w-full lg:hidden">
+          <div class="shrink-0 lg:hidden">
             <DashboardMonthFilter
               v-model="selectedMonth"
-              block
+              compact
               :max-value="currentMonth"
               :annual="annual"
               :has-selection="true"

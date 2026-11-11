@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { ConsolidationInfo } from '~/types/reports'
 
-const props = defineProps<{ info: ConsolidationInfo, month: string, annual: boolean, carolinaOnly?: boolean }>()
+defineProps<{ info: ConsolidationInfo, month: string, annual: boolean, carolinaOnly?: boolean }>()
 type Business = ConsolidationInfo['businesses'][number]
 const columns: TableColumn<Business>[] = [
   { accessorKey: 'name', header: 'Negocio' },
@@ -12,7 +12,6 @@ const columns: TableColumn<Business>[] = [
   { id: 'profit', header: 'Utilidad neta' },
   { id: 'collections', header: 'Cobrado' }
 ]
-const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reportes?month=${props.month}${props.annual ? '&view=annual' : ''}`)
 </script>
 
 <template>
@@ -23,17 +22,66 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
           {{ carolinaOnly ? 'Detalle de Carolina Pinturas' : 'Resultados por negocio' }}
         </h2>
       </div>
-      <UButton
-        :to="carolinaUrl"
-        target="_blank"
-        icon="i-lucide-external-link"
-        color="neutral"
-        variant="outline"
-        label="Reporte de Carolina"
-      />
     </div>
     <DetailCard v-if="!carolinaOnly" :ui="{ container: 'min-w-0 p-0 sm:p-0' }">
+      <ul v-if="info.businesses.length" aria-label="Resultados por negocio en pesos mexicanos" class="min-w-0 divide-y divide-default md:hidden">
+        <li v-for="business in info.businesses" :key="business.id" class="min-w-0 p-4">
+          <h3 class="font-semibold break-words text-highlighted">
+            {{ business.name }}
+          </h3>
+          <dl class="mt-4 grid min-w-0 grid-cols-2 gap-x-4 gap-y-4">
+            <div class="min-w-0">
+              <dt class="text-xs text-muted">
+                Ventas netas
+              </dt>
+              <dd class="mt-1 text-base font-semibold break-words text-highlighted tabular-nums">
+                {{ formatCurrency(business.metrics.sales) }}
+              </dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-xs text-muted">
+                Cobrado
+              </dt>
+              <dd class="mt-1 text-base font-semibold break-words text-highlighted tabular-nums">
+                {{ formatCurrency(business.metrics.collections) }}
+              </dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-xs text-muted">
+                Material
+              </dt>
+              <dd class="mt-1 text-sm break-words text-default tabular-nums">
+                {{ formatCurrency(business.metrics.materialPurchases) }}
+              </dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-xs text-muted">
+                Operación
+              </dt>
+              <dd class="mt-1 text-sm break-words text-default tabular-nums">
+                {{ formatCurrency(business.metrics.operatingExpenses) }}
+              </dd>
+            </div>
+            <div class="col-span-full min-w-0 rounded-lg px-3 py-2.5" :class="business.metrics.netProfit < 0 ? 'bg-error/10' : 'bg-success/10'">
+              <dt class="text-xs text-muted">
+                Utilidad neta
+              </dt>
+              <dd class="mt-1 text-lg font-semibold break-words tabular-nums" :class="business.metrics.netProfit < 0 ? 'text-error' : 'text-success'">
+                {{ formatCurrency(business.metrics.netProfit) }}
+              </dd>
+            </div>
+          </dl>
+        </li>
+      </ul>
+      <UEmpty
+        v-else
+        title="Sin registros"
+        icon="i-lucide-inbox"
+        variant="naked"
+        class="py-10 md:hidden"
+      />
       <DetailTable
+        class="hidden md:block"
         :data="info.businesses"
         :columns="columns"
         :get-row-id="row => row.id"

@@ -95,7 +95,7 @@ function dayLabel(day: ChartMovement) {
             { key: 'result', label: 'Resultado', value: dashboardCompactCurrency(hoveredDay ? hoveredDay.netProfit : totals.netProfit) }
           ]"
           :columns="4"
-          class="gap-x-5 gap-y-2"
+          class="w-full grid-cols-4! gap-x-3 gap-y-2 sm:w-auto sm:gap-x-5"
         >
           <template #label="{ field }">
             <span class="flex items-center gap-1.5 text-xs">

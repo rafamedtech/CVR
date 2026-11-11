@@ -32,7 +32,7 @@ const tabs = computed<NavigationMenuItem[]>(() => props.options.map(option => ({
     :items="options"
     :icon="selectedIcon"
     aria-label="Negocio del reporte"
-    class="w-full lg:hidden"
+    class="min-w-0 flex-1 lg:hidden"
     @update:model-value="emit('change')"
   />
 </template>
