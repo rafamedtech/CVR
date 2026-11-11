@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
       workshopId,
       profile: { active: true }
     },
-    include: { profile: true },
+    select: { role: true, profile: { select: { id: true, fullName: true } } },
     orderBy: { profile: { fullName: 'asc' } }
   })
 

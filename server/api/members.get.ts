@@ -13,9 +13,11 @@ export default defineEventHandler(async (event) => {
             }
           }
         },
-    include: {
+    select: {
+      id: true, fullName: true, email: true, phone: true, active: true,
+      isSuperAdmin: true, isReadOnly: true,
       memberships: {
-        include: { workshop: true }
+        select: { workshopId: true, role: true, workshop: { select: { name: true } } }
       }
     },
     orderBy: { fullName: 'asc' }

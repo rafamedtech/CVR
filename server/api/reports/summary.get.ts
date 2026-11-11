@@ -28,7 +28,7 @@ export default defineEventHandler(async (event): Promise<BusinessReportData> => 
     }
   }
   if (business === 'all') {
-    const dashboard = await getWorkshopDashboard(context, query, { includeCarolina: true, allWorkshops: true, beforeTax: true })
+    const dashboard = await getWorkshopDashboard(context, query, { includeCarolina: true, allWorkshops: true, beforeTax: true, reportOnly: true })
     return { business, businessName: 'Todos los negocios', report: dashboard.report, consolidation: dashboard.consolidation, status: dashboard.consolidation?.status ?? 'unavailable' }
   }
   if (!/^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(business)) {
@@ -36,6 +36,6 @@ export default defineEventHandler(async (event): Promise<BusinessReportData> => 
   }
   const workshop = await usePrisma().workshop.findFirst({ where: { id: business, active: true } })
   if (!workshop) throw createError({ statusCode: 404, statusMessage: 'No se encontró el taller seleccionado.' })
-  const dashboard = await getWorkshopDashboard({ ...context, workshopId: workshop.id, selectedWorkshop: workshop }, query, { beforeTax: true })
+  const dashboard = await getWorkshopDashboard({ ...context, workshopId: workshop.id, selectedWorkshop: workshop }, query, { beforeTax: true, reportOnly: true })
   return { business, businessName: workshop.name, report: dashboard.report, consolidation: null, status: 'connected' }
 })

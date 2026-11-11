@@ -5,13 +5,17 @@ export default defineEventHandler(async (event) => {
 
   const expenses = await prisma.expense.findMany({
     where: workshopWhere(context),
-    include: {
-      workshop: true,
-      recordedBy: true,
+    select: {
+      id: true, workshopId: true, category: true, method: true, description: true,
+      vendor: true, amount: true, amountMxn: true, currency: true, exchangeRate: true,
+      expenseDate: true, notes: true,
+      workshop: { select: { name: true, type: true } },
+      recordedBy: { select: { fullName: true } },
       order: {
-        include: {
-          customer: true,
-          vehicle: true
+        select: {
+          id: true, orderNumber: true,
+          customer: { select: { fullName: true } },
+          vehicle: { select: { make: true, model: true, year: true } }
         }
       }
     },

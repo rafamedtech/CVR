@@ -1,3 +1,4 @@
+import { orderListSelect } from './orders'
 import type { CrmRequestContext } from './auth'
 import type { DashboardData, ExpenseCategory, OrderStatus } from '../../app/types/crm'
 import { resolveReportPeriod } from '../../shared/report-period'
@@ -14,6 +15,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
   includeCarolina?: boolean
   allWorkshops?: boolean
   beforeTax?: boolean
+  reportOnly?: boolean
 } = {}): Promise<DashboardData> {
   const allBusinesses = options.includeCarolina === true
   if (allBusinesses || options.allWorkshops) requireGlobalReadAccess(context)
@@ -52,47 +54,43 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
         status: { in: [...salesStatuses] },
         createdAt: { gte: from, lte: to }
       },
-      include: {
-        workshop: true,
-        customer: true,
-        vehicle: true,
-        assignedTo: true,
-        payments: true,
-        items: true
+      select: {
+        ...orderListSelect,
+        taxTotal: true,
+        deliveredAt: true,
+        items: { select: { description: true, type: true, total: true, taxTotal: true, quantity: true } }
       },
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.serviceOrder.findMany({
-      where: {
-        ...where,
-        status: { in: [...openStatuses] },
-        promisedAt: { gte: from, lte: monthEnd }
-      },
-      include: {
-        workshop: true,
-        customer: true,
-        vehicle: true,
-        assignedTo: true,
-        payments: true
-      },
-      orderBy: [
-        { promisedAt: 'asc' },
-        { createdAt: 'desc' }
-      ]
-    }),
-    prisma.serviceOrder.count({
-      where: {
-        ...where,
-        status: { in: [...openStatuses] }
-      }
-    }),
-    canViewFinancials
+    options.reportOnly
+      ? Promise.resolve([])
+      : prisma.serviceOrder.findMany({
+          where: {
+            ...where,
+            status: { in: [...openStatuses] },
+            promisedAt: { gte: from, lte: monthEnd }
+          },
+          select: orderListSelect,
+          orderBy: [
+            { promisedAt: 'asc' },
+            { createdAt: 'desc' }
+          ]
+        }),
+    options.reportOnly
+      ? Promise.resolve(0)
+      : prisma.serviceOrder.count({
+          where: {
+            ...where,
+            status: { in: [...openStatuses] }
+          }
+        }),
+    canViewFinancials && !options.reportOnly
       ? prisma.serviceOrder.findMany({
           where: {
             ...where,
             status: { in: [...salesStatuses] }
           },
-          include: { payments: true }
+          select: { total: true, payments: { select: { amountMxn: true } } }
         })
       : Promise.resolve([]),
     canViewFinancials
@@ -100,7 +98,8 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
           where: {
             ...scopedWorkshopWhere,
             expenseDate: { gte: expenseFrom, lte: expenseTo }
-          }
+          },
+          select: { workshopId: true, category: true, amountMxn: true, expenseDate: true, vendor: true }
         })
       : Promise.resolve([]),
     prisma.workshop.findMany({
@@ -108,6 +107,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
         active: allBusinesses || options.allWorkshops ? undefined : true,
         ...(!allBusinesses && !options.allWorkshops && context.workshopId ? { id: context.workshopId } : {})
       },
+      select: { id: true, name: true },
       orderBy: { name: 'asc' }
     }),
     canViewFinancials
@@ -125,7 +125,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
     canViewFinancials
       ? prisma.payment.findMany({
           where: { paidAt: { gte: from, lte: to }, order: { ...where, status: { in: [...salesStatuses] } } },
-          include: { order: { select: { workshopId: true } } }
+          select: { amountMxn: true, paidAt: true, method: true, order: { select: { workshopId: true } } }
         })
       : Promise.resolve([])
   ])

@@ -7,13 +7,16 @@ export default defineEventHandler(async (event) => {
     where: {
       order: workshopWhere(context)
     },
-    include: {
-      recordedBy: true,
+    select: {
+      id: true, amount: true, amountMxn: true, currency: true, exchangeRate: true,
+      method: true, reference: true, notes: true, paidAt: true,
+      recordedBy: { select: { fullName: true } },
       order: {
-        include: {
-          workshop: true,
-          customer: true,
-          vehicle: true
+        select: {
+          id: true, orderNumber: true, workshopId: true, total: true,
+          workshop: { select: { name: true } },
+          customer: { select: { fullName: true } },
+          vehicle: { select: { make: true, model: true, year: true, licensePlate: true } }
         }
       }
     },

@@ -1,3 +1,5 @@
+import { orderListSelect } from '../../utils/orders'
+
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   const id = getRouterParam(event, 'id')
@@ -23,7 +25,7 @@ export default defineEventHandler(async (event) => {
       },
       workshops: {
         where: (context.isSuperAdmin || context.isReadOnly) ? {} : { workshopId: context.workshopId! },
-        include: { workshop: true },
+        select: { workshop: { select: { id: true, name: true, type: true } } },
         orderBy: { createdAt: 'asc' }
       },
       orders: {
@@ -31,13 +33,7 @@ export default defineEventHandler(async (event) => {
           ...workshopWhere(context),
           ...assignedOrderWhere(context)
         },
-        include: {
-          workshop: true,
-          customer: true,
-          vehicle: true,
-          assignedTo: true,
-          payments: true
-        },
+        select: orderListSelect,
         orderBy: { createdAt: 'desc' }
       },
       _count: {

@@ -1,3 +1,5 @@
+import { orderListSelect } from '../../utils/orders'
+
 const validStatuses = new Set([
   'ESTIMATE',
   'AWAITING_APPROVAL',
@@ -35,13 +37,7 @@ export default defineEventHandler(async (event) => {
           }
         : {})
     },
-    include: {
-      workshop: true,
-      customer: true,
-      vehicle: true,
-      assignedTo: true,
-      payments: true
-    },
+    select: orderListSelect,
     orderBy: { createdAt: 'desc' }
   })
 

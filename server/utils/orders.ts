@@ -1,4 +1,4 @@
-import type { Payment, Profile, ServiceOrder, Vehicle, Customer, Workshop } from '../../generated/prisma/client'
+import type { Prisma } from '../../generated/prisma/client'
 import { calculatePaymentStatus } from '../../shared/payment-status'
 import { convertToMxn, normalizeExchangeRate, roundMoney, type Currency } from '../../shared/currency'
 
@@ -82,13 +82,27 @@ export async function recalculateOrder(orderId: string) {
   })
 }
 
-type OrderForList = ServiceOrder & {
-  workshop: Workshop
-  customer: Customer
-  vehicle: Vehicle
-  assignedTo: Profile | null
-  payments: Payment[]
-}
+// Shared by lists and dashboards: do not fetch internal notes, addresses or
+// full payment/profile records just to render an order summary.
+export const orderListSelect = {
+  id: true,
+  workshopId: true,
+  customerId: true,
+  orderNumber: true,
+  status: true,
+  paymentStatus: true,
+  priority: true,
+  total: true,
+  promisedAt: true,
+  createdAt: true,
+  workshop: { select: { name: true } },
+  customer: { select: { fullName: true, phone: true } },
+  vehicle: { select: { make: true, model: true, year: true, color: true, licensePlate: true } },
+  assignedTo: { select: { fullName: true } },
+  payments: { select: { amountMxn: true } }
+} satisfies Prisma.ServiceOrderSelect
+
+type OrderForList = Prisma.ServiceOrderGetPayload<{ select: typeof orderListSelect }>
 
 export function serializeOrderListItem(order: OrderForList) {
   const paid = order.payments.reduce((sum, payment) => sum + Number(payment.amountMxn), 0)

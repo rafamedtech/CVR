@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     include: {
       workshops: {
         where: (context.isSuperAdmin || context.isReadOnly) ? {} : { workshopId: context.workshopId! },
-        include: { workshop: true },
+        select: { workshop: { select: { id: true, name: true, type: true } } },
         orderBy: { createdAt: 'asc' }
       },
       _count: {
