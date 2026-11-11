@@ -22,7 +22,7 @@ const visible = computed(() => expanded.value ? props.items : props.items.slice(
 <template>
   <DetailCard class="min-w-0" :ui="{ container: 'min-w-0 justify-start lg:flex', wrapper: 'flex-none' }" :icon="icon">
     <template #title>
-      <DetailSectionHeading :title="title" :description="description" :ui="{ title: 'text-base' }" />
+      <DetailSectionHeading :title="title" :description="description" :ui="{ title: 'text-lg' }" />
     </template>
 
     <ul v-if="items.length" class="divide-y divide-default">

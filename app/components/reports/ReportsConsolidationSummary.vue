@@ -19,7 +19,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
   <section aria-labelledby="report-businesses" class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h2 id="report-businesses" class="font-semibold text-highlighted">
+        <h2 id="report-businesses" class="text-xl font-semibold text-highlighted">
           {{ carolinaOnly ? 'Detalle de Carolina Pinturas' : 'Resultados por negocio' }}
         </h2>
       </div>
@@ -59,7 +59,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
     </DetailCard>
     <DetailCard v-if="info.internalOperations" :ui="{ container: 'gap-4' }">
       <div>
-        <h3 class="font-semibold text-highlighted">
+        <h3 class="text-lg font-semibold text-highlighted">
           Operaciones internas incluidas
         </h3>
       </div>

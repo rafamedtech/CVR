@@ -76,7 +76,7 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
     <div class="space-y-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <DetailSectionHeading title="Estado de resultados" :ui="{ title: 'text-base' }" />
+          <DetailSectionHeading title="Estado de resultados" :ui="{ title: 'text-lg' }" />
           <p class="mt-1 text-sm text-pretty text-muted">
             De las ventas a la utilidad, con la variación contra el {{ annual ? 'año' : 'mes' }} anterior.
           </p>

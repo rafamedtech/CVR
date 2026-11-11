@@ -11,7 +11,7 @@ const groups = computed(() => groupBusinessSalesChannels(props.channels, props.b
 
 <template>
   <section aria-labelledby="business-sales-channels" class="space-y-3">
-    <h3 id="business-sales-channels" class="font-semibold text-highlighted">
+    <h3 id="business-sales-channels" class="text-xl font-semibold text-highlighted">
       Ventas por canal
     </h3>
     <div class="grid min-w-0 gap-4 xl:grid-cols-2">

@@ -55,7 +55,7 @@ const slices = computed(() => {
 <template>
   <DetailCard :id="id" class="min-w-0" :ui="{ container: 'min-w-0' }">
     <template #title>
-      <DetailSectionHeading :title="title" :description="description" :ui="{ title: 'text-base' }" />
+      <DetailSectionHeading :title="title" :description="description" :ui="{ title: 'text-lg' }" />
     </template>
 
     <div class="flex flex-col items-center gap-6" :class="compact ? 'sm:flex-row' : 'lg:flex-row'">

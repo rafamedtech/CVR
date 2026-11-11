@@ -37,7 +37,7 @@ function change(value: number | null) {
 <template>
   <DetailCard class="min-w-0" :ui="{ container: 'min-w-0' }">
     <div class="space-y-3">
-      <DetailSectionHeading :title="!report.period.elapsedDays ? 'Periodo sin iniciar' : pace.inProgress ? 'Proyección de cierre' : annual ? 'Cierre del año' : 'Cierre del mes'" :ui="{ title: 'text-base' }" />
+      <DetailSectionHeading :title="!report.period.elapsedDays ? 'Periodo sin iniciar' : pace.inProgress ? 'Proyección de cierre' : annual ? 'Cierre del año' : 'Cierre del mes'" :ui="{ title: 'text-lg' }" />
       <p class="mt-1 text-sm text-muted">
         Día {{ report.period.elapsedDays }} de {{ report.period.totalDays }}
       </p>

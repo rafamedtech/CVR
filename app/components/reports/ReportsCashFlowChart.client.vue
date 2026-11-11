@@ -83,7 +83,7 @@ function dayLabel(day: ChartMovement) {
     <template #title>
       <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div>
-          <DetailSectionHeading :title="`Venta y costo por ${annual ? 'mes' : 'semana'}`" :ui="{ title: 'text-base' }" />
+          <DetailSectionHeading :title="`Venta y costo por ${annual ? 'mes' : 'semana'}`" :ui="{ title: 'text-lg' }" />
           <p class="mt-1 text-sm text-muted">
             {{ hoveredDay ? hoveredDay.label : annual ? 'Cuánto se vendió y cuánto se gastó en material y operación.' : 'Totales de lunes a domingo, incluyendo solo los días transcurridos del mes.' }}
           </p>

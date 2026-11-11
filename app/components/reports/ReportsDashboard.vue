@@ -16,7 +16,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
   <div class="flex min-w-0 flex-col gap-6">
     <section aria-labelledby="report-summary" class="space-y-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="report-summary" class="font-semibold text-highlighted">
+        <h2 id="report-summary" class="text-xl font-semibold text-highlighted">
           Resultado del {{ annual ? 'año' : 'mes' }}
         </h2>
         <p class="text-xs text-muted">
