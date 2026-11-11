@@ -7,11 +7,13 @@ type OrderDateField = 'createdAt' | 'promisedAt'
 
 const props = defineProps<{
   title: string
-  description: string
+  description?: string
   emptyMessage: string
   orders: OrderListItem[]
   dateField?: OrderDateField
   mobileDate?: OrderDateField
+  showFinancials?: boolean
+  compact?: boolean
 }>()
 
 const { isAllWorkshops } = useCrmSession()
@@ -28,11 +30,10 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'status',
     header: 'Estado'
   }, {
-    accessorKey: 'total',
-    header: 'Importe'
-  }, {
     id: 'actions'
   }]
+
+  if (props.showFinancials !== false) items.splice(items.length - 1, 0, { accessorKey: 'total', header: 'Importe' })
 
   if (props.dateField === 'createdAt') {
     items.splice(2, 0, { accessorKey: 'createdAt', header: 'Fecha' })
@@ -45,39 +46,41 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0 sm:p-0' }">
-    <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h2 class="font-semibold text-highlighted">
-            {{ props.title }}
-          </h2>
-          <p class="text-sm text-muted">
-            {{ props.description }}
-          </p>
-        </div>
-        <UButton
-          to="/ordenes"
-          label="Ver todas"
-          color="neutral"
-          variant="ghost"
-          trailing-icon="i-lucide-arrow-right"
-        />
-      </div>
+  <DetailCard :ui="{ container: 'min-w-0 lg:flex', wrapper: 'w-full flex-none', body: 'w-full' }">
+    <template #title>
+      <DetailSectionHeading :title="title" :description="description">
+        <template #actions>
+          <UButton
+            to="/ordenes"
+            label="Ver todas"
+            color="neutral"
+            variant="outline"
+            trailing-icon="i-lucide-arrow-right"
+          />
+        </template>
+      </DetailSectionHeading>
     </template>
 
-    <div class="p-4 md:hidden">
+    <div :class="compact ? undefined : 'md:hidden'">
       <OrdersMobileList
-        :orders="mobileOrders"
+        :orders="compact ? orders : mobileOrders"
         :show-workshop="isAllWorkshops"
         :show-created-at="props.mobileDate === 'createdAt'"
         :show-promised-at="props.mobileDate === 'promisedAt'"
         show-customer
         show-vehicle
+        :show-financials="showFinancials"
+        :empty-message="emptyMessage"
       />
     </div>
 
-    <UTable class="hidden md:block" :data="props.orders" :columns="columns">
+    <DetailTable
+      v-if="!compact"
+      class="hidden md:block"
+      :data="props.orders"
+      :columns="columns"
+      :empty="emptyMessage"
+    >
       <template #orderNumber-cell="{ row }">
         <NuxtLink
           :to="`/ordenes/${row.original.id}`"
@@ -134,15 +137,6 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           aria-label="Abrir orden"
         />
       </template>
-
-      <template #empty>
-        <div class="py-10 text-center">
-          <UIcon name="i-lucide-clipboard-list" class="mx-auto size-7 text-dimmed" />
-          <p class="mt-2 text-sm text-muted">
-            {{ props.emptyMessage }}
-          </p>
-        </div>
-      </template>
-    </UTable>
-  </UCard>
+    </DetailTable>
+  </DetailCard>
 </template>

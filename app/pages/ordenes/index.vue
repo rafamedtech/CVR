@@ -18,8 +18,8 @@ const createdAtRange = shallowRef<{
   end: DateValue | undefined
 } | null>(null)
 const dateFilterOpen = shallowRef(false)
-const createOpen = shallowRef(false)
 const { canManageOrders, isAllWorkshops, isReadOnly } = useCrmSession()
+const createOpen = shallowRef(route.query.create === '1' && canManageOrders.value)
 
 const { data: orders, status, refresh } = useFetch<OrderListItem[]>('/api/orders', {
   lazy: true,

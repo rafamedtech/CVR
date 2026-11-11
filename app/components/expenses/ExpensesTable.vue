@@ -91,24 +91,7 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           </div>
         </template>
         <template #assignment-cell="{ row }">
-          <div v-if="row.original.order">
-            <NuxtLink
-              :to="`/ordenes/${row.original.order.id}`"
-              class="font-medium text-primary hover:underline"
-            >
-              {{ row.original.order.orderNumber }}
-            </NuxtLink>
-            <p class="text-xs text-muted">
-              {{ row.original.order.customerName }} · {{ row.original.order.vehicleLabel }}
-            </p>
-          </div>
-          <UBadge
-            v-else
-            label="Gasto del taller"
-            icon="i-lucide-building-2"
-            color="neutral"
-            variant="subtle"
-          />
+          <ExpensesAssignment :order="row.original.order" />
         </template>
         <template #workshopName-cell="{ row }">
           <UTooltip :text="row.original.workshopName">

@@ -255,6 +255,32 @@ export interface MemberAccessPreset {
   role?: WorkshopRole
 }
 
+export interface DashboardActivityItem {
+  id: string
+  type: 'order' | 'customer' | 'vehicle' | 'payment' | 'expense'
+  title: string
+  description: string
+  date: string
+  to: string
+  amount?: number
+  status?: OrderStatus
+  order?: ExpenseOrderOption | null
+  customerName?: string
+  vehicleLabel?: string
+}
+
+export interface DashboardOverviewData {
+  timeZone: string
+  updatedAt: string
+  since: string
+  canViewFinancials: boolean
+  kpis: Pick<DashboardData['kpis'], 'collected' | 'receivable' | 'openOrders' | 'completedOrders'>
+  attention: { awaitingApproval: number, ready: number, overdue: number }
+  activity: DashboardActivityItem[]
+  recentOrders: OrderListItem[]
+  upcomingDeliveries: OrderListItem[]
+}
+
 export interface DashboardData {
   consolidation: import('./reports').ConsolidationInfo | null
   report: import('./reports').BusinessReportSummary | null

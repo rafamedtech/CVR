@@ -9,6 +9,8 @@ defineProps<{
   showVehicle?: boolean
   showCreatedAt?: boolean
   showPromisedAt?: boolean
+  showFinancials?: boolean
+  emptyMessage?: string
 }>()
 </script>
 
@@ -133,7 +135,7 @@ defineProps<{
               {{ formatDate(order.promisedAt) }}
             </dd>
           </div>
-          <div>
+          <div v-if="showFinancials !== false">
             <dt class="text-xs text-muted">
               Importe
             </dt>
@@ -161,7 +163,7 @@ defineProps<{
         No hay órdenes
       </p>
       <p class="text-sm text-muted">
-        Crea una cotización para comenzar el seguimiento.
+        {{ emptyMessage ?? 'Crea una cotización para comenzar el seguimiento.' }}
       </p>
     </div>
   </UCard>

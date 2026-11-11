@@ -1,76 +1,39 @@
 <script setup lang="ts">
-import type { DashboardData } from '~/types/crm'
+import type { DashboardOverviewData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
-const { activeWorkshop, isReadOnly } = useCrmSession()
-const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
-const { data, status, error, refresh } = useFetch<DashboardData>('/api/dashboard', {
+const { activeWorkshop, isReadOnly, canManageOrders, canViewReports } = useCrmSession()
+const { data, status, error, refresh } = useFetch<DashboardOverviewData>('/api/dashboard/overview', {
   lazy: true,
   server: false,
-  query: periodQuery,
-  key: 'crm-dashboard',
-  immediate: Boolean(activeWorkshop.value) || isReadOnly.value,
-  watch: false
+  key: 'crm-overview',
+  immediate: Boolean(activeWorkshop.value) || isReadOnly.value
 })
-
-async function selectMonth() {
-  await syncPeriod()
-  if (activeWorkshop.value || isReadOnly.value) await refresh()
-}
+const updatedLabel = computed(() => data.value
+  ? new Intl.DateTimeFormat('es-MX', { timeZone: data.value.timeZone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(data.value.updatedAt))
+  : '')
 </script>
 
 <template>
   <UDashboardPanel id="dashboard">
     <template #header>
-      <UDashboardNavbar
-        :title="isReadOnly ? 'Todos los negocios' : activeWorkshop?.name ?? 'Resumen'"
-        :toggle="{ size: 'xl' }"
-        :ui="{ title: 'text-base lg:text-sm' }"
-      >
+      <UDashboardNavbar title="Resumen" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
-
         <template #right>
-          <div class="hidden lg:block">
-            <DashboardMonthFilter
-              v-model="selectedMonth"
-              :max-value="currentMonth"
-              :annual="annual"
-              :has-selection="true"
-              @select="selectMonth"
-            />
-          </div>
-          <div class="lg:hidden">
-            <WorkshopSwitcher size="xl" :allow-all="false" />
-          </div>
           <UButton
             color="neutral"
-            variant="outline"
-            icon="i-lucide-calendar-range"
-            :label="annual ? 'Anual' : 'Mensual'"
-            :aria-pressed="annual"
-            aria-label="Cambiar entre reporte mensual y anual"
-            @click="annual = !annual; selectMonth()"
+            variant="ghost"
+            icon="i-lucide-refresh-cw"
+            aria-label="Actualizar resumen"
+            :loading="status === 'pending'"
+            :disabled="!activeWorkshop && !isReadOnly"
+            @click="refresh()"
           />
-          <div class="hidden lg:block">
-            <WorkshopSwitcher :allow-all="false" />
-          </div>
+          <WorkshopSwitcher :allow-all="false" />
         </template>
       </UDashboardNavbar>
-
-      <UDashboardToolbar class="py-4 lg:hidden">
-        <div class="w-full">
-          <DashboardMonthFilter
-            v-model="selectedMonth"
-            block
-            :max-value="currentMonth"
-            :annual="annual"
-            :has-selection="true"
-            @select="selectMonth"
-          />
-        </div>
-      </UDashboardToolbar>
     </template>
 
     <template #body>
@@ -81,17 +44,11 @@ async function selectMonth() {
         icon="i-lucide-building-2"
         class="py-16"
       />
-      <div v-else-if="status === 'idle' || status === 'pending'" class="space-y-6">
-        <USkeleton class="h-72 rounded-2xl" />
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <USkeleton v-for="index in 4" :key="index" class="h-24 rounded-xl" />
-        </div>
-      </div>
-
+      <TableLoadingState v-else-if="!data && (status === 'idle' || status === 'pending')" />
       <UAlert
         v-else-if="error"
-        title="No se pudo cargar el resumen"
-        description="Intenta cargar el reporte de nuevo."
+        title="No se pudo actualizar el resumen"
+        description="Intenta cargar la actividad de nuevo."
         color="error"
         icon="i-lucide-circle-alert"
       >
@@ -104,46 +61,51 @@ async function selectMonth() {
           />
         </template>
       </UAlert>
-
       <div v-else-if="data" class="space-y-6">
-        <UAlert
-          v-if="isReadOnly && data.consolidation?.status !== 'connected'"
-          title="Reporte parcial: solo talleres"
-          description="La información de Carolina Pinturas no está disponible en este momento."
-          color="warning"
-          icon="i-lucide-unplug"
-        />
-        <ReportsDashboard
-          v-if="data.canViewFinancials && data.report"
-          :report="data.report"
-          :businesses="data.consolidation?.businesses"
-          :consolidated="isReadOnly"
-          :all-businesses="isReadOnly"
+        <DetailSectionHeading
+          title="Actividad reciente"
+          color="primary"
+          :description="`${activeWorkshop?.name ?? 'Todos los talleres'} · Actualizado el ${updatedLabel}`"
         >
-          <template #businesses>
-            <ReportsConsolidationSummary
-              v-if="isReadOnly && data.consolidation"
-              :info="data.consolidation"
-              :month="month"
-              :annual="annual"
+          <template #actions>
+            <UButton
+              v-if="canViewReports"
+              to="/reportes"
+              label="Ver reportes"
+              icon="i-lucide-chart-no-axes-combined"
+              color="neutral"
+              variant="outline"
+            />
+            <UButton
+              v-if="canManageOrders"
+              to="/ordenes?create=1"
+              icon="i-lucide-plus"
+              label="Nueva orden"
             />
           </template>
-        </ReportsDashboard>
+        </DetailSectionHeading>
 
-        <section aria-labelledby="dashboard-operation" class="space-y-4">
-          <h2 id="dashboard-operation" class="font-semibold text-highlighted">
-            Operación del taller
-          </h2>
-          <DashboardKpiGrid :kpis="data.kpis" :can-view-financials="false" />
-          <div class="grid gap-4 xl:grid-cols-2">
-            <DashboardStatusBreakdown :items="data.statusCounts" />
-            <DashboardTrend v-if="!data.canViewFinancials" :items="data.trend" :can-view-financials="false" />
+        <DashboardKpiGrid :kpis="data.kpis" :can-view-financials="data.canViewFinancials" recent />
+
+        <div class="grid items-start gap-6 xl:grid-cols-3">
+          <DashboardActivityFeed
+            :items="data.activity"
+            :can-view-financials="data.canViewFinancials"
+            :time-zone="data.timeZone"
+            class="min-w-0 xl:col-span-2"
+          />
+          <div class="min-w-0 space-y-6">
+            <DashboardAttention :attention="data.attention" />
+            <DashboardUpcomingDeliveries
+              :orders="data.upcomingDeliveries"
+              :show-financials="data.canViewFinancials"
+              upcoming
+              compact
+            />
           </div>
-        </section>
+        </div>
 
-        <DashboardRecentOrders :orders="data.recentOrders" />
-
-        <DashboardUpcomingDeliveries :orders="data.upcomingDeliveries" :annual="annual" />
+        <DashboardRecentOrders :orders="data.recentOrders" :show-financials="data.canViewFinancials" recent />
       </div>
     </template>
   </UDashboardPanel>
