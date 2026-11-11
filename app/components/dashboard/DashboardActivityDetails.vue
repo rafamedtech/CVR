@@ -7,8 +7,7 @@ const props = defineProps<{
   timeZone: string
 }>()
 const dateLabel = computed(() => new Intl.DateTimeFormat('es-MX', {
-  timeZone: props.timeZone, day: 'numeric', month: 'short',
-  ...(['expense', 'order'].includes(props.item.type) ? {} : { hour: '2-digit', minute: '2-digit' } as const)
+  timeZone: props.timeZone, day: 'numeric', month: 'short'
 }).format(new Date(props.item.date)))
 </script>
 

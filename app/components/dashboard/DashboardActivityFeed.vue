@@ -59,7 +59,11 @@ const columns = computed<TableColumn<DashboardActivityItem>[]>(() => [
           <p class="text-xs text-muted">
             {{ types[row.original.type] }}
           </p>
-          <NuxtLink v-if="row.original.type !== 'order'" :to="row.original.to" class="font-medium text-primary hover:underline">
+          <NuxtLink
+            v-if="row.original.type !== 'order' && (row.original.type !== 'vehicle' || isMobileViewport)"
+            :to="row.original.to"
+            class="font-medium text-primary hover:underline"
+          >
             {{ row.original.title }}
           </NuxtLink>
           <p v-if="row.original.customerName" class="font-medium text-primary">
@@ -92,6 +96,14 @@ const columns = computed<TableColumn<DashboardActivityItem>[]>(() => [
           :show-details="false"
           :label="row.original.type === 'expense' ? 'Tipo de gasto' : undefined"
         />
+        <div v-else-if="row.original.type === 'vehicle'" class="whitespace-normal">
+          <p class="text-xs text-muted">
+            Vehículo
+          </p>
+          <NuxtLink :to="row.original.to" class="font-medium text-primary hover:underline">
+            {{ row.original.title }}
+          </NuxtLink>
+        </div>
         <span v-else class="text-muted">—</span>
       </template>
       <template #details-cell="{ row }">
