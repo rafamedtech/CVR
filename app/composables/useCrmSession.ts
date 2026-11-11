@@ -34,13 +34,13 @@ export function useCrmSession() {
     session.value = value
   }
 
-  async function selectWorkshop(workshopId: string | null) {
+  async function selectWorkshop(workshopId: string | null, path?: string) {
     const cookie = useCookie<string>('crm-workshop', {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365
     })
     cookie.value = workshopId ?? 'all'
-    await reloadNuxtApp({ force: true })
+    await reloadNuxtApp({ force: true, ...(path ? { path } : {}) })
   }
 
   return {

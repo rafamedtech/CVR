@@ -28,7 +28,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  if (session.value?.profile.isReadOnly && to.path === '/') {
+  if (session.value?.profile.isReadOnly && ['/', '/elegir-taller'].includes(to.path)) {
     return navigateTo('/reportes', { replace: true })
   }
 })

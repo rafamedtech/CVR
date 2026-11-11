@@ -80,6 +80,20 @@ test('consulta tampoco puede abrir Resumen con una sesión ya cargada', async ()
   assert.equal(app.requests(), 0)
 })
 
+test('consulta omite la selección inicial de taller y conserva su acceso global', async () => {
+  const app = fixture()
+  await app.run({ path: '/elegir-taller' })
+  assert.deepEqual(app.redirects, [{ path: '/reportes', replace: true }])
+})
+
+test('la selección inicial carga el perfil antes de mostrar los talleres autorizados', async () => {
+  const app = fixture({ userId: 'admin', existingId: 'previous-user', isReadOnly: false })
+  await app.run({ path: '/elegir-taller' })
+  assert.equal(app.session.value?.profile.id, 'admin')
+  assert.equal(app.requests(), 1)
+  assert.deepEqual(app.redirects, [])
+})
+
 test('consulta puede navegar a reportes y otras páginas sin redirecciones', async () => {
   const app = fixture({ existingId: 'consulta' })
   for (const path of ['/reportes', '/clientes', '/ordenes']) await app.run({ path })

@@ -44,7 +44,7 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
     return
   }
 
-  await navigateTo('/')
+  await navigateTo('/elegir-taller')
 }
 </script>
 

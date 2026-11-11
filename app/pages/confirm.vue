@@ -51,7 +51,7 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
   }
 
   toast.add({ title: 'Contraseña guardada', color: 'success' })
-  await navigateTo('/')
+  await navigateTo('/elegir-taller')
 }
 </script>
 
