@@ -16,7 +16,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
   beforeTax?: boolean
 } = {}): Promise<DashboardData> {
   const allBusinesses = options.includeCarolina === true
-  if (allBusinesses || options.allWorkshops) requireSuperAdmin(context)
+  if (allBusinesses || options.allWorkshops) requireGlobalReadAccess(context)
   const scopedWorkshopWhere = allBusinesses || options.allWorkshops ? {} : workshopWhere(context)
   const timeZone = context.selectedWorkshop?.timezone ?? 'America/Tijuana'
   let bounds: ReturnType<typeof resolveReportPeriod>

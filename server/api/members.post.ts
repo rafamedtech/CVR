@@ -5,10 +5,13 @@ const memberSchema = z.object({
   email: z.email('Escribe un correo válido.').transform(email => email.trim().toLowerCase()),
   fullName: z.string().trim().min(2, 'Escribe el nombre.').max(120),
   phone: z.string().trim().max(30).optional().nullable(),
-  accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN']),
+  accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN', 'READ_ONLY']),
   workshopId: z.string(),
   role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER', 'READ_ONLY'])
 }).superRefine((value, context) => {
+  if (value.accessType === 'WORKSHOP' && value.role === 'READ_ONLY') {
+    context.addIssue({ code: 'custom', path: ['accessType'], message: 'Selecciona el acceso global de sólo lectura.' })
+  }
   if (value.accessType === 'WORKSHOP' && !z.uuid().safeParse(value.workshopId).success) {
     context.addIssue({
       code: 'custom',
@@ -43,8 +46,9 @@ export default defineEventHandler(async (event) => {
   const body = await readCrmBody(event, memberSchema)
   const prisma = usePrisma()
 
-  if (body.accessType === 'SUPER_ADMIN' && !context.isSuperAdmin) {
-    throw createError({ statusCode: 403, statusMessage: 'Sólo un administrador general puede dar este acceso.' })
+  const globalReadOnly = body.accessType === 'READ_ONLY'
+  if ((body.accessType === 'SUPER_ADMIN' || globalReadOnly || body.role === 'READ_ONLY') && !context.isSuperAdmin) {
+    throw createError({ statusCode: 403, statusMessage: 'Sólo un administrador general puede dar acceso global.' })
   }
 
   if (
@@ -88,11 +92,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (body.accessType === 'WORKSHOP' && existing?.isSuperAdmin) {
+  if (body.accessType !== 'SUPER_ADMIN' && existing?.isSuperAdmin) {
     throw createError({
       statusCode: 409,
       statusMessage: 'Este usuario ya es administrador general y no necesita acceso por taller.'
     })
+  }
+
+  if (existing?.isReadOnly && !context.isSuperAdmin) {
+    throw createError({ statusCode: 403, statusMessage: 'Sólo un administrador general puede cambiar el acceso global.' })
   }
 
   await prisma.$transaction(async (transaction) => {
@@ -103,6 +111,7 @@ export default defineEventHandler(async (event) => {
         fullName: body.fullName,
         phone: body.phone || null,
         active: true,
+        isReadOnly: globalReadOnly,
         ...(body.accessType === 'SUPER_ADMIN' ? { isSuperAdmin: true } : {})
       },
       create: {
@@ -110,9 +119,14 @@ export default defineEventHandler(async (event) => {
         email: body.email,
         fullName: body.fullName,
         phone: body.phone || null,
+        isReadOnly: globalReadOnly,
         isSuperAdmin: body.accessType === 'SUPER_ADMIN'
       }
     })
+
+    if (globalReadOnly) {
+      await transaction.workshopMember.deleteMany({ where: { profileId: authUser.id } })
+    }
 
     if (body.accessType === 'WORKSHOP') {
       await transaction.workshopMember.upsert({

@@ -9,7 +9,7 @@ const createOpen = shallowRef(false)
 const editOpen = shallowRef(false)
 const assignmentsOpen = shallowRef(false)
 const selectedVehicle = shallowRef<VehicleListItem | null>(null)
-const { session, canManageCustomers, isAllWorkshops, isSuperAdmin } = useCrmSession()
+const { session, canManageCustomers, isAllWorkshops, isSuperAdmin, isReadOnly } = useCrmSession()
 const { data: vehicles, status, refresh } = await useFetch<VehicleListItem[]>('/api/vehicles', {
   default: () => [],
   key: 'crm-vehicles'
@@ -56,7 +56,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+          <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
                 label="Nuevo vehículo"
@@ -91,7 +91,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
 
     <template #body>
       <UAlert
-        v-if="isAllWorkshops"
+        v-if="isAllWorkshops && !isReadOnly"
         class="mb-4"
         title="Selecciona un taller para registrar vehículos"
         icon="i-lucide-info"

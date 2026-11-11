@@ -5,7 +5,7 @@ import { isCarolinaReportsConfigured, readCarolinaReport } from '../../utils/car
 
 export default defineEventHandler(async (event): Promise<BusinessReportData> => {
   const context = await requireCrmUser(event)
-  requireSuperAdmin(context)
+  requireGlobalReadAccess(context)
   const query = getQuery(event)
   const business = typeof query.business === 'string' ? query.business : 'all'
   if (business === 'carolina-pinturas') {

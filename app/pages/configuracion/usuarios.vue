@@ -81,7 +81,13 @@ function openMemberForm(preset: MemberAccessPreset | null = null) {
               variant="subtle"
             />
             <UBadge
-              v-for="membership in member.memberships"
+              v-if="member.isReadOnly"
+              label="Todos los negocios · Sólo lectura"
+              color="info"
+              variant="subtle"
+            />
+            <UBadge
+              v-for="membership in (member.isReadOnly ? [] : member.memberships)"
               :key="membership.workshopId"
               :label="`${membership.workshopName} · ${workshopRoleLabels[membership.role]}`"
               color="neutral"

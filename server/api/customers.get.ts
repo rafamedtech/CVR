@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     },
     include: {
       workshops: {
-        where: context.isSuperAdmin ? {} : { workshopId: context.workshopId! },
+        where: (context.isSuperAdmin || context.isReadOnly) ? {} : { workshopId: context.workshopId! },
         include: { workshop: true },
         orderBy: { createdAt: 'asc' }
       },

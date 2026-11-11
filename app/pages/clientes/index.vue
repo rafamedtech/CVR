@@ -9,7 +9,7 @@ const createOpen = shallowRef(false)
 const editOpen = shallowRef(false)
 const assignmentsOpen = shallowRef(false)
 const selectedCustomer = shallowRef<CustomerListItem | null>(null)
-const { session, canManageCustomers, isAllWorkshops, isSuperAdmin } = useCrmSession()
+const { session, canManageCustomers, isAllWorkshops, isSuperAdmin, isReadOnly } = useCrmSession()
 const { data: customers, status, refresh } = await useFetch<CustomerListItem[]>('/api/customers', {
   default: () => [],
   key: 'crm-customers'
@@ -56,7 +56,7 @@ async function handleUpdated() {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+          <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
                 label="Nuevo cliente"

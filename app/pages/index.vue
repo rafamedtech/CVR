@@ -2,18 +2,18 @@
 import type { DashboardData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
-const { activeWorkshop } = useCrmSession()
-const { selectedMonth, currentMonth, annual, periodQuery, syncPeriod } = useReportPeriod()
+const { activeWorkshop, isReadOnly } = useCrmSession()
+const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
 const { data, status, error, refresh } = await useFetch<DashboardData>('/api/dashboard', {
   query: periodQuery,
   key: 'crm-dashboard',
-  immediate: Boolean(activeWorkshop.value),
+  immediate: Boolean(activeWorkshop.value) || isReadOnly.value,
   watch: false
 })
 
 async function selectMonth() {
   await syncPeriod()
-  if (activeWorkshop.value) await refresh()
+  if (activeWorkshop.value || isReadOnly.value) await refresh()
 }
 </script>
 
@@ -21,7 +21,7 @@ async function selectMonth() {
   <UDashboardPanel id="dashboard">
     <template #header>
       <UDashboardNavbar
-        :title="activeWorkshop?.name ?? 'Resumen'"
+        :title="isReadOnly ? 'Todos los negocios' : activeWorkshop?.name ?? 'Resumen'"
         :toggle="{ size: 'xl' }"
         :ui="{ title: 'text-base lg:text-sm' }"
       >
@@ -73,7 +73,7 @@ async function selectMonth() {
 
     <template #body>
       <UEmpty
-        v-if="!activeWorkshop"
+        v-if="!activeWorkshop && !isReadOnly"
         title="Selecciona un taller"
         description="Elige Carrocería o Mecánica en el selector para ver su resumen."
         icon="i-lucide-building-2"
@@ -104,7 +104,28 @@ async function selectMonth() {
       </UAlert>
 
       <div v-else-if="data" class="space-y-6">
-        <ReportsDashboard v-if="data.canViewFinancials && data.report" :report="data.report" :consolidated="false" />
+        <UAlert
+          v-if="isReadOnly && data.consolidation?.status !== 'connected'"
+          title="Reporte parcial: solo talleres"
+          description="La información de Carolina Pinturas no está disponible en este momento."
+          color="warning"
+          icon="i-lucide-unplug"
+        />
+        <ReportsDashboard
+          v-if="data.canViewFinancials && data.report"
+          :report="data.report"
+          :consolidated="isReadOnly"
+          :all-businesses="isReadOnly"
+        >
+          <template #businesses>
+            <ReportsConsolidationSummary
+              v-if="isReadOnly && data.consolidation"
+              :info="data.consolidation"
+              :month="month"
+              :annual="annual"
+            />
+          </template>
+        </ReportsDashboard>
 
         <section aria-labelledby="dashboard-operation" class="space-y-4">
           <h2 id="dashboard-operation" class="font-semibold text-highlighted">

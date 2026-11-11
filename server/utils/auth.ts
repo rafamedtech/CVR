@@ -11,6 +11,7 @@ export interface CrmRequestContext {
   workshopId: string | null
   selectedWorkshop: Workshop | null
   isSuperAdmin: boolean
+  isReadOnly: boolean
 }
 
 async function ensureDefaultWorkshops() {
@@ -115,7 +116,10 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
   const selected = getCookie(event, 'crm-workshop')
   let selectedWorkshop: Workshop | null = null
 
-  if (profile.isSuperAdmin) {
+  if (profile.isReadOnly) {
+    // Global consultation always ignores a previous workshop selection.
+    selectedWorkshop = null
+  } else if (profile.isSuperAdmin) {
     if (selected && selected !== 'all') {
       selectedWorkshop = await prisma.workshop.findFirst({
         where: { id: selected, active: true }
@@ -136,7 +140,7 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
   }
 
   const role = profile.memberships.find(item => item.workshopId === selectedWorkshop?.id)?.role
-  if (!profile.isSuperAdmin && role === 'READ_ONLY' && !['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
+  if ((profile.isReadOnly || (!profile.isSuperAdmin && role === 'READ_ONLY')) && !['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Tu usuario tiene permisos de sólo lectura.'
@@ -147,7 +151,8 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
     profile,
     workshopId: selectedWorkshop?.id ?? null,
     selectedWorkshop,
-    isSuperAdmin: profile.isSuperAdmin
+    isSuperAdmin: profile.isSuperAdmin && !profile.isReadOnly,
+    isReadOnly: profile.isReadOnly
   }
 }
 
@@ -163,7 +168,7 @@ export function requireSelectedWorkshop(context: CrmRequestContext) {
 }
 
 export function requireSuperAdmin(context: CrmRequestContext) {
-  if (!context.isSuperAdmin) {
+  if (!context.isSuperAdmin || context.isReadOnly) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Sólo los administradores generales pueden realizar esta acción.'
@@ -171,7 +176,17 @@ export function requireSuperAdmin(context: CrmRequestContext) {
   }
 }
 
+export function requireGlobalReadAccess(context: CrmRequestContext) {
+  if (!context.isSuperAdmin && !context.isReadOnly) {
+    throw createError({ statusCode: 403, statusMessage: 'No tienes acceso a la consulta global.' })
+  }
+}
+
 export function requireWorkshopRole(context: CrmRequestContext, roles: WorkshopRole[]) {
+  if (context.isReadOnly) {
+    if (roles.includes('READ_ONLY')) return
+    throw createError({ statusCode: 403, statusMessage: 'Tu usuario tiene permisos de sólo lectura.' })
+  }
   if (context.isSuperAdmin) return
 
   const membership = context.profile.memberships.find(item => item.workshopId === context.workshopId)
@@ -184,6 +199,7 @@ export function requireWorkshopRole(context: CrmRequestContext, roles: WorkshopR
 }
 
 export function currentWorkshopRole(context: CrmRequestContext) {
+  if (context.isReadOnly) return 'READ_ONLY' as const
   if (context.isSuperAdmin) return null
   return context.profile.memberships.find(item => item.workshopId === context.workshopId)?.role ?? null
 }

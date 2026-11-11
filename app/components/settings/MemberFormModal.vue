@@ -18,16 +18,17 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 const toast = useToast()
 const loading = shallowRef(false)
-const roleOptions = Object.entries(workshopRoleLabels).map(([value, label]) => ({ value, label }))
+const roleOptions = Object.entries(workshopRoleLabels).filter(([value]) => value !== 'READ_ONLY').map(([value, label]) => ({ value, label }))
 const accessTypeOptions = [
   { value: 'WORKSHOP', label: 'Usuario de taller' },
-  { value: 'SUPER_ADMIN', label: 'Administrador general' }
+  { value: 'SUPER_ADMIN', label: 'Administrador general' },
+  { value: 'READ_ONLY', label: 'Sólo lectura · Todos los negocios' }
 ] satisfies Array<{ value: MemberAccessType, label: string }>
 const schema = z.object({
   fullName: z.string().min(2, 'Escribe el nombre.'),
   email: z.email('Escribe un correo válido.'),
   phone: z.string().optional(),
-  accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN']),
+  accessType: z.enum(['WORKSHOP', 'SUPER_ADMIN', 'READ_ONLY']),
   workshopId: z.string(),
   role: z.enum(['MANAGER', 'ADVISOR', 'TECHNICIAN', 'CASHIER', 'READ_ONLY'])
 }).superRefine((value, context) => {
@@ -163,11 +164,11 @@ async function onSubmit(event: FormSubmitEvent<MemberSchema>) {
           />
         </UFormField>
         <UAlert
-          :title="state.accessType === 'SUPER_ADMIN' ? 'Acceso global' : state.role === 'READ_ONLY' ? 'Sólo lectura' : 'Permisos por taller'"
+          :title="state.accessType === 'SUPER_ADMIN' ? 'Acceso global' : state.accessType === 'READ_ONLY' ? 'Sólo lectura' : 'Permisos por taller'"
           :description="state.accessType === 'SUPER_ADMIN'
             ? 'Este usuario podrá ver y administrar ambos talleres.'
-            : state.role === 'READ_ONLY'
-              ? 'Podrá consultar la información del taller seleccionado, sin crear, modificar ni eliminar registros.'
+            : state.accessType === 'READ_ONLY'
+              ? 'Podrá consultar todos los negocios y sus reportes, sin crear, modificar ni eliminar registros.'
               : 'El usuario sólo tendrá acceso al taller y las funciones de su rol.'"
           icon="i-lucide-shield-check"
           color="info"

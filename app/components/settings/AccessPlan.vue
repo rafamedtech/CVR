@@ -42,9 +42,7 @@ const presets: MemberAccessPreset[] = [
     key: 'consultation',
     fullName: 'Consulta',
     email: 'consulta@cvrtransportinc.com',
-    accessType: 'WORKSHOP',
-    workshopSlug: 'carroceria',
-    role: 'READ_ONLY'
+    accessType: 'READ_ONLY'
   },
   {
     key: 'second-admin',
@@ -62,6 +60,10 @@ function assignedMember(preset: MemberAccessPreset) {
     return props.members.find(member => (
       member.isSuperAdmin && member.id !== props.currentUserId
     ))
+  }
+
+  if (preset.accessType === 'READ_ONLY') {
+    return props.members.find(member => member.active && member.isReadOnly && !member.isSuperAdmin && member.email.toLowerCase() === preset.email?.toLowerCase())
   }
 
   const workshop = workshopFor(preset)
@@ -91,7 +93,9 @@ const accessCards = computed(() => presets.map((preset) => {
       : preset.fullName,
     description: preset.accessType === 'SUPER_ADMIN'
       ? 'Vista global y administración de ambos talleres'
-      : `${workshop?.name ?? 'Taller'} · ${workshopRoleLabels[preset.role ?? 'MANAGER']}`
+      : preset.accessType === 'READ_ONLY'
+        ? 'Todos los negocios · Sólo lectura'
+        : `${workshop?.name ?? 'Taller'} · ${workshopRoleLabels[preset.role ?? 'MANAGER']}`
   }
 }))
 </script>

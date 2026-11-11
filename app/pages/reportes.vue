@@ -3,7 +3,7 @@ import type { BusinessReportData } from '~/types/reports'
 
 useHead({ title: 'Reportes' })
 const route = useRoute()
-const { session, isSuperAdmin } = useCrmSession()
+const { session, canViewReports } = useCrmSession()
 const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
 const businessOptions = computed(() => [
   { label: 'Todos los negocios', value: 'all' },
@@ -14,7 +14,7 @@ const business = shallowRef(typeof route.query.business === 'string' && business
 const { data, status, error, refresh } = await useFetch<BusinessReportData>('/api/reports/summary', {
   key: 'crm-business-reports',
   query: computed(() => ({ ...periodQuery.value, business: business.value })),
-  immediate: isSuperAdmin.value,
+  immediate: canViewReports.value,
   watch: false
 })
 const isCarolina = computed(() => business.value === 'carolina-pinturas')
@@ -26,7 +26,7 @@ const unavailableMessage = computed(() => data.value?.status === 'not-configured
   : 'No se pudo consultar Carolina Pinturas. Sus importes no están incluidos en los resultados mostrados.')
 async function updateReport() {
   await syncPeriod({ business: business.value })
-  if (isSuperAdmin.value) await refresh()
+  if (canViewReports.value) await refresh()
 }
 </script>
 
@@ -58,7 +58,7 @@ async function updateReport() {
           />
         </template>
       </UDashboardNavbar>
-      <UDashboardToolbar v-if="isSuperAdmin" class="py-3">
+      <UDashboardToolbar v-if="canViewReports" class="py-3">
         <div class="flex w-full flex-wrap items-center gap-3">
           <USelect
             v-model="business"
@@ -85,11 +85,11 @@ async function updateReport() {
     </template>
     <template #body>
       <UAlert
-        v-if="!isSuperAdmin"
+        v-if="!canViewReports"
         color="warning"
         icon="i-lucide-lock-keyhole"
         title="Acceso restringido"
-        description="Los reportes por negocio están disponibles para el administrador general. El resumen de tu taller sigue disponible en Inicio."
+        description="Los reportes por negocio requieren acceso global. El resumen de tu taller sigue disponible en Inicio."
       />
       <div v-else-if="status === 'pending'" class="space-y-6" aria-label="Cargando reporte">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

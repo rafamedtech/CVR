@@ -5,11 +5,15 @@ export function useCrmSession() {
 
   const activeWorkshop = computed(() => session.value?.selectedWorkshop ?? null)
   const isAllWorkshops = computed(() => session.value?.canViewAll === true && session.value.selectedWorkshopId === null)
-  const currentRole = computed(() => session.value?.workshops.find(workshop => (
-    workshop.id === session.value?.selectedWorkshopId
-  ))?.role ?? null)
+  const isReadOnly = computed(() => session.value?.profile.isReadOnly === true)
+  const canViewReports = computed(() => session.value?.canViewAll === true)
+  const currentRole = computed(() => isReadOnly.value
+    ? 'READ_ONLY'
+    : session.value?.workshops.find(workshop => (
+      workshop.id === session.value?.selectedWorkshopId
+    ))?.role ?? null)
   const canCreateInWorkshop = computed(() => (
-    Boolean(session.value?.selectedWorkshopId) && currentRole.value !== 'READ_ONLY'
+    Boolean(session.value?.selectedWorkshopId) && !isReadOnly.value && currentRole.value !== 'READ_ONLY'
   ))
   const isSuperAdmin = computed(() => session.value?.profile.isSuperAdmin === true)
   const canManageCustomers = computed(() => (
@@ -46,6 +50,8 @@ export function useCrmSession() {
     canCreateInWorkshop,
     currentRole,
     isSuperAdmin,
+    isReadOnly,
+    canViewReports,
     canManageCustomers,
     canManageOrders,
     canRecordPayments,

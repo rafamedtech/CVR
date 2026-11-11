@@ -10,6 +10,7 @@ const {
   currentRole,
   isAllWorkshops,
   isSuperAdmin,
+  isReadOnly,
   setSession
 } = useCrmSession()
 const toast = useToast()
@@ -84,7 +85,7 @@ async function saveTaxRate() {
           </div>
         </template>
         <UBadge
-          :label="session?.profile.isSuperAdmin ? 'Administrador general' : 'Usuario de taller'"
+          :label="isReadOnly ? 'Sólo lectura · Todos los negocios' : session?.profile.isSuperAdmin ? 'Administrador general' : 'Usuario de taller'"
           :color="session?.profile.isSuperAdmin ? 'primary' : 'neutral'"
           variant="subtle"
         />
@@ -102,7 +103,7 @@ async function saveTaxRate() {
               Vista
             </dt>
             <dd class="font-medium text-highlighted">
-              {{ isAllWorkshops ? 'Todos los talleres' : activeWorkshop?.name }}
+              {{ isReadOnly ? 'Todos los negocios' : isAllWorkshops ? 'Todos los talleres' : activeWorkshop?.name }}
             </dd>
           </div>
           <div class="flex justify-between gap-4">
@@ -141,7 +142,7 @@ async function saveTaxRate() {
           </div>
         </dl>
         <UAlert
-          v-if="isAllWorkshops"
+          v-if="isAllWorkshops && !isReadOnly"
           class="mt-4"
           title="Selecciona un taller"
           description="El IVA predeterminado se configura por taller."
@@ -149,7 +150,7 @@ async function saveTaxRate() {
           color="info"
           variant="subtle"
         />
-        <div v-else class="mt-5 flex items-center justify-between gap-4 border-t border-default pt-4">
+        <div v-else-if="!isReadOnly" class="mt-5 flex items-center justify-between gap-4 border-t border-default pt-4">
           <p class="text-xs text-muted">
             Se aplicará a los nuevos conceptos de órdenes.
           </p>

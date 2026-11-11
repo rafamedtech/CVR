@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{
   allowAll?: boolean
 }>(), { allowAll: true })
 
-const { session, selectWorkshop } = useCrmSession()
+const { session, selectWorkshop, isReadOnly } = useCrmSession()
 
 const workshopIcons: Record<WorkshopType, string> = {
   BODY_SHOP: 'i-lucide-paintbrush',
@@ -50,7 +50,15 @@ const items = computed<DropdownMenuItem[][]>(() => {
 </script>
 
 <template>
+  <UBadge
+    v-if="isReadOnly"
+    label="Todos los negocios"
+    icon="i-lucide-building-2"
+    color="neutral"
+    variant="subtle"
+  />
   <UDropdownMenu
+    v-else
     :items="items"
     :content="{ align: 'end', collisionPadding: 12 }"
     :ui="{ content: 'w-64' }"

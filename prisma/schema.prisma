@@ -111,6 +111,7 @@ model Profile {
   fullName         String
   phone            String?
   isSuperAdmin     Boolean          @default(false)
+  isReadOnly       Boolean          @default(false)
   active           Boolean          @default(true)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt

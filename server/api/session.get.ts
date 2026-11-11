@@ -2,7 +2,7 @@ export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   const prisma = usePrisma()
 
-  const workshops = context.isSuperAdmin
+  const workshops = context.isSuperAdmin || context.isReadOnly
     ? await prisma.workshop.findMany({
         where: { active: true },
         orderBy: { name: 'asc' }
@@ -19,7 +19,8 @@ export default defineEventHandler(async (event) => {
       id: context.profile.id,
       email: context.profile.email,
       fullName: context.profile.fullName,
-      isSuperAdmin: context.profile.isSuperAdmin
+      isSuperAdmin: context.isSuperAdmin,
+      isReadOnly: context.isReadOnly
     },
     workshops: workshops.map(workshop => ({
       id: workshop.id,
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
       name: workshop.name,
       type: workshop.type,
       taxRate: Number(workshop.taxRate),
-      role: 'role' in workshop ? workshop.role : undefined
+      role: context.isReadOnly ? 'READ_ONLY' : 'role' in workshop ? workshop.role : undefined
     })),
     selectedWorkshopId: context.workshopId,
     selectedWorkshop: context.selectedWorkshop
@@ -39,6 +40,6 @@ export default defineEventHandler(async (event) => {
           taxRate: Number(context.selectedWorkshop.taxRate)
         }
       : null,
-    canViewAll: context.isSuperAdmin
+    canViewAll: context.isSuperAdmin || context.isReadOnly
   }
 })

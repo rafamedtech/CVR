@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
     phone: profile.phone,
     active: profile.active,
     isSuperAdmin: profile.isSuperAdmin,
+    isReadOnly: profile.isReadOnly,
     memberships: profile.memberships.map(membership => ({
       workshopId: membership.workshopId,
       workshopName: membership.workshop.name,

@@ -18,6 +18,7 @@ const canViewFinancials = computed(() => (
   sessionData.value?.profile.isSuperAdmin
   || selectedRole.value === 'MANAGER'
   || selectedRole.value === 'CASHIER'
+  || sessionData.value?.profile.isReadOnly
   || selectedRole.value === 'READ_ONLY'
 ))
 
@@ -29,7 +30,7 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     exact: true,
     onSelect: () => { open.value = false }
   },
-  ...(sessionData.value?.profile.isSuperAdmin
+  ...(sessionData.value?.canViewAll
     ? [{
         label: 'Reportes',
         icon: 'i-lucide-chart-no-axes-combined',

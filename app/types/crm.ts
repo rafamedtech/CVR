@@ -7,7 +7,7 @@ export type { CustomerType } from '#shared/customer-type'
 
 export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER' | 'READ_ONLY'
-export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN'
+export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN' | 'READ_ONLY'
 export type TaxRate = 0 | 8 | 16
 export type OrderStatus = 'ESTIMATE' | 'AWAITING_APPROVAL' | 'APPROVED' | 'IN_PROGRESS' | 'QUALITY_CONTROL' | 'READY' | 'DELIVERED' | 'LIQUIDATED' | 'CANCELLED'
 export type OrderPriority = 'NORMAL' | 'HIGH' | 'URGENT'
@@ -31,6 +31,7 @@ export interface CrmSession {
     email: string
     fullName: string
     isSuperAdmin: boolean
+    isReadOnly: boolean
   }
   workshops: WorkshopSummary[]
   selectedWorkshopId: string | null
@@ -237,6 +238,7 @@ export interface MemberListItem {
   phone: string | null
   active: boolean
   isSuperAdmin: boolean
+  isReadOnly: boolean
   memberships: Array<{
     workshopId: string
     workshopName: string

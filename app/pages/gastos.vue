@@ -8,7 +8,7 @@ const search = shallowRef('')
 const formOpen = shallowRef(false)
 const selectedExpense = shallowRef<ExpenseListItem | null>(null)
 const duplicateExpense = shallowRef<ExpenseListItem | null>(null)
-const { canCreateInWorkshop, isAllWorkshops } = useCrmSession()
+const { canCreateInWorkshop, isAllWorkshops, isReadOnly } = useCrmSession()
 const { data: expenses, status, refresh } = await useFetch<ExpenseListItem[]>('/api/expenses', {
   default: () => [],
   key: 'crm-expenses'
@@ -63,7 +63,7 @@ function openDuplicateModal(expense: ExpenseListItem) {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+          <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
                 :label="newExpenseLabel"
@@ -90,7 +90,7 @@ function openDuplicateModal(expense: ExpenseListItem) {
 
     <template #body>
       <UAlert
-        v-if="isAllWorkshops"
+        v-if="isAllWorkshops && !isReadOnly"
         class="mb-4"
         title="Vista consolidada"
         description="Selecciona un taller para registrar un gasto."

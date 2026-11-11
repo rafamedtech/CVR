@@ -19,7 +19,7 @@ const createdAtRange = shallowRef<{
 } | null>(null)
 const dateFilterOpen = shallowRef(false)
 const createOpen = shallowRef(false)
-const { canManageOrders, isAllWorkshops } = useCrmSession()
+const { canManageOrders, isAllWorkshops, isReadOnly } = useCrmSession()
 
 const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
   default: () => [],
@@ -134,7 +134,7 @@ const filteredOrders = computed(() => {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UTooltip :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
+          <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
               <UButton
                 :label="newOrderLabel"
