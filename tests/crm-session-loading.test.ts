@@ -9,12 +9,14 @@ const source = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }
 ).outputText
 
-function fixture({ userId = 'consulta', existingId = '', fail = 0 } = {}) {
-  const session = { value: existingId ? { profile: { id: existingId } } : null }
+function fixture({ userId = 'consulta', existingId = '', fail = 0, isReadOnly = true } = {}) {
+  const session = { value: existingId ? { profile: { id: existingId, isReadOnly } } : null }
+  const redirects: Array<{ path: string, replace: boolean }> = []
   let requests = 0
   const exports: { default?: (to: { path: string }) => Promise<void> } = {}
   runInNewContext(source, {
     exports,
+    navigateTo: (path: string, options: { replace: boolean }) => { redirects.push({ path, replace: options.replace }) },
     defineNuxtRouteMiddleware: (handler: unknown) => handler,
     useSupabaseUser: () => ({ value: userId ? { sub: userId } : null }),
     useCrmSession: () => ({ session, setSession: (value: typeof session.value) => { session.value = value } }),
@@ -22,11 +24,11 @@ function fixture({ userId = 'consulta', existingId = '', fail = 0 } = {}) {
       requests += 1
       if (fail) throw Object.assign(new Error('Session failed'), { statusCode: fail })
       await Promise.resolve()
-      return { profile: { id: userId, isReadOnly: true }, selectedWorkshopId: null, canViewAll: true }
+      return { profile: { id: userId, isReadOnly }, selectedWorkshopId: null, canViewAll: true }
     },
     createError: (error: { statusCode: number, statusMessage: string }) => Object.assign(new Error(error.statusMessage), error)
   })
-  return { run: exports.default!, session, requests: () => requests }
+  return { run: exports.default!, session, redirects, requests: () => requests }
 }
 
 test('espera la sesión de consulta antes de montar la página de datos', async () => {
@@ -63,4 +65,29 @@ test('no carga el perfil en las rutas públicas ni sin sesión autenticada', asy
   await signedOut.run({ path: '/' })
   assert.equal(signedOut.session.value, null)
   assert.equal(signedOut.requests(), 0)
+})
+
+test('consulta inicia directamente en reportes después de cargar su perfil', async () => {
+  const app = fixture()
+  await app.run({ path: '/' })
+  assert.deepEqual(app.redirects, [{ path: '/reportes', replace: true }])
+})
+
+test('consulta tampoco puede abrir Resumen con una sesión ya cargada', async () => {
+  const app = fixture({ existingId: 'consulta' })
+  await app.run({ path: '/' })
+  assert.deepEqual(app.redirects, [{ path: '/reportes', replace: true }])
+  assert.equal(app.requests(), 0)
+})
+
+test('consulta puede navegar a reportes y otras páginas sin redirecciones', async () => {
+  const app = fixture({ existingId: 'consulta' })
+  for (const path of ['/reportes', '/clientes', '/ordenes']) await app.run({ path })
+  assert.deepEqual(app.redirects, [])
+})
+
+test('los otros perfiles mantienen Resumen como inicio', async () => {
+  const app = fixture({ userId: 'admin', isReadOnly: false })
+  await app.run({ path: '/' })
+  assert.deepEqual(app.redirects, [])
 })

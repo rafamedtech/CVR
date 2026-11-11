@@ -10,6 +10,7 @@ const props = withDefaults(defineProps<{
   empty: string
   items: ReportRankingItem[]
   countLabel: (count: number) => string
+  uppercaseValues?: boolean
   exactAmounts?: boolean
   color?: 'primary' | 'material'
 }>(), { color: 'primary' })
@@ -36,7 +37,7 @@ const bar = computed(() => props.color === 'material' ? 'bg-violet-500' : 'bg-pr
         </span>
         <div class="min-w-0 flex-1">
           <div class="flex items-baseline justify-between gap-3">
-            <p class="truncate text-sm font-medium text-highlighted">
+            <p class="truncate text-sm font-medium text-highlighted" :class="{ uppercase: uppercaseValues }">
               {{ item.label }}
             </p>
             <p class="shrink-0 text-sm font-semibold tabular-nums text-highlighted">

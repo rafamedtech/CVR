@@ -3,6 +3,7 @@ import test from 'node:test'
 import { buildBusinessReport } from '../server/utils/business-report'
 import { buildCarolinaReport } from '../server/utils/carolina-reports'
 import { combineBusinessReports } from '../shared/combine-reports'
+import { groupBusinessSalesChannels } from '../shared/report-sales-channels'
 import { readReportPages } from '../server/utils/report-pagination'
 
 const period = { mode: 'monthly' as const, start: '2026-09-01', end: '2026-09-30', totalDays: 30, elapsedDays: 30, label: 'Septiembre 2026' }
@@ -125,4 +126,40 @@ test('pagination checks the final empty page and fails on incomplete reads', asy
   assert.deepEqual(ranges, [[0, 1], [2, 3]])
   await assert.rejects(() => readReportPages(async () => ({ data: null, error: { message: 'Network failure' } })))
   await assert.rejects(() => readReportPages(async () => ({ data: null, error: null })))
+})
+
+test('separa Carolina de los talleres y calcula la participación dentro de cada bloque', () => {
+  const bodyShop = workshop()
+  const mechanical = workshop(580, 80)
+  bodyShop.metrics.previousSales = 800
+  const paintStore = carolina().report
+  const sources = [
+    { id: 'body-shop', name: 'Carrocería', report: bodyShop },
+    { id: 'mechanical', name: 'Mecánica', report: mechanical },
+    { id: 'carolina-pinturas', name: 'Carolina Pinturas', report: paintStore }
+  ]
+  const combined = combineBusinessReports(sources)
+  const groups = groupBusinessSalesChannels(combined.salesChannels ?? [], sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })))
+  assert.equal(groups.carolina.reduce((sum, channel) => sum + channel.amount, 0), 2000)
+  assert.equal(groups.carolina.find(channel => channel.key === 'internal')?.percentage, 100)
+  assert.equal(groups.carolina.find(channel => channel.key === 'internal')?.previousAmount, 1000)
+  assert.deepEqual(groups.workshops.map(channel => ({ key: channel.key, amount: channel.amount, percentage: channel.percentage })), [
+    { key: 'body-shop', amount: 1000, percentage: 66.7 },
+    { key: 'mechanical', amount: 500, percentage: 33.3 }
+  ])
+  assert.equal(groups.workshops[0]?.previousAmount, 800)
+  assert.equal(groups.workshops[0]?.count, 1)
+  assert.equal(groups.carolina.reduce((sum, channel) => sum + channel.amount, 0) + groups.workshops.reduce((sum, channel) => sum + channel.amount, 0), combined.metrics.sales)
+})
+
+test('conserva los talleres por separado sin Carolina y muestra porcentajes válidos sin ventas', () => {
+  const empty = buildBusinessReport(input)
+  const businesses = [
+    { id: 'body-shop', name: 'Carrocería', metrics: empty.metrics },
+    { id: 'mechanical', name: 'Mecánica', metrics: empty.metrics }
+  ]
+  const groups = groupBusinessSalesChannels(empty.salesChannels ?? [], businesses)
+  assert.equal(groups.carolina.length, 0)
+  assert.equal(groups.workshops.length, 2)
+  assert.ok(groups.workshops.every(channel => channel.amount === 0 && channel.percentage === 0))
 })

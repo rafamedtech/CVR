@@ -72,7 +72,7 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
 </script>
 
 <template>
-  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0' }">
+  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0', wrapper: 'min-w-0' }">
     <div class="space-y-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <div>
@@ -90,7 +90,39 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
       </div>
     </div>
 
+    <dl class="min-w-0 divide-y divide-default sm:hidden">
+      <div v-for="row in rows" :key="row.key" class="min-w-0 space-y-2 py-3 first:pt-0 last:pb-0">
+        <dt class="flex min-w-0 items-baseline justify-between gap-3">
+          <span class="flex min-w-0 items-baseline gap-2" :class="row.total ? 'font-semibold text-highlighted' : 'text-default'">
+            <span class="w-3 shrink-0 text-center font-mono text-xs text-dimmed" aria-hidden="true">{{ row.sign }}</span>
+            <span class="min-w-0 text-sm">{{ row.label }}</span>
+          </span>
+          <span class="shrink-0 text-xs tabular-nums text-muted" aria-label="Porcentaje de la venta">{{ share(row.amount) }}</span>
+        </dt>
+        <dd class="min-w-0 space-y-2 pl-5">
+          <p
+            class="text-lg tabular-nums [overflow-wrap:anywhere]"
+            :class="[row.total ? 'font-semibold' : 'font-medium', row.amount < 0 ? 'text-error' : row.total && row.amount > 0 ? 'text-success' : 'text-highlighted']"
+          >
+            {{ reportCurrency.format(row.amount) }}
+          </p>
+          <div class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs tabular-nums">
+            <p class="min-w-0 text-muted [overflow-wrap:anywhere]">
+              Anterior: {{ reportCurrency.format(row.previous) }}
+            </p>
+            <p :class="change(row).class">
+              Variación: {{ change(row).label }}
+            </p>
+          </div>
+          <div class="h-1.5 rounded-full bg-elevated" aria-hidden="true">
+            <div class="h-full rounded-full" :class="row.bar" :style="{ width: width(row.amount) }" />
+          </div>
+        </dd>
+      </div>
+    </dl>
+
     <DetailTable
+      class="hidden min-w-0 sm:block"
       :data="rows"
       :columns="columns"
       :get-row-id="row => row.key"
@@ -138,7 +170,7 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
           :style="{ width: `${Math.abs(item.value) / hundredTotal * 100}%` }"
         />
       </div>
-      <DetailFields :fields="hundred.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2">
+      <DetailFields :fields="hundred.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2 grid-cols-3">
         <template #label="{ field }">
           <span class="flex items-center gap-1.5 text-xs">
             <span class="size-2 rounded-full" :class="hundred.find(item => item.key === field.key)?.class" />

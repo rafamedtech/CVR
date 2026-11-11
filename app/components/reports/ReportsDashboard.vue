@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import type { BusinessReportSummary } from '~/types/reports'
+import type { BusinessReportSummary, ConsolidationInfo } from '~/types/reports'
 import type { ExpenseCategory, LineItemType, PaymentMethod } from '~/types/crm'
+import { reportFormatDate } from '~/utils/datetime'
 
-const props = withDefaults(defineProps<{ report: BusinessReportSummary, consolidated: boolean, allBusinesses?: boolean, carolina?: boolean, detailsLinks?: boolean }>(), { detailsLinks: true })
+const props = withDefaults(defineProps<{ report: BusinessReportSummary, consolidated: boolean, allBusinesses?: boolean, carolina?: boolean, detailsLinks?: boolean, businesses?: ConsolidationInfo['businesses'] }>(), { detailsLinks: true })
 const annual = computed(() => props.report.period.mode === 'annual')
+const periodLabel = computed(() => `${reportFormatDate(props.report.period.start)} – ${reportFormatDate(props.report.period.end)}`)
 const lines = computed(() => props.report.salesByLine.map(item => ({ ...item, label: lineItemTypeLabels[item.key as LineItemType] ?? item.label })))
 const categories = computed(() => props.report.operatingExpenseCategories.map(item => ({ ...item, label: expenseCategoryLabels[item.key as ExpenseCategory] ?? item.label })))
 const methods = computed(() => props.report.paymentMethods.map(item => ({ ...item, label: paymentMethodLabels[item.key as PaymentMethod] ?? item.label })))
@@ -18,12 +20,9 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           Resultado del {{ annual ? 'año' : 'mes' }}
         </h2>
         <p class="text-xs text-muted">
-          {{ report.period.label }} · MXN · {{ report.taxBasis === 'before-tax' ? 'ventas antes de IVA' : 'ventas con IVA cuando aplica' }}
+          {{ periodLabel }} · MXN · {{ report.taxBasis === 'before-tax' ? 'ventas antes de IVA' : 'ventas con IVA cuando aplica' }}
         </p>
       </div>
-      <p class="text-xs text-muted">
-        {{ allBusinesses ? 'Talleres: órdenes aprobadas y posteriores por fecha de creación. Carolina: pedidos vigentes por fecha del pedido. Operaciones internas incluidas.' : carolina ? 'Pedidos vigentes de Carolina Pinturas, según la fecha del pedido.' : 'Órdenes aprobadas y posteriores, según su fecha de creación.' }} Comparación con el {{ annual ? 'año' : 'mes' }} anterior completo.
-      </p>
       <ReportsSummaryCards :metrics="report.metrics" :annual="annual" :before-tax="report.taxBasis === 'before-tax'" />
       <div class="grid gap-4 xl:grid-cols-3">
         <ReportsProfitStatement
@@ -44,15 +43,19 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         marker="bg-primary"
         :amount="report.metrics.sales"
       />
+      <ReportsBusinessSalesChannels
+        v-if="allBusinesses"
+        :channels="report.salesChannels ?? []"
+        :businesses="businesses ?? []"
+      />
       <ReportsSalesChannels
-        v-if="(carolina || allBusinesses) && report.salesChannels?.length"
+        v-else-if="carolina && report.salesChannels?.length"
         :channels="report.salesChannels"
-        :all-businesses="allBusinesses"
       />
       <slot name="businesses" />
       <ReportsBreakdownCard
-        v-if="consolidated"
-        :title="allBusinesses ? 'Ventas por negocio' : 'Ventas por taller'"
+        v-if="consolidated && !allBusinesses"
+        title="Ventas por taller"
         description="Participación de cada negocio en las ventas del periodo."
         icon="i-lucide-building-2"
         color="primary"
@@ -68,6 +71,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           icon="i-lucide-wrench"
           color="primary"
           :items="lines"
+          uppercase-values
           empty-icon="i-lucide-wrench"
           empty-title="Sin trabajos registrados"
           :count-label="count => `${count} ${count === 1 ? 'partida' : 'partidas'}`"
@@ -78,6 +82,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           icon="i-lucide-clipboard-list"
           empty="Sin trabajos registrados"
           :items="report.topServices"
+          uppercase-values
           :count-label="count => `${count.toLocaleString('es-MX')} uds.`"
         />
         <ReportsRankingCard
@@ -86,6 +91,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           icon="i-lucide-users"
           empty="Sin clientes con ventas"
           :items="report.topCustomers"
+          uppercase-values
           :count-label="countOrders"
         />
       </div>
@@ -104,6 +110,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         icon="i-lucide-truck"
         empty="Sin compras de material"
         :items="report.topMaterialProviders"
+        uppercase-values
         :count-label="count => `${count} ${count === 1 ? 'gasto' : 'gastos'}`"
         color="material"
         exact-amounts
@@ -123,6 +130,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         icon="i-lucide-receipt"
         color="warning"
         :items="categories"
+        uppercase-values
         empty-icon="i-lucide-receipt"
         empty-title="Sin gastos operativos"
         :count-label="count => `${count} ${count === 1 ? 'gasto' : 'gastos'}`"
@@ -166,7 +174,16 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
               ]"
               :columns="3"
               class="mb-4 rounded-lg bg-elevated/60 p-3"
-            />
+            >
+              <template #value="{ field }">
+                <span
+                  :class="{
+                    'text-error': field.key === 'flow' && report.metrics.netCashFlow < 0,
+                    'text-success': field.key === 'flow' && report.metrics.netCashFlow > 0
+                  }"
+                >{{ field.value }}</span>
+              </template>
+            </DetailFields>
             <p class="mb-4 text-xs text-muted">
               {{ report.metrics.collectionCoveragePercentage }}% de las ventas del periodo está cubierto. Cobrado incluye pagos recibidos en el periodo, incluso de órdenes anteriores. El flujo neto resta material y gastos operativos a esos cobros.
             </p>
@@ -178,6 +195,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           icon="i-lucide-wallet-cards"
           color="success"
           :items="methods"
+          uppercase-values
           empty-icon="i-lucide-hand-coins"
           empty-title="Sin cobros"
           :count-label="count => `${count} ${count === 1 ? 'movimiento' : 'movimientos'}`"

@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { reportCurrency } from '~/utils/reportPeriods'
-import type { ReportSalesChannel } from '~/types/reports'
+import type { SalesChannelRow } from '#shared/report-sales-channels'
 import { dashboardNumber } from '~/utils/dashboardFormatters'
 
-const props = defineProps<{ channels: ReportSalesChannel[], allBusinesses?: boolean }>()
+const props = withDefaults(defineProps<{
+  channels: SalesChannelRow[]
+  id?: string
+  title?: string
+  description?: string
+  compact?: boolean
+}>(), {
+  id: 'reports-sales-channels',
+  title: 'Ventas por canal',
+  description: 'Mostrador, vendedor y clientes internos, según el cliente del pedido.'
+})
 const total = computed(() => props.channels.reduce((sum, item) => sum + item.amount, 0))
 const channelColors: Record<string, string> = {
   counter: 'bg-primary',
@@ -17,9 +27,19 @@ const channelFills: Record<string, string> = {
   internal: 'fill-warning',
   workshop: 'fill-violet-500'
 }
+const rows = computed(() => props.channels.map((channel, index) => {
+  const previous = channel.previousAmount
+  return {
+    ...channel,
+    previous,
+    change: previous ? (channel.amount - previous) / previous * 100 : null,
+    color: channelColors[channel.key] ?? ['bg-violet-500', 'bg-sky-500'][index % 2],
+    fill: channelFills[channel.key] ?? ['fill-violet-500', 'fill-sky-500'][index % 2]
+  }
+}))
 const slices = computed(() => {
   let angle = -Math.PI / 2
-  return props.channels.filter(channel => channel.amount > 0).map((channel) => {
+  return rows.value.filter(channel => channel.amount > 0).map((channel) => {
     const start = angle
     angle += channel.amount / total.value * Math.PI * 2
     const middle = (start + angle) / 2
@@ -30,22 +50,19 @@ const slices = computed(() => {
     }
   })
 })
-const rows = computed(() => props.channels.map((channel) => {
-  const previous = channel.previousAmount
-  return { ...channel, previous, change: previous ? (channel.amount - previous) / previous * 100 : null }
-}))
 </script>
 
 <template>
-  <DetailCard id="reports-sales-channels" class="min-w-0" :ui="{ container: 'min-w-0' }">
+  <DetailCard :id="id" class="min-w-0" :ui="{ container: 'min-w-0' }">
     <template #title>
-      <DetailSectionHeading title="Ventas por canal" :description="allBusinesses ? 'Mostrador, vendedor y clientes internos de Carolina Pinturas, y ventas de los talleres.' : 'Mostrador, vendedor y clientes internos, según el cliente del pedido.'" :ui="{ title: 'text-base' }" />
+      <DetailSectionHeading :title="title" :description="description" :ui="{ title: 'text-base' }" />
     </template>
 
-    <div class="flex flex-col items-center gap-6 lg:flex-row">
+    <div class="flex flex-col items-center gap-6" :class="compact ? 'sm:flex-row' : 'lg:flex-row'">
       <svg
         viewBox="0 0 200 200"
-        class="size-48 shrink-0"
+        class="shrink-0"
+        :class="compact ? 'size-36' : 'size-48'"
         role="img"
         :aria-label="total > 0 ? channels.map(item => `${item.label}: ${reportCurrency.format(item.amount)}, ${item.percentage}%`).join('. ') : 'Sin ventas en este periodo'"
       >
@@ -60,7 +77,7 @@ const rows = computed(() => props.channels.map((channel) => {
           v-for="slice in slices"
           :key="slice.key"
           :d="slice.path"
-          :class="channelFills[slice.key]"
+          :class="slice.fill"
           class="stroke-default"
           stroke-width="2"
           stroke-linejoin="round"
@@ -69,10 +86,10 @@ const rows = computed(() => props.channels.map((channel) => {
         </path>
       </svg>
 
-      <DetailFields :fields="rows.map(channel => ({ key: channel.key, label: channel.label }))" :columns="channels.length > 3 ? 4 : 3" class="w-full min-w-0">
+      <DetailFields :fields="rows.map(channel => ({ key: channel.key, label: channel.label }))" :columns="compact ? 1 : channels.length > 3 ? 4 : 3" class="w-full min-w-0">
         <template #label="{ field }">
           <span v-for="channel in rows.filter(channel => channel.key === field.key)" :key="channel.key" class="flex items-center gap-2">
-            <span class="size-2.5 rounded-full" :class="channelColors[channel.key]" />
+            <span class="size-2.5 rounded-full" :class="channel.color" />
             {{ channel.label }}
             <span class="ml-auto tabular-nums">{{ channel.percentage }}%</span>
           </span>

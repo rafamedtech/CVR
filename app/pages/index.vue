@@ -114,6 +114,7 @@ async function selectMonth() {
         <ReportsDashboard
           v-if="data.canViewFinancials && data.report"
           :report="data.report"
+          :businesses="data.consolidation?.businesses"
           :consolidated="isReadOnly"
           :all-businesses="isReadOnly"
         >

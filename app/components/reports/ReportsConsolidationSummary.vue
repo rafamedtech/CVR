@@ -22,9 +22,6 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
         <h2 id="report-businesses" class="font-semibold text-highlighted">
           {{ carolinaOnly ? 'Detalle de Carolina Pinturas' : 'Resultados por negocio' }}
         </h2>
-        <p class="mt-1 text-xs text-muted">
-          Ventas antes de IVA. Cobros y saldos conservan los importes registrados.
-        </p>
       </div>
       <UButton
         :to="carolinaUrl"
@@ -44,7 +41,7 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
         :ui="{ caption: 'sr-only', th: 'whitespace-nowrap', td: 'tabular-nums whitespace-nowrap' }"
       >
         <template #sales-cell="{ row }">
-          {{ formatCurrency(row.original.metrics.sales) }}
+          <span class="font-bold">{{ formatCurrency(row.original.metrics.sales) }}</span>
         </template>
         <template #material-cell="{ row }">
           {{ formatCurrency(row.original.metrics.materialPurchases) }}
@@ -65,9 +62,6 @@ const carolinaUrl = computed(() => `https://carolina-pinturas.vercel.app/reporte
         <h3 class="font-semibold text-highlighted">
           Operaciones internas incluidas
         </h3>
-        <p class="mt-1 text-xs text-muted">
-          Se muestran por separado y permanecen en los totales. {{ carolinaOnly ? 'Se usa la clasificación de clientes internos de Carolina.' : 'Los clientes internos usan la clasificación de Carolina; los insumos se identifican por el proveedor registrado en los talleres.' }}
-        </p>
       </div>
       <DetailFields
         :columns="4"

@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
   emptyIcon: string
   emptyTitle: string
   countLabel: (count: number) => string
+  uppercaseValues?: boolean
   limit?: number
 }>(), { limit: 8 })
 
@@ -27,7 +28,7 @@ const visible = computed(() => expanded.value ? props.items : props.items.slice(
     <ul v-if="items.length" class="divide-y divide-default">
       <li v-for="item in visible" :key="item.key" class="py-3 first:pt-0 last:pb-0">
         <div class="flex items-baseline justify-between gap-4">
-          <p class="truncate text-sm font-medium text-highlighted">
+          <p class="truncate text-sm font-medium text-highlighted" :class="{ uppercase: uppercaseValues }">
             {{ item.label }}
           </p>
           <p class="shrink-0 text-sm font-semibold tabular-nums text-highlighted">

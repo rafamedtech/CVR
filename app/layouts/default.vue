@@ -16,13 +16,15 @@ const canViewFinancials = computed(() => (
 ))
 
 const links = computed<NavigationMenuItem[][]>(() => [[
-  {
-    label: 'Resumen',
-    icon: 'i-lucide-layout-dashboard',
-    to: '/',
-    exact: true,
-    onSelect: () => { open.value = false }
-  },
+  ...(!sessionData.value?.profile.isReadOnly
+    ? [{
+        label: 'Resumen',
+        icon: 'i-lucide-layout-dashboard',
+        to: '/',
+        exact: true,
+        onSelect: () => { open.value = false }
+      }]
+    : []),
   ...(sessionData.value?.canViewAll
     ? [{
         label: 'Reportes',

@@ -19,7 +19,6 @@ const { data, status, error, refresh } = await useFetch<BusinessReportData>('/ap
 })
 const isCarolina = computed(() => business.value === 'carolina-pinturas')
 const isCombined = computed(() => business.value === 'all')
-const selectedBusinessName = computed(() => businessOptions.value.find(option => option.value === business.value)?.label ?? 'Reportes')
 const unavailableTitle = computed(() => isCombined.value ? 'Reporte parcial: solo talleres' : 'Reporte de Carolina no disponible')
 const unavailableMessage = computed(() => data.value?.status === 'not-configured'
   ? 'Falta configurar la conexión de reportes de Carolina Pinturas en este entorno.'
@@ -67,9 +66,6 @@ async function updateReport() {
             class="w-full sm:w-72"
             @update:model-value="updateReport"
           />
-          <p v-if="!isCombined" class="text-xs text-muted">
-            {{ selectedBusinessName }}
-          </p>
           <div class="w-full lg:hidden">
             <DashboardMonthFilter
               v-model="selectedMonth"
@@ -133,6 +129,7 @@ async function updateReport() {
         <ReportsDashboard
           v-if="data.report"
           :report="data.report"
+          :businesses="data.consolidation?.businesses"
           :consolidated="isCombined"
           :all-businesses="isCombined"
           :carolina="isCarolina"
