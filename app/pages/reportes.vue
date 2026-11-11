@@ -91,12 +91,12 @@ async function updateReport() {
         title="Acceso restringido"
         description="Los reportes por negocio requieren acceso global. El resumen de tu taller sigue disponible en Inicio."
       />
-      <div v-else-if="status === 'pending'" class="space-y-6" aria-label="Cargando reporte">
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <USkeleton v-for="index in 4" :key="index" class="h-36 rounded-xl" />
-        </div>
-        <USkeleton class="h-96 rounded-xl" />
-      </div>
+      <ReportsLoadingState
+        v-else-if="status === 'pending'"
+        :annual="annual"
+        :all-businesses="isCombined"
+        :carolina="isCarolina"
+      />
       <UAlert
         v-else-if="error"
         color="error"

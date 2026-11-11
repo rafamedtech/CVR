@@ -6,6 +6,7 @@ defineProps<{
   title: string
   marker: string
   amount?: number
+  loading?: boolean
 }>()
 </script>
 
@@ -21,7 +22,8 @@ defineProps<{
         <span class="h-4 w-1 rounded-full" :class="marker" aria-hidden="true" />
       </template>
     </DetailSectionHeading>
-    <p v-if="amount !== undefined" class="text-sm font-semibold tabular-nums text-muted">
+    <USkeleton v-if="loading" class="h-5 w-24" />
+    <p v-else-if="amount !== undefined" class="text-sm font-semibold tabular-nums text-muted">
       {{ reportCurrency.format(amount) }}
     </p>
   </div>
