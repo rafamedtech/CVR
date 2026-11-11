@@ -50,15 +50,8 @@ const items = computed<DropdownMenuItem[][]>(() => {
 </script>
 
 <template>
-  <UBadge
-    v-if="isReadOnly"
-    label="Todos los negocios"
-    icon="i-lucide-building-2"
-    color="neutral"
-    variant="subtle"
-  />
   <UDropdownMenu
-    v-else
+    v-if="!isReadOnly"
     :items="items"
     :content="{ align: 'end', collisionPadding: 12 }"
     :ui="{ content: 'w-64' }"
