@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import type { BusinessReportData } from '~/types/reports'
+import type { WorkshopType } from '~/types/crm'
 
 useHead({ title: 'Reportes' })
 const route = useRoute()
 const { session, canViewReports } = useCrmSession()
 const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
+const workshopIcons: Record<WorkshopType, string> = {
+  BODY_SHOP: 'i-lucide-paintbrush',
+  MECHANICAL: 'i-lucide-wrench',
+  PAINT_STORE: 'i-lucide-palette'
+}
 const businessOptions = computed(() => [
-  { label: 'Todos los negocios', value: 'all' },
-  { label: 'Carolina Pinturas', value: 'carolina-pinturas' },
-  ...(session.value?.workshops ?? []).map(workshop => ({ label: workshop.name, value: workshop.id }))
+  { label: 'Todos los negocios', value: 'all', icon: 'i-lucide-building-2' },
+  { label: 'Carolina Pinturas', value: 'carolina-pinturas', icon: 'i-lucide-palette' },
+  ...(session.value?.workshops ?? []).map(workshop => ({ label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type] }))
 ])
 const business = shallowRef(typeof route.query.business === 'string' && businessOptions.value.some(option => option.value === route.query.business) ? route.query.business : 'all')
 const { data, status, error, refresh } = await useFetch<BusinessReportData>('/api/reports/summary', {
@@ -57,14 +63,12 @@ async function updateReport() {
           />
         </template>
       </UDashboardNavbar>
-      <UDashboardToolbar v-if="canViewReports" class="py-3">
+      <UDashboardToolbar v-if="canViewReports" class="py-3 lg:py-0">
         <div class="flex w-full flex-wrap items-center gap-3">
-          <USelect
+          <ReportsBusinessSelector
             v-model="business"
-            :items="businessOptions"
-            aria-label="Negocio del reporte"
-            class="w-full sm:w-72"
-            @update:model-value="updateReport"
+            :options="businessOptions"
+            @change="updateReport"
           />
           <div class="w-full lg:hidden">
             <DashboardMonthFilter

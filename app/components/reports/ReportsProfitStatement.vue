@@ -170,10 +170,10 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
           :style="{ width: `${Math.abs(item.value) / hundredTotal * 100}%` }"
         />
       </div>
-      <DetailFields :fields="hundred.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2 grid-cols-3">
+      <DetailFields :fields="hundred.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2 grid-cols-3 text-center">
         <template #label="{ field }">
-          <span class="flex items-center gap-1.5 text-xs">
-            <span class="size-2 rounded-full" :class="hundred.find(item => item.key === field.key)?.class" />
+          <span class="flex items-center justify-center gap-1.5 text-xs">
+            <span class="size-2 shrink-0 rounded-full" :class="hundred.find(item => item.key === field.key)?.class" />
             {{ field.label }}
           </span>
         </template>
