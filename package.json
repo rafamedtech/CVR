@@ -18,6 +18,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:relink-auth": "node scripts/relink-auth-user.mjs",
     "db:studio": "prisma studio"
   },
   "dependencies": {
