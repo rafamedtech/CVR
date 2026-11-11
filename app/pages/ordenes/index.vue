@@ -21,15 +21,21 @@ const dateFilterOpen = shallowRef(false)
 const createOpen = shallowRef(false)
 const { canManageOrders, isAllWorkshops, isReadOnly } = useCrmSession()
 
-const { data: orders, status, refresh } = await useFetch<OrderListItem[]>('/api/orders', {
+const { data: orders, status, refresh } = useFetch<OrderListItem[]>('/api/orders', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-orders'
 })
-const { data: customers } = await useFetch<CustomerListItem[]>('/api/customers', {
+const { data: customers, status: customersStatus } = useFetch<CustomerListItem[]>('/api/customers', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-customers-for-orders'
 })
-const { data: vehicles } = await useFetch<VehicleListItem[]>('/api/vehicles', {
+const { data: vehicles, status: vehiclesStatus } = useFetch<VehicleListItem[]>('/api/vehicles', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-vehicles-for-orders'
 })
@@ -211,7 +217,7 @@ const filteredOrders = computed(() => {
 
     <template #body>
       <UAlert
-        v-if="!isAllWorkshops && (!customers.length || !vehicles.length)"
+        v-if="!isAllWorkshops && customersStatus === 'success' && vehiclesStatus === 'success' && (!customers.length || !vehicles.length)"
         class="mb-4"
         title="Faltan datos para crear una orden"
         description="Necesitas por lo menos un cliente y un vehículo registrado."
@@ -223,7 +229,7 @@ const filteredOrders = computed(() => {
 
       <OrdersTable
         :orders="filteredOrders"
-        :loading="status === 'pending'"
+        :loading="status === 'idle' || status === 'pending'"
         :show-workshop="isAllWorkshops"
         show-created-at
       />

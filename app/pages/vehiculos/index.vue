@@ -10,11 +10,15 @@ const editOpen = shallowRef(false)
 const assignmentsOpen = shallowRef(false)
 const selectedVehicle = shallowRef<VehicleListItem | null>(null)
 const { session, canManageCustomers, isAllWorkshops, isSuperAdmin, isReadOnly } = useCrmSession()
-const { data: vehicles, status, refresh } = await useFetch<VehicleListItem[]>('/api/vehicles', {
+const { data: vehicles, status, refresh } = useFetch<VehicleListItem[]>('/api/vehicles', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-vehicles'
 })
-const { data: customers } = await useFetch<CustomerListItem[]>('/api/customers', {
+const { data: customers, status: customersStatus } = useFetch<CustomerListItem[]>('/api/customers', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-customers-for-vehicles'
 })
@@ -99,7 +103,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
         variant="subtle"
       />
       <UAlert
-        v-else-if="!customers.length"
+        v-else-if="customersStatus === 'success' && !customers.length"
         class="mb-4"
         title="Primero registra un cliente"
         description="Cada vehículo debe quedar asociado a su propietario."
@@ -111,7 +115,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
 
       <VehiclesTable
         :vehicles="filteredVehicles"
-        :loading="status === 'pending'"
+        :loading="status === 'idle' || status === 'pending'"
         :can-edit="canEditVehicles"
         :can-assign-workshops="isSuperAdmin"
         @edit="handleEdit"

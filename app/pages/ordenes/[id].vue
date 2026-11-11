@@ -12,7 +12,9 @@ const deleting = shallowRef(false)
 const orderId = computed(() => route.params.id as string)
 const { isSuperAdmin, canRecordExpenses } = useCrmSession()
 
-const { data: order, status, refresh } = await useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
+const { data: order, status, refresh } = useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
+  lazy: true,
+  server: false,
   key: `crm-order-${orderId.value}`
 })
 
@@ -102,7 +104,7 @@ async function deleteOrder() {
     </template>
 
     <template #body>
-      <div v-if="status === 'pending'" class="space-y-4">
+      <div v-if="status === 'idle' || status === 'pending'" class="space-y-4">
         <USkeleton class="h-36 rounded-xl" />
         <USkeleton class="h-72 rounded-xl" />
       </div>

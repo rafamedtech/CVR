@@ -4,7 +4,19 @@ import { reportCurrency } from '~/utils/reportPeriods'
 import type { ReportMetrics } from '~/types/reports'
 import { dashboardNumber } from '~/utils/dashboardFormatters'
 
-const props = defineProps<{ metrics: ReportMetrics, annual?: boolean, beforeTax?: boolean }>()
+const props = defineProps<{ metrics?: ReportMetrics, annual?: boolean, beforeTax?: boolean, loading?: boolean }>()
+const metrics = computed(() => props.metrics ?? {
+  sales: 0, previousSales: 0,
+  materialPurchases: 0, previousMaterialPurchases: 0,
+  operatingExpenses: 0, previousOperatingExpenses: 0,
+  grossProfit: 0, previousGrossProfit: 0, grossMarginPercentage: null,
+  netProfit: 0, previousNetProfit: 0
+})
+const hundredPlaceholders = [
+  { key: 'materials', label: 'Material', value: 0, class: 'bg-violet-500' },
+  { key: 'operating', label: 'Operación', value: 0, class: 'bg-warning' },
+  { key: 'profit', label: 'Te queda', value: 0, class: 'bg-success' }
+]
 
 interface StatementRow {
   key: string
@@ -19,7 +31,7 @@ interface StatementRow {
 }
 
 const rows = computed<StatementRow[]>(() => {
-  const m = props.metrics
+  const m = metrics.value
   return [
     { key: 'sales', label: props.beforeTax ? 'Ventas netas' : 'Ventas de órdenes', sign: '', amount: m.sales, previous: m.previousSales, bar: 'bg-primary' },
     { key: 'materials', label: 'Compras de material', sign: '−', amount: m.materialPurchases, previous: m.previousMaterialPurchases, bar: 'bg-violet-500', inverse: true },
@@ -36,14 +48,14 @@ const columns: TableColumn<StatementRow>[] = [
   { id: 'change', header: 'Variación', meta: { class: { td: 'text-right text-xs whitespace-nowrap tabular-nums' } } }
 ]
 
-const scale = computed(() => Math.max(props.metrics.sales, props.metrics.materialPurchases + props.metrics.operatingExpenses, 1))
+const scale = computed(() => Math.max(metrics.value.sales, metrics.value.materialPurchases + metrics.value.operatingExpenses, 1))
 
 function width(amount: number) {
   return `${Math.min(Math.abs(amount) / scale.value * 100, 100)}%`
 }
 
 function share(amount: number) {
-  return props.metrics.sales > 0 ? `${dashboardNumber.format(Math.round(amount / props.metrics.sales * 1000) / 10)}%` : '—'
+  return metrics.value.sales > 0 ? `${dashboardNumber.format(Math.round(amount / metrics.value.sales * 1000) / 10)}%` : '—'
 }
 
 function change(row: StatementRow) {
@@ -58,7 +70,7 @@ function change(row: StatementRow) {
 
 // Split each $100 sold between material, operating cost and what is left.
 const hundred = computed(() => {
-  const m = props.metrics
+  const m = metrics.value
   if (m.sales <= 0) return null
   const material = m.materialPurchases / m.sales * 100
   const operating = m.operatingExpenses / m.sales * 100
@@ -68,11 +80,12 @@ const hundred = computed(() => {
     { key: 'profit', label: m.netProfit < 0 ? 'Pérdida' : 'Te queda', value: 100 - material - operating, class: m.netProfit < 0 ? 'bg-error' : 'bg-success' }
   ]
 })
+const hundredRows = computed(() => hundred.value ?? hundredPlaceholders)
 const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + Math.abs(item.value), 0) ?? 0)
 </script>
 
 <template>
-  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0', wrapper: 'min-w-0' }">
+  <DetailCard class="min-w-0" :aria-busy="loading || undefined" :ui="{ container: 'min-w-0', wrapper: 'min-w-0' }">
     <div class="space-y-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <div>
@@ -83,7 +96,8 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
         </div>
         <p class="text-xs text-muted tabular-nums">
           Margen bruto
-          <span class="font-semibold text-highlighted">
+          <USkeleton v-if="loading" as="span" class="inline-block h-3 w-10 align-middle" />
+          <span v-else class="font-semibold text-highlighted">
             {{ metrics.grossMarginPercentage === null ? '—' : `${dashboardNumber.format(metrics.grossMarginPercentage)}%` }}
           </span>
         </p>
@@ -97,24 +111,38 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
             <span class="w-3 shrink-0 text-center font-mono text-xs text-dimmed" aria-hidden="true">{{ row.sign }}</span>
             <span class="min-w-0 text-sm">{{ row.label }}</span>
           </span>
-          <span class="shrink-0 text-xs tabular-nums text-muted" aria-label="Porcentaje de la venta">{{ share(row.amount) }}</span>
+          <span class="shrink-0 text-xs tabular-nums text-muted" aria-label="Porcentaje de la venta">
+            <USkeleton v-if="loading" as="span" class="inline-block h-3 w-10 align-middle" />
+            <template v-else>{{ share(row.amount) }}</template>
+          </span>
         </dt>
         <dd class="min-w-0 space-y-2 pl-5">
           <p
             class="text-lg tabular-nums [overflow-wrap:anywhere]"
             :class="[row.total ? 'font-semibold' : 'font-medium', row.amount < 0 ? 'text-error' : row.total && row.amount > 0 ? 'text-success' : 'text-highlighted']"
           >
-            {{ reportCurrency.format(row.amount) }}
+            <USkeleton v-if="loading" as="span" class="inline-block h-5 w-28 align-middle" />
+            <template v-else>
+              {{ reportCurrency.format(row.amount) }}
+            </template>
           </p>
-          <div class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs tabular-nums">
+          <div class="grid min-w-0 gap-x-3 gap-y-1 text-xs tabular-nums min-[400px]:flex min-[400px]:flex-wrap min-[400px]:items-baseline min-[400px]:justify-between">
             <p class="min-w-0 text-muted [overflow-wrap:anywhere]">
-              Anterior: {{ reportCurrency.format(row.previous) }}
+              Anterior:
+              <USkeleton v-if="loading" as="span" class="inline-block h-3 w-20 align-middle" />
+              <template v-else>
+                {{ reportCurrency.format(row.previous) }}
+              </template>
             </p>
             <p :class="change(row).class">
-              Variación: {{ change(row).label }}
+              Variación:
+              <USkeleton v-if="loading" as="span" class="inline-block h-3 w-10 align-middle" />
+              <template v-else>
+                {{ change(row).label }}
+              </template>
             </p>
           </div>
-          <div class="h-1.5 rounded-full bg-elevated" aria-hidden="true">
+          <div class="h-1.5 rounded-full bg-elevated" :class="{ 'animate-pulse': loading }" aria-hidden="true">
             <div class="h-full rounded-full" :class="row.bar" :style="{ width: width(row.amount) }" />
           </div>
         </dd>
@@ -135,50 +163,62 @@ const hundredTotal = computed(() => hundred.value?.reduce((sum, item) => sum + M
             <span class="w-3 shrink-0 text-center font-mono text-xs text-dimmed" aria-hidden="true">{{ row.original.sign }}</span>
             <span>{{ row.original.label }}</span>
           </div>
-          <div class="mt-2 ml-5 h-1.5 rounded-full bg-elevated">
+          <div class="mt-2 ml-5 h-1.5 rounded-full bg-elevated" :class="{ 'animate-pulse': loading }">
             <div class="h-full rounded-full transition-[width] duration-500" :class="row.original.bar" :style="{ width: width(row.original.amount) }" />
           </div>
         </div>
       </template>
       <template #amount-cell="{ row }">
-        <span :class="[row.original.total ? 'font-semibold' : 'font-medium', row.original.amount < 0 ? 'text-error' : row.original.total && row.original.amount > 0 ? 'text-success' : 'text-highlighted']">{{ reportCurrency.format(row.original.amount) }}</span>
+        <USkeleton v-if="loading" as="span" class="inline-block h-4 w-24 align-middle" />
+        <span v-else :class="[row.original.total ? 'font-semibold' : 'font-medium', row.original.amount < 0 ? 'text-error' : row.original.total && row.original.amount > 0 ? 'text-success' : 'text-highlighted']">{{ reportCurrency.format(row.original.amount) }}</span>
         <p class="mt-0.5 text-xs font-normal text-muted">
-          ant. {{ reportCurrency.format(row.original.previous) }}
+          ant.
+          <USkeleton v-if="loading" as="span" class="inline-block h-3 w-20 align-middle" />
+          <template v-else>
+            {{ reportCurrency.format(row.original.previous) }}
+          </template>
         </p>
       </template>
       <template #share-cell="{ row }">
-        {{ share(row.original.amount) }}
+        <USkeleton v-if="loading" as="span" class="inline-block h-3 w-10 align-middle" />
+        <template v-else>
+          {{ share(row.original.amount) }}
+        </template>
       </template>
       <template #change-cell="{ row }">
-        <span :class="change(row.original).class">{{ change(row.original).label }}</span>
+        <USkeleton v-if="loading" as="span" class="inline-block h-3 w-12 align-middle" />
+        <span v-else :class="change(row.original).class">{{ change(row.original).label }}</span>
       </template>
     </DetailTable>
 
-    <div v-if="hundred" class="border-t border-default pt-4">
+    <!-- Keep this space for periods without sales as well. -->
+    <div class="border-t border-default pt-4" :class="{ invisible: !loading && !hundred }" :aria-hidden="!loading && !hundred || undefined">
       <p class="text-xs font-medium text-muted">
         De cada $100 vendidos
       </p>
       <div
         class="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full"
+        :class="{ 'animate-pulse bg-accented': loading }"
         role="img"
-        :aria-label="hundred.map(item => `${item.label}: $${dashboardNumber.format(item.value)}`).join(', ')"
+        :aria-label="loading ? 'Cargando distribución de ventas' : (hundred ?? []).map(item => `${item.label}: $${dashboardNumber.format(item.value)}`).join(', ')"
       >
         <div
-          v-for="item in hundred"
+          v-for="item in hundredRows"
           :key="item.key"
           :class="item.class"
-          :style="{ width: `${Math.abs(item.value) / hundredTotal * 100}%` }"
+          :style="{ width: `${hundredTotal ? Math.abs(item.value) / hundredTotal * 100 : 0}%` }"
         />
       </div>
-      <DetailFields :fields="hundred.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2 grid-cols-3 text-center">
+      <DetailFields :fields="hundredRows.map(item => ({ key: item.key, label: item.label, value: `$${dashboardNumber.format(Math.round(item.value * 10) / 10)}` }))" :columns="3" class="mt-2 grid-cols-3 text-center">
         <template #label="{ field }">
           <span class="flex items-center justify-center gap-1.5 text-xs">
-            <span class="size-2 shrink-0 rounded-full" :class="hundred.find(item => item.key === field.key)?.class" />
+            <span class="size-2 shrink-0 rounded-full" :class="hundredRows.find(item => item.key === field.key)?.class" />
             {{ field.label }}
           </span>
         </template>
         <template #value="{ field }">
-          <span class="text-xs font-semibold tabular-nums text-highlighted">{{ field.value }}</span>
+          <USkeleton v-if="loading" as="span" class="inline-block h-3 w-12 align-middle" />
+          <span v-else class="text-xs font-semibold tabular-nums text-highlighted">{{ field.value }}</span>
         </template>
       </DetailFields>
     </div>

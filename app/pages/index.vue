@@ -4,7 +4,9 @@ import type { DashboardData } from '~/types/crm'
 useHead({ title: 'Resumen' })
 const { activeWorkshop, isReadOnly } = useCrmSession()
 const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
-const { data, status, error, refresh } = await useFetch<DashboardData>('/api/dashboard', {
+const { data, status, error, refresh } = useFetch<DashboardData>('/api/dashboard', {
+  lazy: true,
+  server: false,
   query: periodQuery,
   key: 'crm-dashboard',
   immediate: Boolean(activeWorkshop.value) || isReadOnly.value,
@@ -79,7 +81,7 @@ async function selectMonth() {
         icon="i-lucide-building-2"
         class="py-16"
       />
-      <div v-else-if="status === 'pending'" class="space-y-6">
+      <div v-else-if="status === 'idle' || status === 'pending'" class="space-y-6">
         <USkeleton class="h-72 rounded-2xl" />
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <USkeleton v-for="index in 4" :key="index" class="h-24 rounded-xl" />

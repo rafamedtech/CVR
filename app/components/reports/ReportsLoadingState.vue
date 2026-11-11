@@ -47,10 +47,10 @@ const sections = [
         </DetailStatCard>
       </div>
       <div class="grid gap-4 xl:grid-cols-3">
-        <ReportsLoadingCard
-          title="Estado de resultados"
-          :description="`De las ventas a la utilidad, con la variación contra el ${annual ? 'año' : 'mes'} anterior.`"
-          :labels="['Ventas netas', 'Compras de material', 'Utilidad bruta', 'Gastos operativos', 'Utilidad neta']"
+        <ReportsProfitStatement
+          :annual="annual"
+          before-tax
+          loading
           class="xl:col-span-2"
         />
         <DetailCard class="min-w-0">

@@ -10,7 +10,9 @@ const editOpen = shallowRef(false)
 const assignmentsOpen = shallowRef(false)
 const selectedCustomer = shallowRef<CustomerListItem | null>(null)
 const { session, canManageCustomers, isAllWorkshops, isSuperAdmin, isReadOnly } = useCrmSession()
-const { data: customers, status, refresh } = await useFetch<CustomerListItem[]>('/api/customers', {
+const { data: customers, status, refresh } = useFetch<CustomerListItem[]>('/api/customers', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-customers'
 })
@@ -85,7 +87,7 @@ async function handleUpdated() {
     <template #body>
       <CustomersTable
         :customers="filteredCustomers"
-        :loading="status === 'pending'"
+        :loading="status === 'idle' || status === 'pending'"
         :can-edit="canEditCustomers"
         :can-assign-workshops="isSuperAdmin"
         @edit="handleEdit"

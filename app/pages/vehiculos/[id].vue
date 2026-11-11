@@ -5,9 +5,9 @@ const route = useRoute()
 const vehicleId = computed(() => route.params.id as string)
 const { isAllWorkshops } = useCrmSession()
 
-const { data: vehicle, error, status } = await useFetch<VehicleDetail>(
+const { data: vehicle, error, status } = useFetch<VehicleDetail>(
   () => `/api/vehicles/${vehicleId.value}`,
-  { key: `crm-vehicle-${vehicleId.value}` }
+  { key: `crm-vehicle-${vehicleId.value}`, lazy: true, server: false }
 )
 
 useHead({ title: 'Detalle del vehículo' })
@@ -34,7 +34,7 @@ useHead({ title: 'Detalle del vehículo' })
     </template>
 
     <template #body>
-      <div v-if="status === 'pending'" class="space-y-6">
+      <div v-if="status === 'idle' || status === 'pending'" class="space-y-6">
         <USkeleton class="h-80 rounded-xl" />
         <USkeleton class="h-72 rounded-xl" />
       </div>

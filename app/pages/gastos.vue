@@ -9,11 +9,15 @@ const formOpen = shallowRef(false)
 const selectedExpense = shallowRef<ExpenseListItem | null>(null)
 const duplicateExpense = shallowRef<ExpenseListItem | null>(null)
 const { canCreateInWorkshop, isAllWorkshops, isReadOnly } = useCrmSession()
-const { data: expenses, status, refresh } = await useFetch<ExpenseListItem[]>('/api/expenses', {
+const { data: expenses, status, refresh } = useFetch<ExpenseListItem[]>('/api/expenses', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-expenses'
 })
-const { data: orderOptions } = await useFetch<ExpenseOrderOption[]>('/api/expense-order-options', {
+const { data: orderOptions } = useFetch<ExpenseOrderOption[]>('/api/expense-order-options', {
+  lazy: true,
+  server: false,
   default: () => [],
   immediate: canCreateInWorkshop.value,
   key: 'crm-expense-order-options'
@@ -100,7 +104,7 @@ function openDuplicateModal(expense: ExpenseListItem) {
       />
       <ExpensesTable
         :expenses="filteredExpenses"
-        :loading="status === 'pending'"
+        :loading="status === 'idle' || status === 'pending'"
         :show-workshop="isAllWorkshops"
         :can-edit="canCreateInWorkshop"
         @edit="openEditModal"

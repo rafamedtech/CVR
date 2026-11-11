@@ -17,7 +17,9 @@ const businessOptions = computed(() => [
   ...(session.value?.workshops ?? []).map(workshop => ({ label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type] }))
 ])
 const business = shallowRef(typeof route.query.business === 'string' && businessOptions.value.some(option => option.value === route.query.business) ? route.query.business : 'all')
-const { data, status, error, refresh } = await useFetch<BusinessReportData>('/api/reports/summary', {
+const { data, status, error, refresh } = useFetch<BusinessReportData>('/api/reports/summary', {
+  lazy: true,
+  server: false,
   key: 'crm-business-reports',
   query: computed(() => ({ ...periodQuery.value, business: business.value })),
   immediate: canViewReports.value,
@@ -92,7 +94,7 @@ async function updateReport() {
         description="Los reportes por negocio requieren acceso global. El resumen de tu taller sigue disponible en Inicio."
       />
       <ReportsLoadingState
-        v-else-if="status === 'pending'"
+        v-else-if="status === 'idle' || status === 'pending'"
         :annual="annual"
         :all-businesses="isCombined"
         :carolina="isCarolina"

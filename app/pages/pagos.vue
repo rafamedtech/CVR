@@ -5,7 +5,9 @@ useHead({ title: 'Pagos' })
 
 const search = shallowRef('')
 const { isAllWorkshops, isReadOnly } = useCrmSession()
-const { data: payments, status } = await useFetch<PaymentListItem[]>('/api/payments', {
+const { data: payments, status } = useFetch<PaymentListItem[]>('/api/payments', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-payments'
 })
@@ -76,7 +78,7 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
 
       <PaymentsTable
         :payments="filteredPayments"
-        :loading="status === 'pending'"
+        :loading="status === 'idle' || status === 'pending'"
         :show-workshop="isAllWorkshops"
       />
     </template>

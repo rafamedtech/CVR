@@ -102,7 +102,8 @@ const columns: TableColumn<PaymentListItem>[] = [{
           <span v-else>—</span>
         </template>
         <template #empty>
-          <div class="py-12 text-center">
+          <TableLoadingState v-if="loading" />
+          <div v-else class="py-12 text-center">
             <UIcon name="i-lucide-hand-coins" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay pagos registrados

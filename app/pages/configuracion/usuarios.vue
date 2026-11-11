@@ -7,7 +7,9 @@ const search = shallowRef('')
 const createOpen = shallowRef(false)
 const activePreset = shallowRef<MemberAccessPreset | null>(null)
 const { session, isAllWorkshops } = useCrmSession()
-const { data: members, status, refresh } = await useFetch<MemberListItem[]>('/api/members', {
+const { data: members, status, refresh } = useFetch<MemberListItem[]>('/api/members', {
+  lazy: true,
+  server: false,
   default: () => [],
   key: 'crm-members'
 })
@@ -41,8 +43,16 @@ function openMemberForm(preset: MemberAccessPreset | null = null) {
       <UButton label="Vincular usuario" icon="i-lucide-user-plus" @click="openMemberForm()" />
     </div>
 
+    <div
+      v-if="session?.profile.isSuperAdmin && (status === 'idle' || status === 'pending')"
+      class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      aria-busy="true"
+      aria-label="Cargando usuarios y permisos"
+    >
+      <USkeleton v-for="index in 5" :key="index" class="h-48 rounded-xl" />
+    </div>
     <SettingsAccessPlan
-      v-if="session?.profile.isSuperAdmin"
+      v-else-if="session?.profile.isSuperAdmin"
       :members="members"
       :workshops="session.workshops"
       :current-user-id="session.profile.id"
@@ -57,7 +67,7 @@ function openMemberForm(preset: MemberAccessPreset | null = null) {
     />
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
-      <div v-if="status === 'pending'" class="space-y-3 p-5">
+      <div v-if="status === 'idle' || status === 'pending'" class="space-y-3 p-5">
         <USkeleton v-for="index in 3" :key="index" class="h-14" />
       </div>
       <ul v-else-if="filteredMembers.length" role="list" class="divide-y divide-default">
