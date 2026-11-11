@@ -12,7 +12,7 @@ defineProps<{ title: string, icon?: string, value?: string | number, unit?: stri
     <template v-if="$slots.title" #title>
       <slot name="title" />
     </template>
-    <USkeleton v-if="loading" class="h-8 w-24 max-w-full" />
+    <USkeleton v-if="loading" class="h-8 w-24 max-w-full motion-reduce:animate-none" />
     <div v-else class="min-w-0">
       <span class="text-2xl font-semibold break-words tabular-nums" :class="valueColor === 'primary' ? 'text-primary' : 'text-highlighted'"><slot name="value">{{ value ?? '—' }}</slot></span>
       <span v-if="unit" class="ml-1 text-xs text-muted">{{ unit }}</span>

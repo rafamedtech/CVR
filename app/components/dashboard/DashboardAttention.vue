@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { DashboardOverviewData } from '~/types/crm'
 
-const props = defineProps<{ attention: DashboardOverviewData['attention'] }>()
+const props = defineProps<{ attention?: DashboardOverviewData['attention'], loading?: boolean }>()
 const fields = computed(() => [
-  { label: 'Entregas atrasadas', value: props.attention.overdue },
-  { label: 'Por autorizar', value: props.attention.awaitingApproval },
-  { label: 'Listas para entregar', value: props.attention.ready }
+  { label: 'Entregas atrasadas', value: props.attention?.overdue },
+  { label: 'Por autorizar', value: props.attention?.awaitingApproval },
+  { label: 'Listas para entregar', value: props.attention?.ready }
 ])
 </script>
 
@@ -14,7 +14,7 @@ const fields = computed(() => [
     <template #title>
       <DetailSectionHeading title="Pendientes actuales" />
     </template>
-    <DetailFields :fields="fields" :columns="1" />
+    <DetailFields :fields="fields" :columns="1" :loading="loading" />
     <UButton
       to="/ordenes"
       label="Revisar órdenes"

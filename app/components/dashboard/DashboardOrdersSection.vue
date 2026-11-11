@@ -7,6 +7,7 @@ type OrderDateField = 'createdAt' | 'promisedAt'
 
 const props = defineProps<{
   title: string
+  loading?: boolean
   description?: string
   emptyMessage: string
   orders: OrderListItem[]
@@ -62,7 +63,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       </DetailSectionHeading>
     </template>
 
-    <div :class="compact ? undefined : 'md:hidden'">
+    <TableLoadingState v-if="loading" :label="`Cargando ${title.toLowerCase()}…`" />
+    <div v-else :class="compact ? undefined : 'md:hidden'">
       <OrdersMobileList
         :orders="compact ? orders : mobileOrders"
         :show-workshop="isAllWorkshops"
@@ -76,7 +78,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     </div>
 
     <DetailTable
-      v-if="!compact"
+      v-if="!compact && !loading"
       class="hidden md:block"
       :data="props.orders"
       :columns="columns"

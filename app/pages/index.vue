@@ -2,13 +2,16 @@
 import type { DashboardOverviewData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
-const { activeWorkshop, isReadOnly, canManageOrders, canViewReports } = useCrmSession()
+const { activeWorkshop, isReadOnly, isSuperAdmin, currentRole, canManageOrders, canViewReports } = useCrmSession()
 const { data, status, error, refresh } = useFetch<DashboardOverviewData>('/api/dashboard/overview', {
   lazy: true,
   server: false,
   key: 'crm-overview',
   immediate: Boolean(activeWorkshop.value) || isReadOnly.value
 })
+const initialLoading = computed(() => !data.value && (status.value === 'idle' || status.value === 'pending'))
+const canViewFinancials = computed(() => data.value?.canViewFinancials
+  ?? (isSuperAdmin.value || isReadOnly.value || ['MANAGER', 'CASHIER', 'READ_ONLY'].includes(currentRole.value ?? '')))
 const updatedLabel = computed(() => data.value
   ? new Intl.DateTimeFormat('es-MX', { timeZone: data.value.timeZone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(data.value.updatedAt))
   : '')
@@ -44,7 +47,6 @@ const updatedLabel = computed(() => data.value
         icon="i-lucide-building-2"
         class="py-16"
       />
-      <TableLoadingState v-else-if="!data && (status === 'idle' || status === 'pending')" />
       <UAlert
         v-else-if="error"
         title="No se pudo actualizar el resumen"
@@ -61,11 +63,12 @@ const updatedLabel = computed(() => data.value
           />
         </template>
       </UAlert>
-      <div v-else-if="data" class="space-y-6">
+      <div v-else-if="data || initialLoading" class="space-y-6" :aria-busy="status === 'pending' || initialLoading">
+        <span v-if="initialLoading" role="status" class="sr-only">Cargando resumen…</span>
         <DetailSectionHeading
           title="Actividad reciente"
           color="primary"
-          :description="`${activeWorkshop?.name ?? 'Todos los talleres'} · Actualizado el ${updatedLabel}`"
+          :description="`${activeWorkshop?.name ?? 'Todos los talleres'}${updatedLabel ? ` · Actualizado el ${updatedLabel}` : ''}`"
         >
           <template #actions>
             <UButton
@@ -85,27 +88,39 @@ const updatedLabel = computed(() => data.value
           </template>
         </DetailSectionHeading>
 
-        <DashboardKpiGrid :kpis="data.kpis" :can-view-financials="data.canViewFinancials" recent />
+        <DashboardKpiGrid
+          :kpis="data?.kpis"
+          :can-view-financials="canViewFinancials"
+          :loading="initialLoading"
+          recent
+        />
 
         <div class="grid items-start gap-6 xl:grid-cols-3">
           <DashboardActivityFeed
-            :items="data.activity"
-            :can-view-financials="data.canViewFinancials"
-            :time-zone="data.timeZone"
+            :items="data?.activity ?? []"
+            :can-view-financials="canViewFinancials"
+            :time-zone="data?.timeZone ?? 'America/Tijuana'"
+            :loading="initialLoading"
             class="min-w-0 xl:col-span-2"
           />
           <div class="min-w-0 space-y-6">
-            <DashboardAttention :attention="data.attention" />
+            <DashboardAttention :attention="data?.attention" :loading="initialLoading" />
             <DashboardUpcomingDeliveries
-              :orders="data.upcomingDeliveries"
-              :show-financials="data.canViewFinancials"
+              :orders="data?.upcomingDeliveries ?? []"
+              :show-financials="canViewFinancials"
+              :loading="initialLoading"
               upcoming
               compact
             />
           </div>
         </div>
 
-        <DashboardRecentOrders :orders="data.recentOrders" :show-financials="data.canViewFinancials" recent />
+        <DashboardRecentOrders
+          :orders="data?.recentOrders ?? []"
+          :show-financials="canViewFinancials"
+          :loading="initialLoading"
+          recent
+        />
       </div>
     </template>
   </UDashboardPanel>

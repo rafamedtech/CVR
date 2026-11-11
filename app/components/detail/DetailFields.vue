@@ -20,7 +20,7 @@ defineProps<{
         </slot>
       </dt>
       <dd class="mt-1 font-medium break-words">
-        <USkeleton v-if="loading" class="h-5 w-32 max-w-full" />
+        <USkeleton v-if="loading" class="h-6 w-32 max-w-full motion-reduce:animate-none" />
         <template v-else>
           <slot name="value" :field="field">
             {{ field.value === undefined || field.value === null || field.value === '' ? '—' : field.value }}

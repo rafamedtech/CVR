@@ -6,6 +6,7 @@ const props = defineProps<{
   items: DashboardActivityItem[]
   canViewFinancials: boolean
   timeZone: string
+  loading?: boolean
 }>()
 
 const selected = ref<'all' | DashboardActivityItem['type']>('all')
@@ -44,11 +45,14 @@ const columns = computed<TableColumn<DashboardActivityItem>[]>(() => [
             :items="categories"
             aria-label="Filtrar actividad por tipo"
             class="w-full sm:w-48"
+            :disabled="loading"
           />
         </template>
       </DetailSectionHeading>
     </template>
+    <TableLoadingState v-if="loading" label="Cargando movimientos…" />
     <DetailTable
+      v-else
       :data="visibleItems"
       :columns="columns"
       empty="Sin movimientos recientes en esta categoría"
