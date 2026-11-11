@@ -7,7 +7,7 @@ defineProps<{
 
 const supabase = useSupabaseClient()
 const colorMode = useColorMode()
-const { session, setSession } = useCrmSession()
+const { session, setSession, isReadOnly } = useCrmSession()
 
 const initials = computed(() => session.value?.profile.fullName
   .split(' ')
@@ -28,11 +28,13 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
   onSelect: () => {
     colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
   }
-}, {
-  label: 'Configuración',
-  icon: 'i-lucide-settings',
-  to: '/configuracion'
-}], [{
+}, ...(!isReadOnly.value
+  ? [{
+      label: 'Configuración',
+      icon: 'i-lucide-settings',
+      to: '/configuracion'
+    }]
+  : [])], [{
   label: 'Cerrar sesión',
   icon: 'i-lucide-log-out',
   onSelect: async () => {

@@ -64,12 +64,14 @@ const links = computed<NavigationMenuItem[][]>(() => [[
         onSelect: () => { open.value = false }
       }]
     : []),
-  {
-    label: 'Configuración',
-    icon: 'i-lucide-settings',
-    to: '/configuracion',
-    onSelect: () => { open.value = false }
-  }
+  ...(!sessionData.value?.profile.isReadOnly
+    ? [{
+        label: 'Configuración',
+        icon: 'i-lucide-settings',
+        to: '/configuracion',
+        onSelect: () => { open.value = false }
+      }]
+    : [])
 ]])
 
 const groups = computed<CommandPaletteGroup[]>(() => [{
@@ -124,7 +126,7 @@ useHead({
           }"
         />
 
-        <div v-if="!collapsed" class="mt-auto px-3 pb-2">
+        <div v-if="!collapsed && !sessionData?.profile.isReadOnly" class="mt-auto px-3 pb-2">
           <p class="text-xs text-muted">
             {{ sessionData?.selectedWorkshop?.name ?? 'Vista consolidada' }}
           </p>

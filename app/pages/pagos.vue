@@ -4,7 +4,7 @@ import type { PaymentListItem } from '~/types/crm'
 useHead({ title: 'Pagos' })
 
 const search = shallowRef('')
-const { isAllWorkshops } = useCrmSession()
+const { isAllWorkshops, isReadOnly } = useCrmSession()
 const { data: payments, status } = await useFetch<PaymentListItem[]>('/api/payments', {
   default: () => [],
   key: 'crm-payments'
@@ -65,7 +65,7 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
 
     <template #body>
       <UAlert
-        v-if="isAllWorkshops"
+        v-if="isAllWorkshops && !isReadOnly"
         class="mb-4"
         title="Vista consolidada"
         description="Se muestran los pagos registrados en todos los talleres."
