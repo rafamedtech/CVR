@@ -14,6 +14,7 @@ const props = defineProps<{
   mobileDate?: OrderDateField
   showFinancials?: boolean
   compact?: boolean
+  customerColor?: 'primary' | 'neutral'
 }>()
 
 const { isAllWorkshops } = useCrmSession()
@@ -92,7 +93,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 
       <template #customerName-cell="{ row }">
         <div>
-          <p class="font-medium text-highlighted">
+          <p class="font-medium" :class="customerColor === 'primary' ? 'text-primary' : 'text-highlighted'">
             {{ row.original.customerName }}
           </p>
           <p class="max-w-48 truncate text-xs text-muted">
@@ -114,12 +115,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       </template>
 
       <template #status-cell="{ row }">
-        <UBadge
-          :label="orderStatusLabels[row.original.status]"
-          :color="orderStatusColors[row.original.status]"
-          variant="subtle"
-          size="sm"
-        />
+        <OrdersStatusBadge :status="row.original.status" />
       </template>
 
       <template #total-cell="{ row }">

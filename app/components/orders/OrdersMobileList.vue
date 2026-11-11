@@ -56,10 +56,8 @@ defineProps<{
             />
           </div>
 
-          <UBadge
-            :label="orderStatusLabels[order.status]"
-            :color="orderStatusColors[order.status]"
-            variant="subtle"
+          <OrdersStatusBadge
+            :status="order.status"
             class="shrink-0"
           />
         </div>

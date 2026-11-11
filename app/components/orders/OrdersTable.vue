@@ -156,11 +156,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           <span class="text-sm">{{ row.original.assignedToName || 'Sin responsable asignado' }}</span>
         </template>
         <template #status-cell="{ row }">
-          <UBadge
-            :label="orderStatusLabels[row.original.status]"
-            :color="orderStatusColors[row.original.status]"
-            variant="subtle"
-          />
+          <OrdersStatusBadge :status="row.original.status" />
         </template>
         <template #total-cell="{ row }">
           <span class="font-medium text-highlighted">{{ formatCurrency(row.original.total) }}</span>

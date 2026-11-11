@@ -16,5 +16,6 @@ defineProps<{
     :orders="orders"
     mobile-date="createdAt"
     :show-financials="showFinancials"
+    customer-color="primary"
   />
 </template>

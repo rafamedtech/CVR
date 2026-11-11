@@ -5,6 +5,10 @@ const largeControl = {
 }
 
 export default defineAppConfig({
+  orderStatusBadge: {
+    size: 'md' as const,
+    mobileSize: 'lg' as const
+  },
   ui: {
     colors: {
       primary: 'brand',

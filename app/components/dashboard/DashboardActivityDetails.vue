@@ -16,12 +16,9 @@ const dateLabel = computed(() => new Intl.DateTimeFormat('es-MX', {
     <p v-if="item.type === 'order'" class="text-xs text-muted">
       <time :datetime="item.date">{{ dateLabel }}</time>
     </p>
-    <UBadge
+    <OrdersStatusBadge
       v-if="item.status"
-      :label="orderStatusLabels[item.status]"
-      :color="orderStatusColors[item.status]"
-      variant="subtle"
-      size="sm"
+      :status="item.status"
     />
     <p v-if="item.type !== 'order'" class="text-xs text-muted">
       <time :datetime="item.date">{{ dateLabel }}</time>
