@@ -14,7 +14,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
   // Auth updates the session before its asynchronous getClaims() updates the user.
   // With a session but no claims, let the API validate identity and load access.
-  if (!userId || session.value?.profile.id !== userId || to.path === '/elegir-taller') {
+  if (!userId || (session.value?.userSwitch?.id ?? session.value?.profile.id) !== userId || to.path === '/elegir-taller') {
     setSession(null)
     try {
       const requestFetch = useRequestFetch()

@@ -8,6 +8,7 @@ defineProps<{
 const supabase = useSupabaseClient()
 const colorMode = useColorMode()
 const { session, setSession, isReadOnly } = useCrmSession()
+const { switchItems, loadUsers, switching } = useUserSwitch()
 
 const initials = computed(() => session.value?.profile.fullName
   .split(' ')
@@ -20,9 +21,9 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
   type: 'label',
   label: session.value?.profile.fullName ?? 'Usuario'
 }, {
-  label: session.value?.profile.isSuperAdmin ? 'Administrador general' : 'Usuario de taller',
+  label: isReadOnly.value ? 'Sólo lectura' : session.value?.profile.isSuperAdmin ? 'Administrador general' : 'Usuario de taller',
   icon: session.value?.profile.isSuperAdmin ? 'i-lucide-shield-check' : 'i-lucide-user'
-}], [{
+}], [...switchItems.value, {
   label: colorMode.value === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro',
   icon: colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
   onSelect: () => {
@@ -50,6 +51,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
     :items="items"
     :content="{ align: 'center', collisionPadding: 12 }"
     :ui="{ content: collapsed ? 'w-52' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+    @update:open="loadUsers"
   >
     <UButton
       :label="collapsed ? undefined : session?.profile.fullName"
@@ -57,6 +59,7 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
       color="neutral"
       variant="ghost"
       block
+      :loading="switching"
       :square="collapsed"
       class="data-[state=open]:bg-elevated"
     >

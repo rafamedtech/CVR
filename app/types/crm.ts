@@ -26,6 +26,7 @@ export interface WorkshopSummary {
 }
 
 export interface CrmSession {
+  userSwitch?: { id: string, fullName: string } | null
   profile: {
     id: string
     email: string

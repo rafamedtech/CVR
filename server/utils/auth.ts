@@ -7,6 +7,7 @@ type ProfileWithMemberships = Profile & {
 }
 
 export interface CrmRequestContext {
+  userSwitch?: { id: string, fullName: string }
   profile: ProfileWithMemberships
   workshopId: string | null
   selectedWorkshop: Workshop | null
@@ -79,7 +80,12 @@ async function bootstrapFirstUser(userId: string, email: string) {
   })
 }
 
-export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext> {
+export function canSwitchCrmUsers(profile: Profile) {
+  return profile.active && profile.isSuperAdmin && !profile.isReadOnly
+    && profile.email.toLowerCase() === 'rafamed.tech@gmail.com'
+}
+
+export async function requireCrmUser(event: H3Event, options: { ignoreUserSwitch?: boolean } = {}): Promise<CrmRequestContext> {
   const claims = await serverSupabaseUser(event)
   const userId = claims?.sub
   const email = typeof claims?.email === 'string' ? claims.email : null
@@ -113,6 +119,23 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
     })
   }
 
+  const actor = profile
+  const userSwitch = canSwitchCrmUsers(actor) ? { id: actor.id, fullName: actor.fullName } : undefined
+  const targetId = getCookie(event, 'crm-user-switch')
+  if (userSwitch && targetId && !options.ignoreUserSwitch) {
+    const target = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(targetId)
+      ? await prisma.profile.findUnique({
+          where: { id: targetId },
+          include: { memberships: { include: { workshop: true }, orderBy: { createdAt: 'asc' } } }
+        })
+      : null
+    if (target?.active && (target.isSuperAdmin || target.isReadOnly || target.memberships.some(item => item.workshop.active))) {
+      profile = target
+    } else {
+      deleteCookie(event, 'crm-user-switch', { path: '/' })
+    }
+  }
+
   const selected = getCookie(event, 'crm-workshop')
   let selectedWorkshop: Workshop | null = null
 
@@ -126,7 +149,7 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
       })
     }
   } else {
-    const membership = profile.memberships.find(item => item.workshopId === selected)
+    const membership = profile.memberships.find(item => item.workshopId === selected && item.workshop.active)
       ?? profile.memberships.find(item => item.workshop.active)
 
     if (!membership) {
@@ -148,6 +171,7 @@ export async function requireCrmUser(event: H3Event): Promise<CrmRequestContext>
   }
 
   return {
+    userSwitch,
     profile,
     workshopId: selectedWorkshop?.id ?? null,
     selectedWorkshop,

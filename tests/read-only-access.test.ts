@@ -13,6 +13,7 @@ function authModuleFixture(role = 'READ_ONLY', isSuperAdmin = false, isReadOnly 
   const workshop = { id: 'body-shop', active: true }
   const profile = {
     id: 'user-id',
+    email: 'consulta@cvrtransportinc.com',
     active: true,
     isSuperAdmin,
     isReadOnly,

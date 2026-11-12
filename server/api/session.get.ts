@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
         }))
 
   return {
+    userSwitch: context.userSwitch ?? null,
     profile: {
       id: context.profile.id,
       email: context.profile.email,
