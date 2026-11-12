@@ -154,63 +154,68 @@ const filteredOrders = computed(() => {
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
+      <UDashboardToolbar :ui="{ root: 'py-3', left: 'w-full flex-col items-start gap-2' }">
         <template #left>
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            :placeholder="searchPlaceholder"
-            class="w-full sm:w-96"
-          />
-          <UButton
-            v-if="route.query.customer"
-            label="Quitar filtro de cliente"
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-x"
-            to="/ordenes"
-          />
-          <USelectMenu
-            v-model="statusSelection"
-            :items="statusOptions"
-            value-key="value"
-            multiple
-            :search-input="false"
-            class="w-full sm:w-56"
-          >
-            <template #default>
-              <span class="min-w-0 truncate">{{ statusFilterLabel }}</span>
-            </template>
-          </USelectMenu>
-          <UPopover v-model:open="dateFilterOpen" class="w-full sm:w-auto">
-            <UButton
-              color="neutral"
-              variant="outline"
-              icon="i-lucide-calendar-days"
-              :label="dateFilterLabel"
-              class="w-full justify-start font-normal sm:w-auto"
+          <div class="flex w-full flex-wrap items-center gap-2">
+            <UInput
+              v-model="search"
+              icon="i-lucide-search"
+              :placeholder="searchPlaceholder"
+              class="w-full sm:w-96"
             />
+            <UButton
+              v-if="route.query.customer"
+              label="Quitar filtro de cliente"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-x"
+              to="/ordenes"
+            />
+          </div>
+          <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            <USelectMenu
+              v-model="statusSelection"
+              :items="statusOptions"
+              value-key="value"
+              multiple
+              :search-input="false"
+              class="min-w-0 w-full sm:w-56"
+            >
+              <template #default>
+                <span class="min-w-0 truncate">{{ statusFilterLabel }}</span>
+              </template>
+            </USelectMenu>
+            <UPopover v-model:open="dateFilterOpen" class="min-w-0 w-full sm:w-auto">
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-calendar-days"
+                :label="dateFilterLabel"
+                class="w-full justify-start font-normal sm:w-auto"
+                :ui="{ label: 'truncate' }"
+              />
 
-            <template #content>
-              <div class="p-2">
-                <UCalendar
-                  v-model="createdAtRange"
-                  range
-                  locale="es-MX"
-                  @update:model-value="handleDateRangeUpdate"
-                />
-                <div class="flex justify-end border-t border-muted pt-2">
-                  <UButton
-                    label="Limpiar fechas"
-                    color="neutral"
-                    variant="ghost"
-                    :disabled="!createdAtRange"
-                    @click="clearDateFilter"
+              <template #content>
+                <div class="p-2">
+                  <UCalendar
+                    v-model="createdAtRange"
+                    range
+                    locale="es-MX"
+                    @update:model-value="handleDateRangeUpdate"
                   />
+                  <div class="flex justify-end border-t border-muted pt-2">
+                    <UButton
+                      label="Limpiar fechas"
+                      color="neutral"
+                      variant="ghost"
+                      :disabled="!createdAtRange"
+                      @click="clearDateFilter"
+                    />
+                  </div>
                 </div>
-              </div>
-            </template>
-          </UPopover>
+              </template>
+            </UPopover>
+          </div>
         </template>
       </UDashboardToolbar>
     </template>
