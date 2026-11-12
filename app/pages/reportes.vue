@@ -150,6 +150,12 @@ async function updateReport() {
               :carolina-only="isCarolina"
             />
           </template>
+          <template #materials>
+            <ReportsInventoryValuation
+              v-if="data.consolidation?.carolinaInventory !== undefined"
+              :valuation="data.consolidation.carolinaInventory"
+            />
+          </template>
         </ReportsDashboard>
       </div>
     </template>

@@ -115,6 +115,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         color="material"
         exact-amounts
       />
+      <slot name="materials" />
     </section>
 
     <section aria-labelledby="report-operating" class="space-y-3">

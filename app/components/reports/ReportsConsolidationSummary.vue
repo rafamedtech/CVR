@@ -121,9 +121,5 @@ const columns: TableColumn<Business>[] = [
         ]"
       />
     </DetailCard>
-    <ReportsInventoryValuation
-      v-if="info.carolinaInventory !== undefined"
-      :valuation="info.carolinaInventory"
-    />
   </section>
 </template>
