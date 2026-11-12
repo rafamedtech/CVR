@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { readCarolinaInventory } from './carolina-inventory'
 import { readReportPages } from './report-pagination'
 import type { BusinessReportSummary, ConsolidationInfo, ReportPeriod, ReportSalesChannelKey } from '../../app/types/reports'
 import { buildBusinessReport } from './business-report'
@@ -135,7 +136,7 @@ export async function readCarolinaReport(period: ReportPeriod) {
     quantity: number
     product: { account_group_name: string | null }
   }
-  const [orders, expenses, payments, items] = await Promise.all([
+  const [orders, expenses, payments, items, inventory] = await Promise.all([
     readReportPages<OrderRow>((from, to) => supabase.from('sales_orders')
       .select('id,order_date,total,tax_total,customer_id,customer_name_snapshot,customer:siigo_customers!customer_id(is_internal_order_customer)')
       .not('status_key', 'in', '(borrador,cancelado)').gte('order_date', previousStart).lte('order_date', period.end)
@@ -151,7 +152,9 @@ export async function readCarolinaReport(period: ReportPeriod) {
     readReportPages<ItemRow>((from, to) => supabase.from('sales_order_items')
       .select('id,order_id,product_name_snapshot,total,tax_amount,quantity,product:siigo_products!product_id(account_group_name),order:sales_orders!inner(order_date,status_key)')
       .gte('order.order_date', period.start).lte('order.order_date', period.end).not('order.status_key', 'in', '(borrador,cancelado)')
-      .order('id').range(from, to).abortSignal(signal).overrideTypes<ItemRow[], { merge: false }>())
+      .order('id').range(from, to).abortSignal(signal).overrideTypes<ItemRow[], { merge: false }>()),
+    // Inventory failure must not hide otherwise available sales reports.
+    readCarolinaInventory(supabase, signal).catch(() => null)
   ])
   const currentIds = orders.filter(order => order.order_date >= period.start).map(order => order.id)
   const paidByOrder = new Map<string, number>()
@@ -170,7 +173,7 @@ export async function readCarolinaReport(period: ReportPeriod) {
     list.push({ description: item.product_name_snapshot, type: item.product.account_group_name?.trim() || 'Sin línea', total: Number(item.total), taxTotal: Number(item.tax_amount), quantity: Number(item.quantity) })
     itemsByOrder.set(item.order_id, list)
   }
-  return buildCarolinaReport(period, {
+  const result = buildCarolinaReport(period, {
     orders: orders.map(order => ({
       id: order.id, date: order.order_date, total: String(order.total), tax: String(order.tax_total),
       customerId: order.customer_id, customer: order.customer_name_snapshot,
@@ -183,4 +186,5 @@ export async function readCarolinaReport(period: ReportPeriod) {
     })),
     payments: payments.map(payment => ({ date: payment.payment_date, method: payment.payment_method, amount: String(payment.amount), internal: payment.order.customer.is_internal_order_customer }))
   })
+  return { ...result, inventory }
 }

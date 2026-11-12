@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<BusinessReportData> => 
       const carolina = await readCarolinaReport(period)
       return {
         ...result, report: carolina.report, status: 'connected',
-        consolidation: { status: 'connected', businesses: [{ id: business, name: result.businessName, metrics: carolina.report.metrics }], internalOperations: carolina.internalOperations }
+        consolidation: { carolinaInventory: carolina.inventory, status: 'connected', businesses: [{ id: business, name: result.businessName, metrics: carolina.report.metrics }], internalOperations: carolina.internalOperations }
       }
     } catch {
       return { ...result, status: 'unavailable' }

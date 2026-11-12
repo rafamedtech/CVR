@@ -67,3 +67,18 @@ los descuentos, saldos, operaciones internas, identificadores de distintos
 orígenes, periodos incompatibles y paginación superior al límite de 1,000 filas.
 Se contrastaron los datos reales de septiembre de Carolina con su reporte:
 ventas 312,938.50 MXN, material 173,974.19 MXN y operación 57,431.00 MXN.
+
+## Valor de la mercancía de Carolina
+
+Los reportes de Carolina y de todos los negocios incluyen el inventario **actual**,
+independiente del periodo seleccionado. Se reproduce el criterio de
+`siigo-pinturas/server/utils/inventoryValuation.ts`: existencias físicas positivas
+(incluidas las reservas) multiplicadas por el último costo registrado, con totales
+por moneda y almacén, sin convertir ni sumar monedas distintas. Se incluyen todos
+los almacenes, también los inactivos y vacíos. Los productos sin costo o moneda se
+excluyen del valor y se cuentan una sola vez en el total, aunque aparezcan en
+varios almacenes. Un costo registrado de cero sí se considera válido.
+
+Las lecturas de almacenes y saldos se paginan por separado. Si el inventario no
+puede consultarse, se muestra un aviso y se conserva el reporte de ventas. La
+valoración no modifica las compras, los gastos ni la utilidad del periodo.

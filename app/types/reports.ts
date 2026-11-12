@@ -87,7 +87,14 @@ export interface BusinessReportSummary {
   salesChannels?: ReportSalesChannel[]
 }
 
+export interface CarolinaInventoryValuation {
+  totals: Array<{ currencyCode: string, amount: number }>
+  productsWithoutCost: number
+  warehouses: Array<{ id: string, code: string, name: string, totals: CarolinaInventoryValuation['totals'], productsWithoutCost: number }>
+}
+
 export interface ConsolidationInfo {
+  carolinaInventory?: CarolinaInventoryValuation | null
   status: 'connected' | 'not-configured' | 'unavailable'
   businesses: Array<{ id: string, name: string, metrics: ReportMetrics }>
   internalOperations: {

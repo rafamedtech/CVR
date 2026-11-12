@@ -23,6 +23,10 @@ const columns: TableColumn<Business>[] = [
         </h2>
       </div>
     </div>
+    <ReportsInventoryValuation
+      v-if="info.carolinaInventory !== undefined"
+      :valuation="info.carolinaInventory"
+    />
     <DetailCard v-if="!carolinaOnly" :ui="{ container: 'min-w-0 p-0 sm:p-0' }">
       <ul v-if="info.businesses.length" aria-label="Resultados por negocio en pesos mexicanos" class="min-w-0 divide-y divide-default md:hidden">
         <li v-for="business in info.businesses" :key="business.id" class="min-w-0 p-4">

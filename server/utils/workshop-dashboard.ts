@@ -245,7 +245,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
           .reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
         sources.push({ id: 'carolina-pinturas', name: 'Carolina Pinturas', report: carolina.report })
         report = combineBusinessReports(sources)
-        consolidation = { status: 'connected', businesses: sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })), internalOperations: carolina.internalOperations }
+        consolidation = { carolinaInventory: carolina.inventory, status: 'connected', businesses: sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })), internalOperations: carolina.internalOperations }
       } catch {
         consolidation.status = 'unavailable'
         console.warn('[carolina-reports] No se pudo consultar el reporte de Carolina Pinturas.')
