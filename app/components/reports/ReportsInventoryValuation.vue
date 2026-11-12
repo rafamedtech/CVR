@@ -9,12 +9,20 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
 </script>
 
 <template>
-  <section aria-labelledby="report-inventory" class="min-w-0 space-y-4">
-    <DetailSectionHeading
-      title-id="report-inventory"
-      title="Valor de la mercancía · Carolina Pinturas"
-      description="Inventario actual al último costo registrado, incluidas las reservas."
-    />
+  <DetailCard
+    class="min-w-0"
+    :ui="{ container: 'min-w-0 justify-start lg:flex', wrapper: 'flex-none' }"
+    icon="i-lucide-warehouse"
+    aria-labelledby="report-inventory"
+  >
+    <template #title>
+      <DetailSectionHeading
+        title-id="report-inventory"
+        title="Valor de la mercancía · Carolina Pinturas"
+        description="Inventario actual al último costo registrado, incluidas las reservas."
+        :ui="{ title: 'text-lg' }"
+      />
+    </template>
     <UAlert
       v-if="!valuation"
       color="warning"
@@ -27,7 +35,7 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
         <DetailCard
           title="Valor registrado"
           icon="i-lucide-banknote"
-          variant="subtle"
+          variant="soft"
           :ui="{ container: 'gap-y-4 p-4 sm:p-5', title: 'text-xs font-normal text-muted uppercase' }"
         >
           <dl v-if="valuation.totals.length" class="space-y-4">
@@ -51,7 +59,7 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
           class="min-w-0 lg:col-span-2"
           title="Distribución por almacén"
           icon="i-lucide-warehouse"
-          variant="subtle"
+          variant="soft"
           :ui="{ container: 'gap-y-4 p-4 sm:p-5', title: 'text-xs font-normal text-muted uppercase' }"
         >
           <dl v-if="warehouses.length" class="divide-y divide-default text-sm">
@@ -83,5 +91,5 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
         description="Las existencias sin costo o moneda quedan fuera de los importes. Un mismo producto puede tener costos pendientes en varios almacenes."
       />
     </template>
-  </section>
+  </DetailCard>
 </template>
