@@ -33,7 +33,6 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         />
         <ReportsMonthPace :report="report" />
       </div>
-      <ReportsCashFlowChart :data="report.dailyMovements" :annual="annual" />
     </section>
 
     <section aria-labelledby="report-sales" class="space-y-3">
@@ -43,6 +42,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
         marker="bg-primary"
         :amount="report.metrics.sales"
       />
+      <ReportsCashFlowChart :data="report.dailyMovements" :annual="annual" />
       <ReportsBusinessSalesChannels
         v-if="allBusinesses"
         :channels="report.salesChannels ?? []"

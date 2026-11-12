@@ -62,6 +62,15 @@ const sections = [
           <DetailFields :fields="[{ label: 'Venta diaria' }, { label: `${annual ? 'Año anterior' : 'Mes anterior'} / día` }]" loading class="mt-4 border-t border-default pt-3" />
         </DetailCard>
       </div>
+    </section>
+
+    <section aria-labelledby="report-sales" class="space-y-3">
+      <ReportsSectionHeading
+        id="report-sales"
+        title="Ventas"
+        marker="bg-primary"
+        loading
+      />
       <DetailCard class="min-w-0">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -82,15 +91,6 @@ const sections = [
         </p>
         <USkeleton class="h-64 w-full" />
       </DetailCard>
-    </section>
-
-    <section aria-labelledby="report-sales" class="space-y-3">
-      <ReportsSectionHeading
-        id="report-sales"
-        title="Ventas"
-        marker="bg-primary"
-        loading
-      />
       <template v-if="allBusinesses">
         <h3 class="text-xl font-semibold text-highlighted">
           Ventas por canal

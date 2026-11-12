@@ -13,7 +13,7 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
     <DetailSectionHeading
       title-id="report-inventory"
       title="Valor de la mercancía · Carolina Pinturas"
-      description="Inventario actual al último costo registrado, incluidas las reservas. No corresponde al cierre del periodo seleccionado. Cada moneda se presenta por separado."
+      description="Inventario actual al último costo registrado, incluidas las reservas."
     />
     <UAlert
       v-if="!valuation"
@@ -23,34 +23,57 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
       description="No se pudo consultar el valor de la mercancía de Carolina Pinturas. Vuelve a cargar el reporte para reintentar."
     />
     <template v-else>
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <DetailStatCard
-          v-for="total in valuation.totals"
-          :key="total.currencyCode"
-          :title="`Valor registrado · ${total.currencyCode}`"
-          :value="money(total.amount, total.currencyCode)"
-          value-color="primary"
-          icon="i-lucide-banknote"
-        >
-          <p class="text-xs text-muted">
-            Total de todos los almacenes.
-          </p>
-        </DetailStatCard>
-        <DetailStatCard
-          v-if="!valuation.totals.length"
+      <div class="grid gap-4 lg:grid-cols-3">
+        <DetailCard
           title="Valor registrado"
-          value="Sin importe"
           icon="i-lucide-banknote"
+          variant="subtle"
+          :ui="{ container: 'gap-y-4 p-4 sm:p-5', title: 'text-xs font-normal text-muted uppercase' }"
         >
-          <p class="text-xs text-muted">
-            Aún no hay existencias con costo y moneda registrados.
+          <dl v-if="valuation.totals.length" class="space-y-4">
+            <div v-for="total in valuation.totals" :key="total.currencyCode">
+              <dt class="text-xs font-medium text-muted">
+                {{ total.currencyCode }}
+              </dt>
+              <dd class="mt-1 text-2xl font-semibold break-words text-primary tabular-nums">
+                {{ money(total.amount, total.currencyCode) }}
+              </dd>
+            </div>
+          </dl>
+          <p v-else class="text-lg font-semibold text-highlighted">
+            Sin importe
           </p>
-        </DetailStatCard>
-        <DetailStatCard title="Productos sin costo" :value="valuation.productsWithoutCost" icon="i-lucide-receipt-text">
           <p class="text-xs text-muted">
-            Productos con existencias que requieren costo o moneda.
+            {{ valuation.totals.length ? 'Total de todos los almacenes, por moneda.' : 'Aún no hay existencias con costo y moneda registrados.' }}
           </p>
-        </DetailStatCard>
+        </DetailCard>
+        <DetailCard
+          class="min-w-0 lg:col-span-2"
+          title="Distribución por almacén"
+          icon="i-lucide-warehouse"
+          variant="subtle"
+          :ui="{ container: 'gap-y-4 p-4 sm:p-5', title: 'text-xs font-normal text-muted uppercase' }"
+        >
+          <dl v-if="warehouses.length" class="divide-y divide-default text-sm">
+            <div v-for="warehouse in warehouses" :key="warehouse.id" class="grid gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-6">
+              <dt class="min-w-0 font-medium break-words text-highlighted">
+                {{ warehouse.name }}
+              </dt>
+              <dd class="flex flex-wrap gap-x-6 gap-y-2 font-medium tabular-nums sm:justify-end sm:text-right">
+                <template v-if="warehouse.totals.length">
+                  <span v-for="total in warehouse.totals" :key="total.currencyCode" class="min-w-28">
+                    <span class="mr-1 text-xs font-normal text-muted">{{ total.currencyCode }}</span>
+                    {{ money(total.amount, total.currencyCode) }}
+                  </span>
+                </template>
+                <span v-else>{{ warehouse.productsWithoutCost ? 'Sin costo' : 'Sin importe' }}</span>
+              </dd>
+            </div>
+          </dl>
+          <p v-else class="text-sm text-muted">
+            Sin almacenes registrados.
+          </p>
+        </DetailCard>
       </div>
       <UAlert
         v-if="valuation.productsWithoutCost"
@@ -59,27 +82,6 @@ const warehouses = computed(() => props.valuation?.warehouses ?? [])
         title="El valor registrado es parcial"
         description="Las existencias sin costo o moneda quedan fuera de los importes. Un mismo producto puede tener costos pendientes en varios almacenes."
       />
-      <DetailCard class="min-w-0">
-        <DetailSectionHeading title="Distribución por almacén" description="Importes registrados y productos pendientes de valorar en cada ubicación." />
-        <ul v-if="warehouses.length" class="divide-y divide-default">
-          <li v-for="warehouse in warehouses" :key="warehouse.id" class="space-y-3 py-4 first:pt-0 last:pb-0">
-            <h3 class="font-semibold break-words text-highlighted">
-              {{ warehouse.name }} <span class="text-xs font-normal text-muted">· {{ warehouse.code }}</span>
-            </h3>
-            <DetailFields
-              :fields="[
-                ...(warehouse.totals.length
-                  ? warehouse.totals.map(total => ({ label: `Valor · ${total.currencyCode}`, value: money(total.amount, total.currencyCode) }))
-                  : [{ label: 'Valor registrado', value: warehouse.productsWithoutCost ? 'Pendiente de costo' : 'Sin importe' }]),
-                { label: 'Costos pendientes', value: warehouse.productsWithoutCost }
-              ]"
-            />
-          </li>
-        </ul>
-        <p v-else class="text-sm text-muted">
-          Sin almacenes registrados.
-        </p>
-      </DetailCard>
     </template>
   </section>
 </template>
