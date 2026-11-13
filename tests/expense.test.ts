@@ -81,3 +81,23 @@ test('rechaza un tipo de cambio no positivo', () => {
   assert.equal(result.success, false)
   assert.equal(result.error?.issues[0]?.path.join('.'), 'exchangeRate')
 })
+
+test('acepta un gasto global sin orden', () => {
+  assert.equal(expenseMutationSchema.safeParse({
+    ...baseExpense, category: 'TAXES', assignmentType: 'GLOBAL', orderId: ''
+  }).success, true)
+})
+
+test('rechaza vincular un gasto global con una orden', () => {
+  const result = expenseMutationSchema.safeParse({
+    ...baseExpense, assignmentType: 'GLOBAL', orderId: '11111111-1111-4111-8111-111111111111'
+  })
+  assert.equal(result.success, false)
+  assert.equal(result.error?.issues[0]?.path.join('.'), 'orderId')
+})
+
+test('rechaza vincular un gasto directo del taller con una orden', () => {
+  assert.equal(expenseMutationSchema.safeParse({
+    ...baseExpense, assignmentType: 'WORKSHOP', orderId: '11111111-1111-4111-8111-111111111111'
+  }).success, false)
+})

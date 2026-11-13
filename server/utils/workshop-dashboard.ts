@@ -236,12 +236,23 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
         payments: periodPayments.filter(payment => payment.order.workshopId === workshop.id)
       })
     }))
+    if (expenses.some(expense => expense.workshopId === null) || previousExpenses.some(expense => expense.workshopId === null)) {
+      sources.push({
+        id: 'global-expenses', name: 'Gastos globales',
+        report: buildBusinessReport({
+          ...reportInput,
+          orders: [], previousOrders: [], payments: [],
+          expenses: expenses.filter(expense => expense.workshopId === null),
+          previousExpenses: previousExpenses.filter(expense => expense.workshopId === null)
+        })
+      })
+    }
     consolidation = { status: 'not-configured', businesses: sources.map(source => ({ id: source.id, name: source.name, metrics: source.report.metrics })), internalOperations: null }
     if (isCarolinaReportsConfigured()) {
       try {
         const carolina = await readCarolinaReport(report.period)
         carolina.internalOperations.workshopMaterialPurchases = expenses
-          .filter(expense => expense.category === 'SUPPLIES' && /carolina\s+pinturas/i.test(expense.vendor ?? ''))
+          .filter(expense => expense.workshopId !== null && expense.category === 'SUPPLIES' && /carolina\s+pinturas/i.test(expense.vendor ?? ''))
           .reduce((sum, expense) => sum + Number(expense.amountMxn), 0)
         sources.push({ id: 'carolina-pinturas', name: 'Carolina Pinturas', report: carolina.report })
         report = combineBusinessReports(sources)

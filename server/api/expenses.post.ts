@@ -3,14 +3,12 @@ import { convertToMxn, normalizeExchangeRate } from '#shared/currency'
 
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
-  requireWorkshopRole(context, ['MANAGER', 'CASHIER'])
-  const workshopId = requireSelectedWorkshop(context)
   const body = await readCrmBody(event, expenseMutationSchema)
+  const workshopId = resolveExpenseWorkshopId(context, body.assignmentType)
   const prisma = usePrisma()
-  const orderId = await resolveExpenseOrderId(
-    body.assignmentType === 'ORDER' ? body.orderId : '',
-    workshopId
-  )
+  const orderId = workshopId && body.assignmentType === 'ORDER'
+    ? await resolveExpenseOrderId(body.orderId, workshopId)
+    : null
   const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
   const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 

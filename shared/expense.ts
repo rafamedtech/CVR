@@ -9,7 +9,7 @@ export const expenseMutationSchema = z.object({
   currency: z.enum(['MXN', 'USD']).default('MXN'),
   exchangeRate: z.coerce.number().positive('El tipo de cambio debe ser mayor a cero.').default(1),
   expenseDate: z.string().min(1, 'Selecciona la fecha.'),
-  assignmentType: z.enum(['WORKSHOP', 'ORDER']),
+  assignmentType: z.enum(['GLOBAL', 'WORKSHOP', 'ORDER']),
   orderId: z.union([
     z.uuid('Selecciona una orden de trabajo válida.'),
     z.literal('')
@@ -24,11 +24,11 @@ export const expenseMutationSchema = z.object({
     })
   }
 
-  if (expense.assignmentType === 'WORKSHOP' && expense.orderId) {
+  if (expense.assignmentType !== 'ORDER' && expense.orderId) {
     context.addIssue({
       code: 'custom',
       path: ['orderId'],
-      message: 'Un gasto directo del taller no debe tener una orden asignada.'
+      message: 'Un gasto global o directo del taller no debe tener una orden asignada.'
     })
   }
 })

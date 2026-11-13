@@ -63,9 +63,9 @@ const items = computed<DropdownMenuItem[][]>(() => {
       color="neutral"
       variant="outline"
       :size="props.size"
-      class="max-w-56 bg-default data-[state=open]:bg-elevated"
+      class="shrink-0 bg-default data-[state=open]:bg-elevated"
       :ui="{
-        label: 'hidden max-w-40 truncate xl:block',
+        label: 'hidden whitespace-nowrap xl:block',
         trailingIcon: 'hidden xl:block'
       }"
     />

@@ -1,14 +1,17 @@
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   requireWorkshopRole(context, ['MANAGER', 'CASHIER'])
-  const workshopId = requireSelectedWorkshop(context)
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: 'Gasto inválido.' })
   }
 
   const result = await usePrisma().expense.deleteMany({
-    where: { id, workshopId }
+    where: {
+      id,
+      ...expenseAccessWhere(context),
+      ...(!context.isSuperAdmin ? { workshopId: requireSelectedWorkshop(context) } : {})
+    }
   })
 
   if (!result.count) {

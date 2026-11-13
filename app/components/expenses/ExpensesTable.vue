@@ -13,6 +13,7 @@ defineProps<{
 const emit = defineEmits<{
   edit: [expense: ExpenseListItem]
   duplicate: [expense: ExpenseListItem]
+  delete: [expense: ExpenseListItem]
 }>()
 
 const workshopIndicators: Record<WorkshopType, { icon: string, label: string }> = {
@@ -57,6 +58,7 @@ const columns: TableColumn<ExpenseListItem>[] = [{
       :can-edit="canEdit"
       @edit="emit('edit', $event)"
       @duplicate="emit('duplicate', $event)"
+      @delete="emit('delete', $event)"
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
@@ -66,7 +68,7 @@ const columns: TableColumn<ExpenseListItem>[] = [{
         </template>
         <template #description-cell="{ row }">
           <div>
-            <p class="font-medium text-highlighted">
+            <p class="font-medium text-primary">
               {{ row.original.description }}
             </p>
             <p class="text-xs text-muted">
@@ -91,10 +93,17 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           </div>
         </template>
         <template #assignment-cell="{ row }">
-          <ExpensesAssignment :order="row.original.order" />
+          <ExpensesAssignment :order="row.original.order" :global="row.original.workshopId === null" />
         </template>
         <template #workshopName-cell="{ row }">
-          <UTooltip :text="row.original.workshopName">
+          <UBadge
+            v-if="!row.original.workshopType"
+            label="Global"
+            icon="i-lucide-globe"
+            color="info"
+            variant="subtle"
+          />
+          <UTooltip v-else :text="row.original.workshopName">
             <div
               class="inline-flex min-w-10 flex-col items-center gap-1 text-muted"
               role="img"
@@ -111,24 +120,13 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           </UTooltip>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
-            <UButton
-              label="Editar"
-              icon="i-lucide-pencil"
-              color="neutral"
-              variant="ghost"
-              size="sm"
+          <div class="flex justify-end">
+            <ExpensesActionsMenu
+              :expense="row.original"
               :disabled="!canEdit"
-              @click="emit('edit', row.original)"
-            />
-            <UButton
-              label="Duplicar"
-              icon="i-lucide-copy"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              :disabled="!canEdit"
-              @click="emit('duplicate', row.original)"
+              @edit="emit('edit', row.original)"
+              @duplicate="emit('duplicate', row.original)"
+              @delete="emit('delete', row.original)"
             />
           </div>
         </template>

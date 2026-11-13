@@ -208,9 +208,9 @@ export interface OrderDetail extends OrderListItem {
 
 export interface ExpenseListItem {
   id: string
-  workshopId: string
+  workshopId: string | null
   workshopName: string
-  workshopType: WorkshopType
+  workshopType: WorkshopType | null
   category: ExpenseCategory
   method: PaymentMethod
   description: string

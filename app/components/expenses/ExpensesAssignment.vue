@@ -3,6 +3,7 @@ import type { ExpenseOrderOption } from '~/types/crm'
 
 withDefaults(defineProps<{
   order: ExpenseOrderOption | null
+  global?: boolean
   showDetails?: boolean
   label?: string
 }>(), { showDetails: true })
@@ -23,8 +24,8 @@ withDefaults(defineProps<{
     </template>
     <UBadge
       v-else
-      label="Gasto del taller"
-      icon="i-lucide-building-2"
+      :label="global ? 'Gasto global' : 'Gasto del taller'"
+      :icon="global ? 'i-lucide-globe' : 'i-lucide-building-2'"
       color="neutral"
       variant="subtle"
     />

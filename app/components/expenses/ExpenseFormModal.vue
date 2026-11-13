@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { convertToMxn } from '#shared/currency'
 import { expenseMutationSchema, type ExpenseAssignmentType, type ExpenseMutation } from '#shared/expense'
 import type { Currency, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
+  initialScope?: 'GLOBAL' | 'WORKSHOP'
   expense?: ExpenseListItem | null
   duplicateExpense?: ExpenseListItem | null
   orders?: ExpenseOrderOption[]
@@ -19,11 +19,19 @@ const emit = defineEmits<{
   deleted: []
 }>()
 const toast = useToast()
+const { isSuperAdmin, activeWorkshop, canRecordExpenses } = useCrmSession()
+const scopeOptions = computed(() => [{
+  label: 'Global · Todos los negocios', value: 'GLOBAL', disabled: !isSuperAdmin.value
+}, {
+  label: `Taller · ${activeWorkshop.value?.name ?? 'Selecciona un taller'}`,
+  value: 'WORKSHOP', disabled: !canRecordExpenses.value
+}])
 const loading = shallowRef(false)
 const deleting = shallowRef(false)
 const deleteConfirmationOpen = shallowRef(false)
 const expenseDate = shallowRef<CalendarDate | undefined>(today(getLocalTimeZone()))
 const expenseDateOpen = shallowRef(false)
+const expenseForm = useTemplateRef('expenseForm')
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
 const assignmentOptions: Array<{ label: string, value: ExpenseAssignmentType }> = [{
@@ -60,7 +68,7 @@ function emptyExpenseState(): ExpenseMutation {
     currency: 'MXN',
     exchangeRate: 1,
     expenseDate: currentDate.toString(),
-    assignmentType: props.fixedOrder ? 'ORDER' : 'WORKSHOP',
+    assignmentType: props.fixedOrder ? 'ORDER' : props.initialScope ?? 'WORKSHOP',
     orderId: props.fixedOrder?.id ?? '',
     notes: ''
   }
@@ -69,7 +77,13 @@ function emptyExpenseState(): ExpenseMutation {
 const state = reactive<ExpenseMutation>({
   ...emptyExpenseState()
 })
-const expenseEquivalentMxn = computed(() => convertToMxn(state.amount, state.currency, state.exchangeRate))
+const expenseScope = computed({
+  get: () => state.assignmentType === 'GLOBAL' ? 'GLOBAL' : 'WORKSHOP',
+  set: (value: string) => {
+    state.assignmentType = value === 'GLOBAL' ? 'GLOBAL' : 'WORKSHOP'
+    state.orderId = ''
+  }
+})
 
 function formatExpenseDate(date: CalendarDate | undefined) {
   if (!date) return 'Selecciona una fecha'
@@ -84,7 +98,10 @@ watch(expenseDate, (date) => {
 })
 
 watch(() => state.assignmentType, (assignmentType) => {
-  if (assignmentType === 'WORKSHOP') state.orderId = ''
+  if (assignmentType !== 'ORDER') {
+    state.orderId = ''
+    expenseForm.value?.clear('orderId')
+  }
 })
 
 watch(() => state.currency, (currency: Currency) => {
@@ -107,7 +124,7 @@ watch([open, () => props.expense, () => props.duplicateExpense], ([isOpen, editi
         currency: expense.currency ?? 'MXN',
         exchangeRate: expense.exchangeRate ?? 1,
         expenseDate: expense.expenseDate.slice(0, 10),
-        assignmentType: expense.order ? 'ORDER' as const : 'WORKSHOP' as const,
+        assignmentType: expense.workshopId === null ? 'GLOBAL' as const : expense.order ? 'ORDER' as const : 'WORKSHOP' as const,
         orderId: expense.order?.id ?? '',
         notes: expense.notes ?? ''
       }
@@ -181,173 +198,252 @@ async function removeExpense() {
     v-model:open="open"
     :title="modalTitle"
     :description="modalDescription"
-    :close="false"
+    :close="{ disabled: loading || deleting || deleteConfirmationOpen }"
     :dismissible="false"
-    :ui="{ footer: 'flex-wrap justify-end' }"
+    :ui="{
+      content: 'max-w-4xl',
+      header: 'pr-12 sm:pr-14',
+      title: 'text-lg font-semibold text-primary',
+      body: 'p-4 sm:p-6',
+      footer: 'flex-wrap gap-2 justify-end bg-elevated/30'
+    }"
   >
     <template #body>
       <UForm
         id="expense-form"
+        ref="expenseForm"
         :schema="expenseMutationSchema"
         :state="state"
-        class="space-y-4"
+        class="grid items-stretch gap-4 md:grid-cols-2"
         @submit="onSubmit"
       >
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField name="category" label="Categoría" required>
-            <USelect
-              v-model="state.category"
-              :items="categoryOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="expenseDate" label="Fecha" required>
-            <UPopover v-model:open="expenseDateOpen">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar-days"
-                :label="formatExpenseDate(expenseDate)"
-                class="w-full justify-start font-normal"
-              />
-
-              <template #content>
-                <UCalendar
-                  v-model="expenseDate"
-                  locale="es-MX"
-                  @update:model-value="expenseDateOpen = false"
+        <DetailCard
+          title="Datos del gasto"
+          icon="i-lucide-receipt-text"
+          :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <UFormField name="expenseDate" label="Fecha" required>
+                <UPopover v-model:open="expenseDateOpen">
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-calendar-days"
+                    :label="formatExpenseDate(expenseDate)"
+                    class="w-full justify-start font-normal"
+                    :ui="{ label: 'truncate' }"
+                  />
+                  <template #content>
+                    <UCalendar
+                      v-model="expenseDate"
+                      locale="es-MX"
+                      @update:model-value="expenseDateOpen = false"
+                    />
+                  </template>
+                </UPopover>
+              </UFormField>
+              <UFormField name="category" label="Categoría" required>
+                <USelect
+                  v-model="state.category"
+                  :items="categoryOptions"
+                  value-key="value"
+                  class="w-full"
                 />
-              </template>
-            </UPopover>
-          </UFormField>
-        </div>
-        <UFormField v-if="fixedOrder" label="Aplicar gasto a">
-          <div class="flex items-start gap-3 rounded-lg border border-default bg-elevated p-3">
-            <UIcon name="i-lucide-clipboard-list" class="mt-0.5 size-5 shrink-0 text-primary" />
-            <div class="min-w-0">
-              <p class="font-medium text-highlighted">
-                Orden {{ fixedOrder.orderNumber }} · {{ fixedOrder.customerName }}
+              </UFormField>
+            </div>
+            <UFormField name="description" label="Concepto" required>
+              <UInput
+                v-model="state.description"
+                placeholder="¿Qué se pagó?"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField name="vendor" label="Proveedor" hint="Opcional">
+              <UInput v-model="state.vendor" placeholder="Nombre del proveedor" class="w-full" />
+            </UFormField>
+          </div>
+        </DetailCard>
+
+        <DetailCard
+          title="Asignación"
+          :icon="state.assignmentType === 'GLOBAL' ? 'i-lucide-globe' : 'i-lucide-building-2'"
+          :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
+          <div class="space-y-4">
+            <UFormField v-if="fixedOrder" label="Orden de trabajo">
+              <p class="font-medium break-words text-primary">
+                {{ fixedOrder.orderNumber }} · {{ fixedOrder.customerName }}
               </p>
-              <p class="truncate text-sm text-muted">
+              <p class="mt-1 text-xs break-words text-muted">
                 {{ fixedOrder.vehicleLabel }}
               </p>
-            </div>
+            </UFormField>
+            <template v-else>
+              <UFormField name="assignmentType" label="¿A quién corresponde?" required>
+                <USelectMenu
+                  v-model="expenseScope"
+                  :items="scopeOptions"
+                  value-key="value"
+                  :search-input="false"
+                  class="w-full"
+                  :ui="{ value: 'truncate' }"
+                />
+              </UFormField>
+              <p v-if="state.assignmentType === 'GLOBAL'" class="text-sm text-muted">
+                Se descuenta una sola vez del consolidado, sin asignarse a un taller ni a una orden.
+              </p>
+              <UFormField
+                v-else
+                name="assignmentType"
+                label="Aplicar a"
+                required
+              >
+                <URadioGroup
+                  v-model="state.assignmentType"
+                  :items="assignmentOptions"
+                  value-key="value"
+                  variant="card"
+                  indicator="hidden"
+                  :ui="{
+                    fieldset: 'grid grid-cols-2 gap-1 rounded-lg bg-elevated p-1 ring ring-default',
+                    item: 'min-w-0 justify-center rounded-md border-0 px-3 py-2 transition-colors hover:bg-default/60 has-data-[state=checked]:bg-default has-data-[state=checked]:shadow-xs focus-within:ring-2 focus-within:ring-primary',
+                    container: 'size-0',
+                    wrapper: 'w-full',
+                    label: 'text-sm'
+                  }"
+                >
+                  <template #label="{ item }">
+                    <span
+                      class="flex min-h-7 items-center justify-center gap-2"
+                      :class="state.assignmentType === item.value ? 'text-primary' : 'text-muted'"
+                    >
+                      <UIcon
+                        :name="item.value === 'WORKSHOP' ? 'i-lucide-building-2' : 'i-lucide-clipboard-list'"
+                        class="size-4 shrink-0"
+                      />
+                      <span class="text-balance">{{ item.label }}</span>
+                    </span>
+                  </template>
+                </URadioGroup>
+              </UFormField>
+              <UFormField
+                v-if="state.assignmentType !== 'GLOBAL'"
+                name="orderId"
+                label="Orden de trabajo"
+                :required="state.assignmentType === 'ORDER'"
+                :ui="{ label: state.assignmentType === 'WORKSHOP' ? 'text-dimmed' : undefined }"
+              >
+                <UTooltip
+                  text="Selecciona Orden de trabajo para poder seleccionar una orden"
+                  :disabled="state.assignmentType === 'ORDER'"
+                >
+                  <span class="block min-w-0 w-full" :tabindex="state.assignmentType === 'WORKSHOP' ? 0 : undefined">
+                    <USelectMenu
+                      v-model="state.orderId"
+                      :items="orderOptions"
+                      value-key="value"
+                      searchable
+                      :disabled="state.assignmentType !== 'ORDER'"
+                      placeholder="Buscar orden, cliente o vehículo…"
+                      class="min-w-0 w-full"
+                      :ui="{
+                        base: 'disabled:bg-elevated/50 disabled:text-dimmed',
+                        placeholder: state.assignmentType === 'WORKSHOP' ? 'text-dimmed' : undefined,
+                        value: 'min-w-0 truncate',
+                        itemLabel: 'min-w-0 truncate'
+                      }"
+                    />
+                  </span>
+                </UTooltip>
+              </UFormField>
+            </template>
           </div>
-        </UFormField>
-        <UFormField
-          v-else
-          name="assignmentType"
-          label="Aplicar gasto a"
-          required
+        </DetailCard>
+
+        <DetailCard
+          title="Importe y pago"
+          class="md:col-span-2"
+          icon="i-lucide-wallet"
+          :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
         >
-          <URadioGroup
-            v-model="state.assignmentType"
-            :items="assignmentOptions"
-            value-key="value"
-            variant="card"
-            :ui="{ fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2' }"
-          />
-        </UFormField>
-        <UFormField
-          v-if="!fixedOrder && state.assignmentType === 'ORDER'"
-          name="orderId"
-          label="Orden de trabajo"
-          required
-        >
-          <USelectMenu
-            v-model="state.orderId"
-            :items="orderOptions"
-            value-key="value"
-            searchable
-            placeholder="Buscar por orden, cliente o vehículo…"
-            class="min-w-0 w-full"
-            :ui="{ value: 'min-w-0 truncate', itemLabel: 'min-w-0 truncate' }"
-          />
-        </UFormField>
-        <UFormField name="description" label="Descripción" required>
-          <UInput v-model="state.description" class="w-full" />
-        </UFormField>
-        <UFormField name="vendor" label="Proveedor">
-          <UInput v-model="state.vendor" class="w-full" />
-        </UFormField>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField name="currency" label="Tipo de moneda" required>
-            <USelect
-              v-model="state.currency"
-              :items="currencyOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField name="exchangeRate" label="Tipo de cambio" required>
-            <AppNumberInput
-              v-model="state.exchangeRate"
-              :disabled="state.currency === 'MXN'"
-              :min="0.000001"
-              :step="0.01"
-              :step-snapping="false"
-              :maximum-fraction-digits="6"
-            />
-          </UFormField>
-          <UFormField name="amount" label="Importe" required>
-            <AppNumberInput
-              v-model="state.amount"
-              format="currency"
-              :currency="state.currency"
-              :min="0.01"
-              :step="0.01"
-              :step-snapping="false"
-            />
-          </UFormField>
-          <UFormField name="method" label="Método de pago" required>
-            <USelect
-              v-model="state.method"
-              :items="methodOptions"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-        </div>
-        <UAlert
-          v-if="state.currency === 'USD'"
-          :title="`Equivalente aplicado: ${formatCurrency(expenseEquivalentMxn)} MXN`"
-          icon="i-lucide-arrow-left-right"
-          color="neutral"
-          variant="subtle"
-        />
-        <UFormField name="notes" label="Notas">
-          <UTextarea
-            v-model="state.notes"
-            class="w-full"
-            :rows="3"
-            autoresize
-          />
-        </UFormField>
+          <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <UFormField name="currency" label="Moneda" required>
+              <USelect
+                v-model="state.currency"
+                :items="currencyOptions"
+                value-key="value"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField
+              name="exchangeRate"
+              label="Tipo de cambio"
+              :required="state.currency === 'USD'"
+              :ui="{ label: state.currency === 'MXN' ? 'text-dimmed' : undefined }"
+            >
+              <AppNumberInput
+                v-model="state.exchangeRate"
+                :disabled="state.currency === 'MXN'"
+                :min="0.000001"
+                :step="0.01"
+                :step-snapping="false"
+                :maximum-fraction-digits="6"
+                class="[&_input:disabled]:bg-elevated/50 [&_input:disabled]:text-dimmed [&_button:disabled]:text-dimmed"
+              />
+            </UFormField>
+            <UFormField name="amount" label="Importe" required>
+              <AppNumberInput
+                v-model="state.amount"
+                format="currency"
+                :currency="state.currency"
+                :min="0.01"
+                :step="0.01"
+                :step-snapping="false"
+              />
+            </UFormField>
+            <UFormField name="method" label="Método de pago" required>
+              <USelect
+                v-model="state.method"
+                :items="methodOptions"
+                value-key="value"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField
+              name="notes"
+              label="Notas"
+              hint="Opcional"
+              class="col-span-2 md:col-span-4"
+            >
+              <UTextarea
+                v-model="state.notes"
+                placeholder="Detalles adicionales del gasto"
+                class="w-full"
+                :rows="2"
+                autoresize
+              />
+            </UFormField>
+          </div>
+        </DetailCard>
       </UForm>
     </template>
-    <template #footer="{ close }">
+    <template #footer>
       <UButton
         v-if="isEditing"
         label="Eliminar gasto"
         icon="i-lucide-trash-2"
         color="error"
-        variant="soft"
+        variant="ghost"
         class="mr-auto"
         :disabled="loading || deleting"
         @click="deleteConfirmationOpen = true"
       />
       <UButton
-        label="Cancelar"
-        color="neutral"
-        variant="outline"
-        :disabled="loading || deleting"
-        @click="close"
-      />
-      <UButton
         type="submit"
         form="expense-form"
         :label="submitLabel"
+        icon="i-lucide-check"
         :loading="loading"
         :disabled="deleting || deleteConfirmationOpen"
       />

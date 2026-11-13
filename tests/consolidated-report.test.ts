@@ -163,3 +163,24 @@ test('conserva los talleres por separado sin Carolina y muestra porcentajes vál
   assert.equal(groups.workshops.length, 2)
   assert.ok(groups.workshops.every(channel => channel.amount === 0 && channel.percentage === 0))
 })
+
+test('global expenses reduce consolidated profit once without changing business profits', () => {
+  const local = workshop()
+  const paint = carolina().report
+  const global = buildBusinessReport({
+    ...input,
+    expenses: [{ category: 'TAXES', amountMxn: 300, expenseDate: new Date('2026-09-10T00:00:00Z'), vendor: null }],
+    previousExpenses: [{ category: 'TAXES', amountMxn: 100 }]
+  })
+  const combined = combineBusinessReports([
+    { id: 'workshop', name: 'Taller', report: local },
+    { id: 'carolina', name: 'Carolina', report: paint },
+    { id: 'global-expenses', name: 'Gastos globales', report: global }
+  ])
+  assert.equal(local.metrics.netProfit, 1000)
+  assert.equal(paint.metrics.netProfit, 1300)
+  assert.equal(combined.metrics.netProfit, 2000)
+  assert.equal(combined.metrics.operatingExpenses, 500)
+  assert.equal(combined.metrics.previousOperatingExpenses, 100)
+  assert.equal(combined.dailyMovements.reduce((sum, day) => sum + day.expenses, 0), 1000)
+})

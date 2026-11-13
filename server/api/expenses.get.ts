@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const prisma = usePrisma()
 
   const expenses = await prisma.expense.findMany({
-    where: workshopWhere(context),
+    where: expenseAccessWhere(context),
     select: {
       id: true, workshopId: true, category: true, method: true, description: true,
       vendor: true, amount: true, amountMxn: true, currency: true, exchangeRate: true,
@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
   return expenses.map(expense => ({
     id: expense.id,
     workshopId: expense.workshopId,
-    workshopName: expense.workshop.name,
-    workshopType: expense.workshop.type,
+    workshopName: expense.workshop?.name ?? 'Todos los negocios',
+    workshopType: expense.workshop?.type ?? null,
     category: expense.category,
     method: expense.method,
     description: expense.description,

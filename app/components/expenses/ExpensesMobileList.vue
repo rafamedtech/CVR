@@ -12,130 +12,130 @@ defineProps<{
 const emit = defineEmits<{
   edit: [expense: ExpenseListItem]
   duplicate: [expense: ExpenseListItem]
+  delete: [expense: ExpenseListItem]
 }>()
 </script>
 
 <template>
   <div v-if="loading" class="space-y-3" aria-label="Cargando gastos operativos">
-    <UCard v-for="index in 3" :key="index" :ui="{ body: 'p-4 sm:p-4' }">
+    <DetailCard v-for="index in 3" :key="index" :ui="{ container: 'p-4 sm:p-4 gap-0' }">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
-          <USkeleton class="h-5 w-40" />
+          <div class="min-w-0 flex-1 space-y-2">
+            <USkeleton class="h-5 w-2/3" />
+            <USkeleton class="h-3 w-24" />
+          </div>
+          <USkeleton class="size-8" />
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <USkeleton class="h-8 w-32" />
           <USkeleton class="h-5 w-24" />
         </div>
-        <USkeleton class="h-4 w-32" />
-        <div class="flex gap-2">
-          <USkeleton class="h-6 w-20" />
-          <USkeleton class="h-6 w-24" />
-        </div>
-        <USkeleton class="h-14 w-full" />
-        <div class="grid grid-cols-2 gap-3">
-          <USkeleton class="h-10 w-full" />
-          <USkeleton class="h-10 w-full" />
-        </div>
+        <USkeleton class="h-8 w-full" />
       </div>
-    </UCard>
+    </DetailCard>
   </div>
 
   <div v-else-if="expenses.length" class="space-y-3">
-    <UCard
+    <DetailCard
       v-for="expense in expenses"
       :key="expense.id"
-      :ui="{ body: 'p-4 sm:p-4' }"
+      as="article"
+      :aria-labelledby="`expense-${expense.id}`"
+      :ui="{ container: 'p-4 sm:p-4 gap-0' }"
     >
-      <article :aria-labelledby="`expense-${expense.id}`">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h2 :id="`expense-${expense.id}`" class="font-semibold text-highlighted">
-              {{ expense.description }}
-            </h2>
-            <p class="mt-1 text-xs text-muted">
-              {{ expense.vendor || 'Sin proveedor' }}
-            </p>
-          </div>
-          <p class="shrink-0 text-sm text-muted">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <h2 :id="`expense-${expense.id}`" class="font-semibold break-words text-primary">
+            {{ expense.description }}
+          </h2>
+          <p class="mt-1 text-xs text-muted">
             {{ formatDateOnly(expense.expenseDate) }}
           </p>
         </div>
-
-        <div class="mt-3 flex flex-wrap gap-2">
-          <UBadge
-            :label="expenseCategoryLabels[expense.category]"
-            color="neutral"
-            variant="subtle"
-          />
-          <UBadge
-            :label="paymentMethodLabels[expense.method]"
-            color="neutral"
-            variant="soft"
+        <div class="-mr-1 -mt-1 shrink-0">
+          <ExpensesActionsMenu
+            :expense="expense"
+            :disabled="!canEdit"
+            @edit="emit('edit', expense)"
+            @duplicate="emit('duplicate', expense)"
+            @delete="emit('delete', expense)"
           />
         </div>
+      </div>
 
-        <div class="mt-4 rounded-md bg-elevated/50 p-3">
-          <template v-if="expense.order">
-            <NuxtLink
-              :to="`/ordenes/${expense.order.id}`"
-              class="font-medium text-primary hover:underline"
-            >
-              {{ expense.order.orderNumber }}
-            </NuxtLink>
-            <p class="mt-1 text-xs text-muted">
-              {{ expense.order.customerName }} · {{ expense.order.vehicleLabel }}
-            </p>
-          </template>
-          <div v-else class="flex items-center gap-2 text-sm text-default">
-            <UIcon name="i-lucide-building-2" class="size-4 text-muted" />
-            <span>Gasto del taller</span>
-          </div>
+      <div class="mt-4 flex flex-wrap items-end justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-xs text-muted">
+            Importe
+          </p>
+          <p class="mt-0.5 text-xl font-semibold break-words text-warning tabular-nums">
+            {{ formatCurrency(expense.amount, expense.currency) }}
+          </p>
+          <p v-if="expense.currency === 'USD'" class="mt-1 text-xs text-muted tabular-nums">
+            TC {{ expense.exchangeRate.toFixed(4) }} · {{ formatCurrency(expense.amountMxn) }} MXN
+          </p>
         </div>
-
-        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+        <dl class="flex flex-wrap gap-3">
           <div>
-            <dt class="text-xs text-muted">
-              Total
+            <dt class="mb-1 text-xs text-muted">
+              Categoría
             </dt>
-            <dd class="mt-0.5 font-semibold text-warning">
-              {{ formatCurrency(expense.amount, expense.currency) }}
-            </dd>
-            <dd v-if="expense.currency === 'USD'" class="mt-1 text-xs text-muted">
-              TC {{ expense.exchangeRate.toFixed(4) }} · {{ formatCurrency(expense.amountMxn) }} MXN
+            <dd>
+              <UBadge
+                :label="expenseCategoryLabels[expense.category]"
+                color="primary"
+                variant="subtle"
+                size="md"
+              />
             </dd>
           </div>
-          <div v-if="showWorkshop" class="col-span-2">
-            <dt class="text-xs text-muted">
-              Taller
+          <div>
+            <dt class="mb-1 text-xs text-muted">
+              Pago
             </dt>
-            <dd class="mt-0.5 text-sm text-default">
-              {{ expense.workshopName }}
+            <dd>
+              <UBadge
+                :label="paymentMethodLabels[expense.method]"
+                color="neutral"
+                variant="subtle"
+                size="md"
+              />
             </dd>
           </div>
         </dl>
+      </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <UButton
-            label="Editar"
-            icon="i-lucide-pencil"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="!canEdit"
-            @click="emit('edit', expense)"
-          />
-          <UButton
-            label="Duplicar"
-            icon="i-lucide-copy"
-            color="neutral"
-            variant="outline"
-            block
-            :disabled="!canEdit"
-            @click="emit('duplicate', expense)"
-          />
+      <div class="mt-4 space-y-2 border-t border-default pt-3">
+        <div v-if="expense.order" class="flex items-start gap-2">
+          <UIcon name="i-lucide-clipboard-list" class="mt-0.5 size-4 shrink-0 text-muted" />
+          <div class="min-w-0">
+            <NuxtLink
+              :to="`/ordenes/${expense.order.id}`"
+              class="text-sm font-medium text-primary hover:underline"
+            >
+              {{ expense.order.orderNumber }}
+            </NuxtLink>
+            <p class="mt-0.5 text-xs break-words text-muted">
+              {{ expense.order.customerName }} · {{ expense.order.vehicleLabel }}
+            </p>
+          </div>
         </div>
-      </article>
-    </UCard>
+        <div v-else class="flex items-center gap-2 text-sm text-default">
+          <UIcon
+            :name="expense.workshopId === null ? 'i-lucide-globe' : 'i-lucide-building-2'"
+            class="size-4 shrink-0 text-muted"
+          />
+          <span>{{ expense.workshopId === null ? 'Gasto global' : 'Gasto del taller' }}</span>
+        </div>
+        <p v-if="showWorkshop" class="text-xs text-muted">
+          {{ expense.workshopName }}
+        </p>
+      </div>
+    </DetailCard>
   </div>
 
-  <UCard v-else>
+  <DetailCard v-else>
     <div class="py-8 text-center">
       <UIcon name="i-lucide-receipt-text" class="mx-auto size-9 text-dimmed" />
       <p class="mt-3 font-medium text-highlighted">
@@ -145,5 +145,5 @@ const emit = defineEmits<{
         Registra un gasto para comenzar el seguimiento.
       </p>
     </div>
-  </UCard>
+  </DetailCard>
 </template>

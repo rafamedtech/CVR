@@ -269,7 +269,13 @@ async function deleteOrder() {
           v-if="order.canViewFinancials"
           v-model:open="expensesOpen"
           title="Gastos de la orden"
-          :ui="{ content: 'sm:max-w-2xl' }"
+          :description="`${order.orderNumber} · ${order.customerName} · ${order.vehicleLabel}`"
+          :ui="{
+            content: 'max-w-2xl',
+            header: 'pr-12 sm:pr-14',
+            title: 'text-lg font-semibold text-primary',
+            body: 'p-4 sm:p-6'
+          }"
         >
           <template #body>
             <OrdersOrderExpensesCard
