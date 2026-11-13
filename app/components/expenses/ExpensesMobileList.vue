@@ -5,7 +5,6 @@ import type { ExpenseListItem } from '~/types/crm'
 defineProps<{
   expenses: ExpenseListItem[]
   loading?: boolean
-  showWorkshop?: boolean
   canEdit?: boolean
 }>()
 
@@ -106,31 +105,20 @@ const emit = defineEmits<{
         </dl>
       </div>
 
-      <div class="mt-4 space-y-2 border-t border-default pt-3">
-        <div v-if="expense.order" class="flex items-start gap-2">
-          <UIcon name="i-lucide-clipboard-list" class="mt-0.5 size-4 shrink-0 text-muted" />
-          <div class="min-w-0">
-            <NuxtLink
-              :to="`/ordenes/${expense.order.id}`"
-              class="text-sm font-medium text-primary hover:underline"
-            >
-              {{ expense.order.orderNumber }}
-            </NuxtLink>
-            <p class="mt-0.5 text-xs break-words text-muted">
-              {{ expense.order.customerName }} · {{ expense.order.vehicleLabel }}
-            </p>
-          </div>
+      <div class="mt-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-t border-default pt-3">
+        <div>
+          <ExpensesWorkshopBadge :expense="expense" />
         </div>
-        <div v-else class="flex items-center gap-2 text-sm text-default">
+        <div v-if="expense.order" class="flex min-w-0 justify-end">
+          <ExpensesExpenseOrderPopover :order="expense.order" />
+        </div>
+        <div v-else class="flex items-center justify-end gap-1.5 text-right text-xs text-muted">
           <UIcon
             :name="expense.workshopId === null ? 'i-lucide-globe' : 'i-lucide-building-2'"
-            class="size-4 shrink-0 text-muted"
+            class="size-4 shrink-0"
           />
           <span>{{ expense.workshopId === null ? 'Gasto global' : 'Gasto del taller' }}</span>
         </div>
-        <p v-if="showWorkshop" class="text-xs text-muted">
-          {{ expense.workshopName }}
-        </p>
       </div>
     </DetailCard>
   </div>

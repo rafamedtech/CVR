@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { formatDateOnly } from '#shared/date'
-import type { ExpenseListItem, WorkshopType } from '~/types/crm'
+import type { ExpenseListItem } from '~/types/crm'
 import ExpensesMobileList from './ExpensesMobileList.vue'
 
-defineProps<{
+const props = defineProps<{
   expenses: ExpenseListItem[]
   loading?: boolean
   showWorkshop?: boolean
@@ -16,13 +16,7 @@ const emit = defineEmits<{
   delete: [expense: ExpenseListItem]
 }>()
 
-const workshopIndicators: Record<WorkshopType, { icon: string, label: string }> = {
-  BODY_SHOP: { icon: 'i-lucide-paintbrush', label: 'TC' },
-  MECHANICAL: { icon: 'i-lucide-wrench', label: 'TM' },
-  PAINT_STORE: { icon: 'i-lucide-palette', label: 'TP' }
-}
-
-const columns: TableColumn<ExpenseListItem>[] = [{
+const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
   accessorKey: 'expenseDate',
   header: 'Fecha'
 }, {
@@ -40,12 +34,14 @@ const columns: TableColumn<ExpenseListItem>[] = [{
 }, {
   id: 'assignment',
   header: 'Asignación'
-}, {
-  accessorKey: 'workshopName',
-  header: 'Taller'
-}, {
+}, ...(props.showWorkshop
+  ? [{
+      accessorKey: 'workshopName',
+      header: 'Taller'
+    }]
+  : []), {
   id: 'actions'
-}]
+}])
 </script>
 
 <template>
@@ -54,7 +50,6 @@ const columns: TableColumn<ExpenseListItem>[] = [{
       class="md:hidden"
       :expenses="expenses"
       :loading="loading"
-      :show-workshop="showWorkshop"
       :can-edit="canEdit"
       @edit="emit('edit', $event)"
       @duplicate="emit('duplicate', $event)"
@@ -96,28 +91,7 @@ const columns: TableColumn<ExpenseListItem>[] = [{
           <ExpensesAssignment :order="row.original.order" :global="row.original.workshopId === null" />
         </template>
         <template #workshopName-cell="{ row }">
-          <UBadge
-            v-if="!row.original.workshopType"
-            label="Global"
-            icon="i-lucide-globe"
-            color="info"
-            variant="subtle"
-          />
-          <UTooltip v-else :text="row.original.workshopName">
-            <div
-              class="inline-flex min-w-10 flex-col items-center gap-1 text-muted"
-              role="img"
-              :aria-label="row.original.workshopName"
-            >
-              <UIcon
-                :name="workshopIndicators[row.original.workshopType].icon"
-                class="size-4"
-              />
-              <span class="text-xs font-medium">
-                {{ workshopIndicators[row.original.workshopType].label }}
-              </span>
-            </div>
-          </UTooltip>
+          <ExpensesWorkshopBadge :expense="row.original" />
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
