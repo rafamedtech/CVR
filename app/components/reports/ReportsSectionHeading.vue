@@ -11,7 +11,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-default pt-4 pb-2">
+  <div
+    class="flex flex-wrap justify-between gap-3 border-b border-default"
+    :class="$slots.actions ? 'items-center py-2' : 'items-baseline pt-4 pb-2'"
+  >
     <DetailSectionHeading
       :title-id="id"
       :title="title"
@@ -26,5 +29,8 @@ defineProps<{
     <p v-else-if="amount !== undefined" class="text-sm font-semibold tabular-nums text-muted">
       {{ reportCurrency.format(amount) }}
     </p>
+    <div v-if="$slots.actions" class="w-full sm:ml-auto sm:w-auto">
+      <slot name="actions" />
+    </div>
   </div>
 </template>

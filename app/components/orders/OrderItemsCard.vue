@@ -144,17 +144,14 @@ async function removeItem(itemId: string) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h2 class="font-semibold text-highlighted">
-            Servicios y partes
-          </h2>
-          <p class="text-sm text-muted">
-            {{ items.length }} conceptos en la orden
-          </p>
-        </div>
+  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0', wrapper: 'min-w-0 items-stretch' }">
+    <template #title>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <DetailSectionHeading
+          title="Conceptos de la orden"
+          color="primary"
+          :description="`${items.length} conceptos en la orden`"
+        />
         <UButton
           v-if="canEdit"
           label="Agregar"
@@ -164,7 +161,7 @@ async function removeItem(itemId: string) {
       </div>
     </template>
 
-    <div v-if="items.length" class="divide-y divide-default">
+    <div v-if="items.length" class="divide-y divide-default text-sm">
       <div v-for="item in items" :key="item.id" class="flex items-start justify-between gap-4 py-3 first:pt-0">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
@@ -180,7 +177,7 @@ async function removeItem(itemId: string) {
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
-          <div class="text-right">
+          <div class="text-right tabular-nums">
             <p class="font-medium text-highlighted">
               {{ formatCurrency(itemTotalInOriginalCurrency(item), item.currency) }}
             </p>
@@ -204,11 +201,16 @@ async function removeItem(itemId: string) {
         </div>
       </div>
     </div>
-    <div v-else class="py-8 text-center text-sm text-muted">
-      Aún no hay conceptos.
-    </div>
+    <UEmpty
+      v-else
+      icon="i-lucide-wrench"
+      title="Aún no hay conceptos"
+      description="Los servicios y partes de esta orden aparecerán aquí."
+      variant="naked"
+      class="py-10"
+    />
 
-    <template #footer>
+    <div class="border-t border-default pt-4">
       <dl class="ml-auto grid max-w-xs grid-cols-2 gap-x-8 gap-y-2 text-sm">
         <dt v-if="requiresInvoice" class="text-muted">
           Subtotal
@@ -229,7 +231,7 @@ async function removeItem(itemId: string) {
           {{ formatCurrency(total) }}
         </dd>
       </dl>
-    </template>
+    </div>
 
     <UModal
       v-model:open="open"
@@ -262,5 +264,5 @@ async function removeItem(itemId: string) {
         />
       </template>
     </UModal>
-  </UCard>
+  </DetailCard>
 </template>

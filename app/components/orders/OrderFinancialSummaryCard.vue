@@ -14,19 +14,16 @@ const itemAmount = computed(() => props.subtotal + props.discountTotal)
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h2 class="font-semibold text-highlighted">
-            Resumen financiero
-          </h2>
-        </div>
-        <UIcon name="i-lucide-chart-no-axes-combined" class="size-5 shrink-0 text-primary" />
-      </div>
+  <DetailCard class="min-w-0" :ui="{ container: 'min-w-0', wrapper: 'min-w-0' }">
+    <template #title>
+      <DetailSectionHeading title="Resumen financiero" color="primary" description="Importes, gastos y ganancia de esta orden.">
+        <template #leading>
+          <UIcon name="i-lucide-chart-no-axes-combined" class="size-5 shrink-0" />
+        </template>
+      </DetailSectionHeading>
     </template>
 
-    <dl class="space-y-3 text-sm">
+    <dl class="space-y-3 text-sm tabular-nums">
       <div class="flex items-center justify-between gap-4">
         <dt class="text-muted">
           Importe de conceptos
@@ -77,25 +74,16 @@ const itemAmount = computed(() => props.subtotal + props.discountTotal)
       </div>
     </dl>
 
-    <template #footer>
-      <div class="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p class="text-xs font-medium uppercase tracking-wide text-muted">
-            Margen de ganancia
-          </p>
-          <p class="mt-1 text-xl font-semibold" :class="profitColor">
-            {{ profitMargin.toFixed(1) }}%
-          </p>
-        </div>
-        <div class="text-right">
-          <p class="text-xs font-medium uppercase tracking-wide text-muted">
-            Ganancia neta
-          </p>
-          <p class="mt-1 text-xl font-semibold" :class="profitColor">
-            {{ formatCurrency(netProfit) }}
-          </p>
-        </div>
-      </div>
-    </template>
-  </UCard>
+    <DetailFields
+      :fields="[
+        { key: 'margin', label: 'Margen de ganancia', value: `${profitMargin.toFixed(1)}%` },
+        { key: 'profit', label: 'Ganancia neta', value: formatCurrency(netProfit) }
+      ]"
+      class="border-t border-default pt-4"
+    >
+      <template #value="{ field }">
+        <span class="text-xl font-semibold tracking-tight tabular-nums" :class="profitColor">{{ field.value }}</span>
+      </template>
+    </DetailFields>
+  </DetailCard>
 </template>

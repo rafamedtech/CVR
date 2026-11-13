@@ -154,9 +154,9 @@ const filteredOrders = computed(() => {
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar :ui="{ root: 'py-3', left: 'w-full flex-col items-start gap-2' }">
+      <UDashboardToolbar :ui="{ root: 'py-3', left: 'w-full flex-col items-start gap-2 lg:flex-row lg:items-center' }">
         <template #left>
-          <div class="flex w-full flex-wrap items-center gap-2">
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto">
             <UInput
               v-model="search"
               icon="i-lucide-search"

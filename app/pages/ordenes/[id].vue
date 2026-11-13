@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { OrderDetail, OrderStatus } from '~/types/crm'
-import { formatPhone } from '~/utils/crm'
 
 const route = useRoute()
 const toast = useToast()
 const savingStatus = shallowRef(false)
 const editOpen = shallowRef(false)
+const paymentsOpen = shallowRef(false)
+const expensesOpen = shallowRef(false)
 const deleteOpen = shallowRef(false)
 const deleting = shallowRef(false)
 const orderId = computed(() => route.params.id as string)
 const { isSuperAdmin, canRecordExpenses } = useCrmSession()
 
-const { data: order, status, refresh } = useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
+const { data: order, status, error, refresh } = useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
   lazy: true,
   server: false,
   key: `crm-order-${orderId.value}`
@@ -84,9 +85,9 @@ async function deleteOrder() {
 </script>
 
 <template>
-  <UDashboardPanel id="order-detail">
+  <UDashboardPanel id="order-detail" :ui="{ body: 'pt-0 sm:pt-0' }">
     <template #header>
-      <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'">
+      <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -104,166 +105,119 @@ async function deleteOrder() {
     </template>
 
     <template #body>
-      <div v-if="status === 'idle' || status === 'pending'" class="space-y-4">
-        <USkeleton class="h-36 rounded-xl" />
-        <USkeleton class="h-72 rounded-xl" />
+      <div
+        v-if="status === 'idle' || status === 'pending'"
+        class="space-y-6"
+        aria-label="Cargando orden"
+        aria-busy="true"
+      >
+        <div class="flex justify-end">
+          <USkeleton class="h-10 w-72 max-w-full" />
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <DetailStatCard
+            v-for="title in ['Cliente', 'Vehículo', 'Entrega prometida', 'Saldo pendiente']"
+            :key="title"
+            :title="title"
+            loading
+          />
+        </div>
+        <div class="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+          <ReportsLoadingCard title="Recepción" />
+          <ReportsLoadingCard title="Resumen financiero" />
+        </div>
+        <ReportsLoadingCard title="Servicios y partes" />
       </div>
 
+      <UAlert
+        v-else-if="error"
+        color="error"
+        icon="i-lucide-circle-alert"
+        title="No se pudo cargar la orden"
+        description="Intenta cargar la información de nuevo."
+      >
+        <template #actions>
+          <UButton
+            label="Reintentar"
+            color="error"
+            variant="soft"
+            @click="refresh()"
+          />
+        </template>
+      </UAlert>
       <div v-else-if="order" class="space-y-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm text-muted">{{ order.workshopName }}</span>
-          </div>
-
-          <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <div class="grid grid-cols-2 items-center gap-2 sm:flex sm:items-center">
-              <UBadge
-                v-if="order.priority !== 'NORMAL'"
-                :label="orderPriorityLabels[order.priority]"
-                :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
-                variant="subtle"
-                size="lg"
-                class="col-span-2 h-9 w-full justify-center sm:w-auto md:h-8"
-              />
-              <UDropdownMenu
-                v-if="isSuperAdmin"
-                :items="orderActionItems"
-                :content="{ align: 'end' }"
-              >
-                <UButton
-                  label="Opciones"
-                  icon="i-lucide-settings-2"
-                  trailing-icon="i-lucide-chevron-down"
-                  color="neutral"
-                  variant="outline"
-                  class="w-full justify-center sm:w-auto"
-                />
-              </UDropdownMenu>
-              <UBadge
-                :label="paymentStatusLabels[order.paymentStatus]"
-                :color="paymentStatusColors[order.paymentStatus]"
-                variant="subtle"
-                size="xl"
-                class="h-10 w-full justify-center sm:w-auto"
-                :class="!isSuperAdmin && 'col-span-2'"
-              />
-              <USelectMenu
-                :model-value="order.status"
-                :color="orderStatusColors[order.status]"
-                variant="subtle"
-                :items="statusOptions"
-                value-key="value"
-                :search-input="false"
-                :loading="savingStatus"
-                :disabled="!isSuperAdmin"
-                class="col-span-2 min-w-40 w-full sm:min-w-0 sm:w-48"
-                :ui="{
-                  base: statusSelectClasses[order.status],
-                  trailingIcon: 'text-current',
-                  content: 'max-h-none',
-                  viewport: 'overflow-y-visible'
-                }"
-                @update:model-value="updateStatus($event as OrderStatus)"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-primary">
-              Cliente
-            </p>
-            <p class="mt-2 font-semibold text-highlighted">
-              {{ order.customerName }}
-            </p>
-            <p class="text-sm text-muted">
-              {{ formatPhone(order.customerPhone) }}
-            </p>
-          </UCard>
-          <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-primary">
-              Vehículo
-            </p>
-            <p class="mt-2 font-semibold text-highlighted">
-              {{ order.vehicleLabel }}
-            </p>
-            <p class="text-sm text-muted">
-              {{ order.licensePlate }}
-            </p>
-          </UCard>
-          <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-primary">
-              Entrega prometida
-            </p>
-            <p class="mt-2 font-semibold text-highlighted">
-              {{ formatDate(order.promisedAt) }}
-            </p>
-            <p class="text-sm text-muted">
-              Responsable: {{ order.assignedToName || 'Sin responsable asignado' }}
-            </p>
-          </UCard>
-          <UCard>
-            <p class="text-xs font-medium uppercase tracking-wide text-primary">
-              Saldo pendiente
-            </p>
-            <p class="mt-2 text-xl font-semibold" :class="order.balance > 0 ? 'text-warning' : 'text-success'">
-              {{ formatCurrency(order.balance) }}
-            </p>
-            <p class="text-sm text-muted">
-              de {{ formatCurrency(order.total) }}
-            </p>
-          </UCard>
-        </div>
-
-        <div
-          class="grid gap-6"
-          :class="order.canViewFinancials ? 'xl:grid-cols-[1.4fr_1fr]' : 'grid-cols-1'"
-        >
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between gap-3">
-                <h2 class="font-semibold text-highlighted">
-                  Recepción
-                </h2>
-                <UIcon name="i-lucide-clipboard-list" class="size-5 shrink-0 text-primary" />
+        <section aria-labelledby="order-overview" class="space-y-3">
+          <ReportsSectionHeading id="order-overview" title="Detalle de la orden" marker="bg-primary">
+            <template #actions>
+              <div class="flex justify-end">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                  <div class="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+                    <UButton
+                      v-if="order.canViewFinancials"
+                      label="Gastos"
+                      icon="i-lucide-receipt-text"
+                      color="neutral"
+                      variant="outline"
+                      class="w-full justify-center sm:w-auto"
+                      @click="expensesOpen = true"
+                    />
+                    <UButton
+                      :label="paymentStatusLabels[order.paymentStatus]"
+                      icon="i-lucide-hand-coins"
+                      :color="paymentStatusColors[order.paymentStatus]"
+                      variant="subtle"
+                      class="w-full justify-center sm:w-auto"
+                      @click="paymentsOpen = true"
+                    />
+                    <UBadge
+                      v-if="order.priority !== 'NORMAL'"
+                      :label="orderPriorityLabels[order.priority]"
+                      :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
+                      variant="subtle"
+                      size="lg"
+                      class="col-span-2 h-9 w-full justify-center sm:w-auto md:h-8"
+                    />
+                    <USelectMenu
+                      :model-value="order.status"
+                      :color="orderStatusColors[order.status]"
+                      variant="subtle"
+                      :items="statusOptions"
+                      value-key="value"
+                      :search-input="false"
+                      :loading="savingStatus"
+                      :disabled="!isSuperAdmin"
+                      class="col-span-2 min-w-40 w-full sm:min-w-0 sm:w-48"
+                      :ui="{
+                        base: statusSelectClasses[order.status],
+                        trailingIcon: 'text-current',
+                        content: 'max-h-none',
+                        viewport: 'overflow-y-visible'
+                      }"
+                      @update:model-value="updateStatus($event as OrderStatus)"
+                    />
+                    <UDropdownMenu
+                      v-if="isSuperAdmin"
+                      :items="orderActionItems"
+                      :content="{ align: 'end' }"
+                    >
+                      <UButton
+                        aria-label="Opciones"
+                        icon="i-lucide-settings-2"
+                        color="neutral"
+                        variant="outline"
+                        class="col-span-2 justify-self-end"
+                      />
+                    </UDropdownMenu>
+                  </div>
+                </div>
               </div>
             </template>
-            <dl class="grid gap-5 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                  Fecha de la orden
-                </dt>
-                <dd class="mt-2 text-default">
-                  {{ formatDate(order.createdAt) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                  Servicio solicitado
-                </dt>
-                <dd class="mt-2 whitespace-pre-wrap text-default">
-                  {{ order.complaint }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                  Condiciones de recepción
-                </dt>
-                <dd class="mt-2 whitespace-pre-wrap text-default">
-                  {{ order.intakeNotes || 'Sin observaciones' }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted">
-                  Notas internas
-                </dt>
-                <dd class="mt-2 whitespace-pre-wrap text-default">
-                  {{ order.internalNotes || 'Sin notas internas' }}
-                </dd>
-              </div>
-            </dl>
-          </UCard>
+          </ReportsSectionHeading>
+          <OrdersOrderOverviewCards :order="order" />
+        </section>
+
+        <div class="grid items-start gap-4" :class="order.canViewFinancials ? 'xl:grid-cols-[1.4fr_1fr]' : 'grid-cols-1'">
+          <OrdersOrderReceptionCard :order="order" />
 
           <OrdersOrderFinancialSummaryCard
             v-if="order.canViewFinancials"
@@ -275,7 +229,13 @@ async function deleteOrder() {
           />
         </div>
 
-        <div class="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <section aria-labelledby="order-services" class="space-y-3">
+          <ReportsSectionHeading
+            id="order-services"
+            title="Servicios y partes"
+            marker="bg-primary"
+            :amount="order.total"
+          />
           <OrdersOrderItemsCard
             :order-id="order.id"
             :items="order.items"
@@ -286,7 +246,14 @@ async function deleteOrder() {
             :can-edit="isSuperAdmin"
             @updated="refresh"
           />
-          <div class="space-y-6">
+        </section>
+
+        <UModal
+          v-model:open="paymentsOpen"
+          title="Pagos de la orden"
+          :ui="{ content: 'sm:max-w-2xl' }"
+        >
+          <template #body>
             <OrdersOrderPaymentsCard
               :order-id="order.id"
               :payments="order.payments"
@@ -295,8 +262,17 @@ async function deleteOrder() {
               :can-record="isSuperAdmin"
               @updated="refresh"
             />
+          </template>
+        </UModal>
+
+        <UModal
+          v-if="order.canViewFinancials"
+          v-model:open="expensesOpen"
+          title="Gastos de la orden"
+          :ui="{ content: 'sm:max-w-2xl' }"
+        >
+          <template #body>
             <OrdersOrderExpensesCard
-              v-if="order.canViewFinancials"
               :expenses="order.expenses"
               :order="{
                 id: order.id,
@@ -307,8 +283,8 @@ async function deleteOrder() {
               :can-record="canRecordExpenses"
               @updated="refresh"
             />
-          </div>
-        </div>
+          </template>
+        </UModal>
 
         <OrdersOrderFormModal
           v-model:open="editOpen"
