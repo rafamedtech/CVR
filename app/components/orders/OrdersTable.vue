@@ -37,10 +37,12 @@ watch(orderIds, () => {
 })
 
 const columns = computed<TableColumn<OrderListItem>[]>(() => {
-  const columns: TableColumn<OrderListItem>[] = [{
-    accessorKey: 'createdAt',
-    header: 'Fecha'
-  }, {
+  const columns: TableColumn<OrderListItem>[] = [...(props.showCreatedAt
+    ? [{
+        accessorKey: 'createdAt',
+        header: 'Fecha'
+      }]
+    : []), {
     accessorKey: 'orderNumber',
     header: 'Orden'
   }, {
@@ -60,7 +62,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
   }, {
     accessorKey: 'promisedAt',
     header: 'Entrega'
-  }]
+  }, ...(props.showWorkshop
+    ? [{
+        accessorKey: 'workshopName',
+        header: 'Taller'
+      }]
+    : [])]
 
   return columns
 })
@@ -76,6 +83,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       :show-customer="showCustomer"
       :show-vehicle="showVehicle"
       :show-created-at="showCreatedAt"
+      show-promised-at
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
@@ -159,10 +167,13 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           <OrdersStatusBadge :status="row.original.status" />
         </template>
         <template #total-cell="{ row }">
-          <span class="font-medium text-highlighted">{{ formatCurrency(row.original.total) }}</span>
+          <span class="font-semibold text-primary tabular-nums">{{ formatCurrency(row.original.total) }}</span>
         </template>
         <template #promisedAt-cell="{ row }">
           <span class="text-sm">{{ formatDayMonth(row.original.promisedAt) }}</span>
+        </template>
+        <template #workshopName-cell="{ row }">
+          <OrdersWorkshopBadge :order="row.original" />
         </template>
         <template #empty>
           <TableLoadingState v-if="loading" />

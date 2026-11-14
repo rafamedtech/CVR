@@ -10,15 +10,13 @@ import type {
 useHead({ title: 'Órdenes' })
 
 const route = useRoute()
-const isMobileViewport = useMobileViewport()
 const search = shallowRef('')
-const statusFilter = shallowRef<OrderStatus[] | 'ALL'>('ALL')
+const statusFilter = shallowRef<OrderStatus[]>([])
 const createdAtRange = shallowRef<{
   start: DateValue | undefined
   end: DateValue | undefined
 } | null>(null)
-const dateFilterOpen = shallowRef(false)
-const { canManageOrders, isAllWorkshops, isReadOnly } = useCrmSession()
+const { session, canManageOrders, isAllWorkshops, isReadOnly } = useCrmSession()
 const createOpen = shallowRef(route.query.create === '1' && canManageOrders.value)
 
 const { data: orders, status, refresh } = useFetch<OrderListItem[]>('/api/orders', {
@@ -39,55 +37,10 @@ const { data: vehicles, status: vehiclesStatus } = useFetch<VehicleListItem[]>('
   default: () => [],
   key: 'crm-vehicles-for-orders'
 })
-type StatusOptionValue = OrderStatus | 'ALL'
-
-const orderStatuses = Object.keys(orderStatusLabels) as OrderStatus[]
-const statusOptions: Array<{ label: string, value: StatusOptionValue }> = [
-  { label: 'Todos los estados', value: 'ALL' },
-  ...Object.entries(orderStatusLabels).map(([value, label]) => ({ value: value as OrderStatus, label }))
-]
-const statusSelection = computed<StatusOptionValue[]>({
-  get: (): StatusOptionValue[] => statusFilter.value === 'ALL' ? ['ALL'] : statusFilter.value,
-  set: (selection: StatusOptionValue[]) => {
-    const wasAllSelected = statusFilter.value === 'ALL'
-    const selectedStatuses = selection.filter((value): value is OrderStatus => value !== 'ALL')
-
-    if (selection.includes('ALL') && !wasAllSelected) {
-      statusFilter.value = 'ALL'
-      return
-    }
-
-    statusFilter.value = !selectedStatuses.length || selectedStatuses.length === orderStatuses.length
-      ? 'ALL'
-      : selectedStatuses
-  }
-})
-const statusFilterLabel = computed(() => {
-  if (statusFilter.value === 'ALL') return 'Todos los estados'
-  if (statusFilter.value.length === 1) return orderStatusLabels[statusFilter.value[0]!]!
-  return `${statusFilter.value.length} seleccionados`
-})
 const createdAtBounds = computed(() => ({
   start: createdAtRange.value?.start?.toString(),
   end: createdAtRange.value?.end?.toString()
 }))
-const dateFilterLabel = computed(() => {
-  const { start, end } = createdAtRange.value ?? {}
-  if (start && end) return `${formatCalendarDate(start)} – ${formatCalendarDate(end)}`
-  if (start) return `Elige fecha final · ${formatCalendarDate(start)}`
-  return 'Fecha de orden'
-})
-const searchPlaceholder = computed(() => isMobileViewport.value
-  ? 'Buscar'
-  : 'Buscar orden, cliente, placas o vehículo…')
-const newOrderLabel = computed(() => isMobileViewport.value ? 'Nueva' : 'Nueva orden')
-
-function formatCalendarDate(date: DateValue) {
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium'
-  }).format(date.toDate(getLocalTimeZone()))
-}
-
 function getLocalDateKey(value: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: getLocalTimeZone(),
@@ -100,14 +53,18 @@ function getLocalDateKey(value: string) {
   return `${part('year')}-${part('month')}-${part('day')}`
 }
 
-function handleDateRangeUpdate(value: { start: DateValue | undefined, end: DateValue | undefined } | null) {
-  if (value?.start && value.end) dateFilterOpen.value = false
+const workshopFilter = shallowRef('all')
+const workshopIcons = {
+  BODY_SHOP: 'i-lucide-paintbrush',
+  MECHANICAL: 'i-lucide-wrench',
+  PAINT_STORE: 'i-lucide-palette'
 }
-
-function clearDateFilter() {
-  createdAtRange.value = null
-  dateFilterOpen.value = false
-}
+const workshopFilterOptions = computed(() => [
+  { label: 'Todas las órdenes', value: 'all', icon: 'i-lucide-clipboard-list' },
+  ...(session.value?.workshops ?? []).map(workshop => ({
+    label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type]
+  }))
+])
 
 const filteredOrders = computed(() => {
   const customerId = typeof route.query.customer === 'string' ? route.query.customer : null
@@ -116,7 +73,8 @@ const filteredOrders = computed(() => {
 
   return orders.value.filter((order) => {
     if (customerId && order.customerId !== customerId) return false
-    if (statusFilter.value !== 'ALL' && !statusFilter.value.includes(order.status)) return false
+    if (isAllWorkshops.value && workshopFilter.value !== 'all' && order.workshopId !== workshopFilter.value) return false
+    if (statusFilter.value.length && !statusFilter.value.includes(order.status)) return false
     if (start && end) {
       const orderDate = getLocalDateKey(order.createdAt)
       if (orderDate < start || orderDate > end) return false
@@ -140,84 +98,49 @@ const filteredOrders = computed(() => {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
-            <span class="inline-flex">
-              <UButton
-                :label="newOrderLabel"
-                icon="i-lucide-file-plus-2"
-                :disabled="!canManageOrders || !customers.length || !vehicles.length"
-                @click="createOpen = true"
-              />
-            </span>
-          </UTooltip>
+          <OrdersCreateMenu
+            v-if="!isReadOnly"
+            class="md:hidden"
+            label="Nueva"
+            :disabled="!canManageOrders || !customers.length || !vehicles.length"
+            @create="createOpen = true"
+          />
           <WorkshopSwitcher />
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar :ui="{ root: 'py-3', left: 'w-full flex-col items-start gap-2 lg:flex-row lg:items-center' }">
-        <template #left>
-          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-            <UInput
-              v-model="search"
-              icon="i-lucide-search"
-              :placeholder="searchPlaceholder"
-              class="w-full sm:w-96"
-            />
-            <UButton
-              v-if="route.query.customer"
-              label="Quitar filtro de cliente"
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-x"
-              to="/ordenes"
-            />
-          </div>
-          <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
-            <USelectMenu
-              v-model="statusSelection"
-              :items="statusOptions"
-              value-key="value"
-              multiple
-              :search-input="false"
-              class="min-w-0 w-full sm:w-56"
-            >
-              <template #default>
-                <span class="min-w-0 truncate">{{ statusFilterLabel }}</span>
-              </template>
-            </USelectMenu>
-            <UPopover v-model:open="dateFilterOpen" class="min-w-0 w-full sm:w-auto">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar-days"
-                :label="dateFilterLabel"
-                class="w-full justify-start font-normal sm:w-auto"
-                :ui="{ label: 'truncate' }"
-              />
-
-              <template #content>
-                <div class="p-2">
-                  <UCalendar
-                    v-model="createdAtRange"
-                    range
-                    locale="es-MX"
-                    @update:model-value="handleDateRangeUpdate"
-                  />
-                  <div class="flex justify-end border-t border-muted pt-2">
-                    <UButton
-                      label="Limpiar fechas"
-                      color="neutral"
-                      variant="ghost"
-                      :disabled="!createdAtRange"
-                      @click="clearDateFilter"
-                    />
-                  </div>
-                </div>
-              </template>
-            </UPopover>
-          </div>
-        </template>
+      <UDashboardToolbar v-if="isAllWorkshops" class="py-3 lg:py-0">
+        <div class="flex w-full min-w-0 items-center gap-3">
+          <ReportsBusinessSelector
+            v-model="workshopFilter"
+            :options="workshopFilterOptions"
+            aria-label="Filtrar órdenes por taller"
+          />
+        </div>
       </UDashboardToolbar>
+      <OrdersFilters
+        v-model:search="search"
+        v-model:statuses="statusFilter"
+        v-model:date-range="createdAtRange"
+      >
+        <template #customer-filter>
+          <UButton
+            v-if="route.query.customer"
+            label="Quitar filtro de cliente"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-x"
+            to="/ordenes"
+          />
+        </template>
+        <template #right>
+          <OrdersCreateMenu
+            v-if="!isReadOnly"
+            :disabled="!canManageOrders || !customers.length || !vehicles.length"
+            @create="createOpen = true"
+          />
+        </template>
+      </OrdersFilters>
     </template>
 
     <template #body>

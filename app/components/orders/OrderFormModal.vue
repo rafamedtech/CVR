@@ -293,14 +293,15 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
     v-model:open="open"
     :title="modalTitle"
     :description="modalDescription"
-    :close="false"
+    :close="{ disabled: loading }"
     :dismissible="false"
     :ui="{
-      content: 'w-[calc(100vw-2rem)] min-w-0 sm:max-w-[44.8rem]',
-      header: 'flex-wrap gap-4',
+      content: 'w-[calc(100vw-2rem)] min-w-0 max-w-4xl',
+      header: 'flex-wrap gap-4 pr-12 sm:pr-14',
+      title: 'text-lg font-semibold text-primary',
       wrapper: 'min-w-0 flex-1',
-      body: 'min-w-0 max-h-[72vh] overflow-x-hidden overflow-y-auto',
-      footer: 'flex-wrap justify-end'
+      body: 'min-w-0 max-h-[72vh] overflow-x-hidden overflow-y-auto p-4 sm:p-6',
+      footer: 'flex-wrap gap-2 justify-end bg-elevated/30'
     }"
   >
     <template #actions>
@@ -316,39 +317,51 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
         :schema="schema"
         :state="state"
         :validate-on="[]"
-        class="min-w-0 space-y-6"
+        class="grid min-w-0 items-start gap-4 md:grid-cols-2"
         @submit="onSubmit"
       >
-        <div class="grid min-w-0 gap-4 sm:grid-cols-2">
-          <UFormField
-            name="customerId"
-            label="Cliente"
-            required
-            class="min-w-0"
-          >
-            <OrdersOrderCustomerSelectMenu
-              v-model="state.customerId"
-              :customers="props.customers"
-              :selected-customer="selectedCustomer"
-              :disabled="isEditing"
-            />
-          </UFormField>
-          <UFormField
-            name="vehicleId"
-            label="Vehículo"
-            required
-            class="min-w-0"
-          >
-            <USelectMenu
-              v-model="state.vehicleId"
-              :items="vehicleOptions"
-              value-key="value"
-              searchable
-              placeholder="Selecciona un vehículo"
-              class="w-full"
-              :disabled="isEditing || !state.customerId"
-            />
-          </UFormField>
+        <DetailCard
+          title="Cliente y vehículo"
+          icon="i-lucide-car"
+          :ui="{ container: 'min-w-0 p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
+          <div class="grid min-w-0 gap-4">
+            <UFormField
+              name="customerId"
+              label="Cliente"
+              required
+              class="min-w-0"
+            >
+              <OrdersOrderCustomerSelectMenu
+                v-model="state.customerId"
+                :customers="props.customers"
+                :selected-customer="selectedCustomer"
+                :disabled="isEditing"
+              />
+            </UFormField>
+            <UFormField
+              name="vehicleId"
+              label="Vehículo"
+              required
+              class="min-w-0"
+            >
+              <USelectMenu
+                v-model="state.vehicleId"
+                :items="vehicleOptions"
+                value-key="value"
+                searchable
+                placeholder="Selecciona un vehículo"
+                class="w-full"
+                :disabled="isEditing || !state.customerId"
+              />
+            </UFormField>
+          </div>
+        </DetailCard>
+        <DetailCard
+          title="Datos de la orden"
+          icon="i-lucide-clipboard-list"
+          :ui="{ container: 'min-w-0 p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
           <div
             class="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2"
           >
@@ -442,44 +455,58 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               </UPopover>
             </UFormField>
           </div>
-          <UFormField
-            name="complaint"
-            label="Servicio solicitado"
-            required
-            class="sm:col-span-2"
-          >
-            <UTextarea
-              v-model="state.complaint"
-              class="w-full"
-              :rows="2"
-              autoresize
-            />
-          </UFormField>
-          <UFormField name="intakeNotes" label="Daños previos / recepción" class="sm:col-span-2">
-            <UTextarea
-              v-model="state.intakeNotes"
-              class="w-full"
-              :rows="2"
-              autoresize
-            />
-          </UFormField>
-          <UFormField name="internalNotes" label="Notas internas" class="sm:col-span-2">
-            <UTextarea
-              v-model="state.internalNotes"
-              class="w-full"
-              :rows="2"
-              autoresize
-            />
-          </UFormField>
-        </div>
+        </DetailCard>
+        <DetailCard
+          title="Servicio y recepción"
+          icon="i-lucide-notebook-pen"
+          class="min-w-0 md:col-span-2"
+          :ui="{ container: 'min-w-0 p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
+          <div class="grid min-w-0 gap-4 sm:grid-cols-2">
+            <UFormField
+              name="complaint"
+              label="Servicio solicitado"
+              required
+              class="sm:col-span-2"
+            >
+              <UTextarea
+                v-model="state.complaint"
+                class="w-full"
+                :rows="2"
+                autoresize
+              />
+            </UFormField>
+            <UFormField name="intakeNotes" label="Daños previos / recepción" class="sm:col-span-2">
+              <UTextarea
+                v-model="state.intakeNotes"
+                class="w-full"
+                :rows="2"
+                autoresize
+              />
+            </UFormField>
+            <UFormField name="internalNotes" label="Notas internas" class="sm:col-span-2">
+              <UTextarea
+                v-model="state.internalNotes"
+                class="w-full"
+                :rows="2"
+                autoresize
+              />
+            </UFormField>
+          </div>
+        </DetailCard>
 
-        <template v-if="!isEditing">
-          <USeparator />
+        <DetailCard
+          v-if="!isEditing"
+          title="Conceptos de la cotización"
+          icon="i-lucide-list-plus"
+          class="min-w-0 md:col-span-2"
+          :ui="{ container: 'min-w-0 p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+        >
           <OrdersOrderItemsEditor
             v-model="state.items"
             :tax-rate="invoiceTaxRate"
           />
-        </template>
+        </DetailCard>
       </UForm>
     </template>
     <template #footer="{ close }">
