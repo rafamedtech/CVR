@@ -75,6 +75,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 
 <template>
   <div>
+    <ListLoading :loading="loading" class="sr-only" label="Cargando órdenes de trabajo" />
     <OrdersMobileList
       class="md:hidden"
       :orders="paginatedOrders"
@@ -87,7 +88,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="paginatedOrders" :columns="columns" :loading="loading">
+      <UTable
+        :data="paginatedOrders"
+        :columns="columns"
+        :loading="loading"
+        :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
+      >
         <template #createdAt-cell="{ row }">
           <span class="text-sm">{{ formatDate(row.original.createdAt) }}</span>
         </template>
@@ -175,9 +181,16 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         <template #workshopName-cell="{ row }">
           <OrdersWorkshopBadge :order="row.original" />
         </template>
+        <template #loading>
+          <ListLoading
+            label="Cargando datos…"
+            size="md"
+            variant="table"
+            :announce="false"
+          />
+        </template>
         <template #empty>
-          <TableLoadingState v-if="loading" />
-          <div v-else class="py-12 text-center">
+          <div class="py-12 text-center">
             <UIcon name="i-lucide-clipboard-list" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay órdenes

@@ -22,18 +22,18 @@ const workshopIcons: Record<WorkshopType, string> = {
 </script>
 
 <template>
-  <div v-if="loading" class="space-y-3" aria-label="Cargando clientes">
+  <div v-if="loading" class="space-y-3" aria-hidden="true">
     <UCard v-for="index in 3" :key="index">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1 space-y-2">
-            <USkeleton class="h-5 w-2/3" />
-            <USkeleton class="h-3 w-1/3" />
+            <USkeleton class="motion-reduce:animate-none h-5 w-2/3" />
+            <USkeleton class="motion-reduce:animate-none h-3 w-1/3" />
           </div>
-          <USkeleton class="size-8" />
+          <USkeleton class="motion-reduce:animate-none size-8" />
         </div>
-        <USkeleton class="h-12 w-full" />
-        <USkeleton class="h-8 w-full" />
+        <USkeleton class="motion-reduce:animate-none h-12 w-full" />
+        <USkeleton class="motion-reduce:animate-none h-8 w-full" />
       </div>
     </UCard>
   </div>

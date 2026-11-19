@@ -63,7 +63,12 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       </DetailSectionHeading>
     </template>
 
-    <TableLoadingState v-if="loading" :label="`Cargando ${title.toLowerCase()}…`" />
+    <ListLoading
+      v-if="loading"
+      size="md"
+      variant="table"
+      :label="`Cargando ${title.toLowerCase()}…`"
+    />
     <div v-else :class="compact ? undefined : 'md:hidden'">
       <OrdersMobileList
         :orders="compact ? orders : mobileOrders"

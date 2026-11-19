@@ -46,6 +46,7 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
 
 <template>
   <div>
+    <ListLoading :loading="loading" class="sr-only" label="Cargando gastos operativos" />
     <ExpensesMobileList
       class="md:hidden"
       :expenses="expenses"
@@ -57,7 +58,12 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="expenses" :columns="columns" :loading="loading">
+      <UTable
+        :data="expenses"
+        :columns="columns"
+        :loading="loading"
+        :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
+      >
         <template #expenseDate-cell="{ row }">
           {{ formatDateOnly(row.original.expenseDate) }}
         </template>
@@ -104,9 +110,16 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
             />
           </div>
         </template>
+        <template #loading>
+          <ListLoading
+            label="Cargando datos…"
+            size="md"
+            variant="table"
+            :announce="false"
+          />
+        </template>
         <template #empty>
-          <TableLoadingState v-if="loading" />
-          <div v-else class="py-12 text-center">
+          <div class="py-12 text-center">
             <UIcon name="i-lucide-receipt-text" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay gastos registrados

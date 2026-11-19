@@ -17,17 +17,17 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <div v-if="loading" class="space-y-3" aria-label="Cargando órdenes de trabajo">
+  <div v-if="loading" class="space-y-3" aria-hidden="true">
     <DetailCard v-for="index in 3" :key="index" :ui="{ container: 'p-4 sm:p-4 gap-0' }">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
-          <USkeleton class="h-5 w-28" />
-          <USkeleton class="h-6 w-24" />
+          <USkeleton class="motion-reduce:animate-none h-5 w-28" />
+          <USkeleton class="motion-reduce:animate-none h-6 w-24" />
         </div>
-        <USkeleton class="h-12 w-full" />
+        <USkeleton class="motion-reduce:animate-none h-12 w-full" />
         <div class="grid grid-cols-2 gap-3">
-          <USkeleton class="h-10 w-full" />
-          <USkeleton class="h-10 w-full" />
+          <USkeleton class="motion-reduce:animate-none h-10 w-full" />
+          <USkeleton class="motion-reduce:animate-none h-10 w-full" />
         </div>
       </div>
     </DetailCard>
