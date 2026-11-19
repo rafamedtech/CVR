@@ -63,14 +63,4 @@ export function reportDailyAverage(total: number, days: number) {
 }
 
 export { reportFormatDate as reportShortDate } from './datetime'
-
-function createReportCurrency() {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
-
-export const reportCurrency = createReportCurrency()
+export { reportCurrency } from '@rafamedtech/nuxt-shared/utils'

@@ -154,13 +154,7 @@ export const workshopTypeLabels: Record<WorkshopType, string> = {
   PAINT_STORE: 'Tienda de pinturas'
 }
 
-export function formatCurrency(value: number, currency: Currency = 'MXN') {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2
-  }).format(value)
-}
+export { formatCurrency } from './format/currency'
 
 export function formatDate(value: string | Date | null, withTime = false) {
   if (!value) return '—'
