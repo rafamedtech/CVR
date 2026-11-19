@@ -16,21 +16,21 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="loading" class="space-y-3" aria-label="Cargando gastos operativos">
+  <div v-if="loading" class="space-y-3" aria-hidden="true">
     <DetailCard v-for="index in 3" :key="index" :ui="{ container: 'p-4 sm:p-4 gap-0' }">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1 space-y-2">
-            <USkeleton class="h-5 w-2/3" />
-            <USkeleton class="h-3 w-24" />
+            <USkeleton class="motion-reduce:animate-none h-5 w-2/3" />
+            <USkeleton class="motion-reduce:animate-none h-3 w-24" />
           </div>
-          <USkeleton class="size-8" />
+          <USkeleton class="motion-reduce:animate-none size-8" />
         </div>
         <div class="flex items-end justify-between gap-3">
-          <USkeleton class="h-8 w-32" />
-          <USkeleton class="h-5 w-24" />
+          <USkeleton class="motion-reduce:animate-none h-8 w-32" />
+          <USkeleton class="motion-reduce:animate-none h-5 w-24" />
         </div>
-        <USkeleton class="h-8 w-full" />
+        <USkeleton class="motion-reduce:animate-none h-8 w-full" />
       </div>
     </DetailCard>
   </div>

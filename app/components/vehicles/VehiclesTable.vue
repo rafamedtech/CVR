@@ -62,6 +62,7 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
 
 <template>
   <div>
+    <ListLoading :loading="loading" class="sr-only" label="Cargando vehículos" />
     <VehicleMobileList
       class="md:hidden"
       :vehicles="paginatedVehicles"
@@ -73,7 +74,12 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="paginatedVehicles" :columns="columns" :loading="loading">
+      <UTable
+        :data="paginatedVehicles"
+        :columns="columns"
+        :loading="loading"
+        :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
+      >
         <template #licensePlate-cell="{ row }">
           <div>
             <div class="flex items-center gap-2">
@@ -137,9 +143,16 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
             />
           </div>
         </template>
+        <template #loading>
+          <ListLoading
+            label="Cargando datos…"
+            size="md"
+            variant="table"
+            :announce="false"
+          />
+        </template>
         <template #empty>
-          <TableLoadingState v-if="loading" />
-          <div v-else class="py-12 text-center">
+          <div class="py-12 text-center">
             <UIcon name="i-lucide-car-front" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay vehículos

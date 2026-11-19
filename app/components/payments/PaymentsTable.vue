@@ -53,6 +53,7 @@ const columns: TableColumn<PaymentListItem>[] = [{
 
 <template>
   <div>
+    <ListLoading :loading="loading" class="sr-only" label="Cargando pagos registrados" />
     <PaymentsMobileList
       class="md:hidden"
       :payments="paginatedPayments"
@@ -61,7 +62,12 @@ const columns: TableColumn<PaymentListItem>[] = [{
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="paginatedPayments" :columns="columns" :loading="loading">
+      <UTable
+        :data="paginatedPayments"
+        :columns="columns"
+        :loading="loading"
+        :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
+      >
         <template #paidAt-cell="{ row }">
           <span class="text-sm">{{ formatDate(row.original.paidAt, true) }}</span>
         </template>
@@ -101,9 +107,16 @@ const columns: TableColumn<PaymentListItem>[] = [{
           <span v-if="showWorkshop" class="text-sm text-muted">{{ row.original.workshopName }}</span>
           <span v-else>—</span>
         </template>
+        <template #loading>
+          <ListLoading
+            label="Cargando datos…"
+            size="md"
+            variant="table"
+            :announce="false"
+          />
+        </template>
         <template #empty>
-          <TableLoadingState v-if="loading" />
-          <div v-else class="py-12 text-center">
+          <div class="py-12 text-center">
             <UIcon name="i-lucide-hand-coins" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay pagos registrados

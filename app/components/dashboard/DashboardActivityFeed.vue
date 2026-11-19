@@ -50,7 +50,12 @@ const columns = computed<TableColumn<DashboardActivityItem>[]>(() => [
         </template>
       </DetailSectionHeading>
     </template>
-    <TableLoadingState v-if="loading" label="Cargando movimientos…" />
+    <ListLoading
+      v-if="loading"
+      size="md"
+      variant="table"
+      label="Cargando movimientos…"
+    />
     <DetailTable
       v-else
       :data="visibleItems"

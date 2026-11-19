@@ -72,6 +72,7 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
 
 <template>
   <div>
+    <ListLoading :loading="loading" class="sr-only" label="Cargando clientes" />
     <CustomerMobileList
       class="md:hidden"
       :customers="paginatedCustomers"
@@ -83,7 +84,12 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
     />
 
     <UCard class="hidden md:block" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="paginatedCustomers" :columns="columns" :loading="loading">
+      <UTable
+        :data="paginatedCustomers"
+        :columns="columns"
+        :loading="loading"
+        :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
+      >
         <template #fullName-cell="{ row }">
           <div>
             <NuxtLink
@@ -185,9 +191,16 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
           </div>
         </template>
 
+        <template #loading>
+          <ListLoading
+            label="Cargando datos…"
+            size="md"
+            variant="table"
+            :announce="false"
+          />
+        </template>
         <template #empty>
-          <TableLoadingState v-if="loading" />
-          <div v-else class="py-12 text-center">
+          <div class="py-12 text-center">
             <UIcon name="i-lucide-users" class="mx-auto size-9 text-dimmed" />
             <p class="mt-3 font-medium text-highlighted">
               No hay clientes
