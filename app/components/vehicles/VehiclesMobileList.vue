@@ -38,48 +38,42 @@ const workshopIcons: Record<WorkshopType, string> = {
   </div>
 
   <div v-else-if="vehicles.length" class="space-y-3">
-    <UCard
+    <ListRecordCard
       v-for="vehicle in vehicles"
       :key="vehicle.id"
-      :ui="{ body: 'p-4 sm:p-4' }"
+      :title="`${vehicle.make} ${vehicle.model} ${vehicle.year}`"
+      :title-to="`/vehiculos/${vehicle.id}`"
     >
-      <article :aria-labelledby="`vehicle-${vehicle.id}`">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <NuxtLink
-              :id="`vehicle-${vehicle.id}`"
-              :to="`/vehiculos/${vehicle.id}`"
-              class="font-semibold text-primary hover:underline"
-            >
-              {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year }}
-            </NuxtLink>
-            <div class="mt-0.5 flex items-center gap-2">
-              <p class="text-xs text-muted">
-                {{ vehicle.licensePlate || 'Sin placas' }}
-              </p>
-              <UBadge
-                v-if="vehicle.color"
-                :label="vehicle.color"
-                icon="i-lucide-palette"
-                color="neutral"
-                variant="subtle"
-                size="sm"
-              />
-            </div>
-          </div>
-
-          <UButton
-            icon="i-lucide-pencil"
-            label="Editar"
+      <template #title-extra>
+        <div class="mt-0.5 flex items-center gap-2">
+          <p class="text-xs text-muted">
+            {{ vehicle.licensePlate || 'Sin placas' }}
+          </p>
+          <UBadge
+            v-if="vehicle.color"
+            :label="vehicle.color"
+            icon="i-lucide-palette"
             color="neutral"
-            variant="ghost"
-            :disabled="!canEdit"
-            :aria-label="`Editar ${vehicle.make} ${vehicle.model}`"
-            @click="emit('edit', vehicle)"
+            variant="subtle"
+            size="sm"
           />
         </div>
+      </template>
 
-        <div class="mt-4 flex items-center justify-between gap-3 border-t border-muted pt-3">
+      <template #actions>
+        <UButton
+          icon="i-lucide-pencil"
+          label="Editar"
+          color="neutral"
+          variant="ghost"
+          :disabled="!canEdit"
+          :aria-label="`Editar ${vehicle.make} ${vehicle.model}`"
+          @click="emit('edit', vehicle)"
+        />
+      </template>
+
+      <template #footer>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-3">
           <div class="flex flex-wrap items-center gap-2">
             <NuxtLink
               :to="`/clientes/${vehicle.customerId}`"
@@ -125,8 +119,8 @@ const workshopIcons: Record<WorkshopType, string> = {
             />
           </div>
         </div>
-      </article>
-    </UCard>
+      </template>
+    </ListRecordCard>
   </div>
 
   <UCard v-else>
