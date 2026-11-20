@@ -40,17 +40,17 @@ async function removeExpense() {
     :ui="{ footer: 'justify-end' }"
   >
     <template #footer>
-      <UButton
+      <AppButton
         label="Cancelar"
-        color="neutral"
-        variant="outline"
+        intent="secondary"
         :disabled="deleting"
         @click="open = false"
       />
-      <UButton
+      <AppButton
         label="Sí, eliminar gasto"
         icon="i-lucide-trash-2"
-        color="error"
+        intent="danger"
+        variant="solid"
         :loading="deleting"
         @click="removeExpense"
       />
