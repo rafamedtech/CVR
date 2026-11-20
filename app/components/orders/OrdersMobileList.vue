@@ -34,121 +34,100 @@ withDefaults(defineProps<{
   </div>
 
   <div v-else-if="orders.length" class="space-y-3">
-    <DetailCard
+    <ListRecordCard
       v-for="order in orders"
       :key="order.id"
-      :ui="{ container: 'p-4 sm:p-4 gap-0' }"
+      :title="order.orderNumber"
+      :title-to="`/ordenes/${order.id}`"
+      :eyebrow="showCreatedAt ? formatDate(order.createdAt) : undefined"
+      :summary-label="showFinancials ? 'Importe' : undefined"
+      :summary-value="showFinancials ? formatCurrency(order.total) : undefined"
+      summary-color="primary"
     >
-      <article :aria-labelledby="`order-${order.id}`">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex min-w-0 flex-wrap items-center gap-2">
-            <NuxtLink
-              :id="`order-${order.id}`"
-              :to="`/ordenes/${order.id}`"
-              class="font-semibold text-primary hover:underline"
-            >
-              {{ order.orderNumber }}
-            </NuxtLink>
-            <UBadge
-              v-if="order.priority !== 'NORMAL'"
-              :label="orderPriorityLabels[order.priority]"
-              :color="order.priority === 'URGENT' ? 'error' : 'warning'"
-              variant="subtle"
-              size="sm"
-            />
-            <p v-if="showCreatedAt" class="w-full text-xs text-muted">
-              {{ formatDate(order.createdAt) }}
-            </p>
-          </div>
+      <template #title-extra>
+        <UBadge
+          v-if="order.priority !== 'NORMAL'"
+          :label="orderPriorityLabels[order.priority]"
+          :color="order.priority === 'URGENT' ? 'error' : 'warning'"
+          variant="subtle"
+          size="sm"
+          class="mt-1"
+        />
+      </template>
 
-          <OrdersStatusBadge
-            :status="order.status"
-            class="shrink-0"
-          />
-        </div>
+      <template #trailing>
+        <OrdersStatusBadge :status="order.status" />
+      </template>
 
-        <div class="mt-4">
-          <template v-if="showCustomer && showVehicle">
-            <div class="flex flex-wrap items-center gap-2">
-              <p class="font-medium break-words text-highlighted">
-                {{ order.vehicleLabel }}
-              </p>
-              <UBadge
-                v-if="order.licensePlate"
-                :label="order.licensePlate"
-                color="neutral"
-                variant="subtle"
-                size="sm"
-              />
-              <span v-else class="text-xs text-muted">Sin placas</span>
-            </div>
-            <p class="mt-1 text-xs text-primary">
-              {{ order.customerName }}
+      <div v-if="showCustomer || showVehicle">
+        <template v-if="showCustomer && showVehicle">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="font-medium break-words text-highlighted">
+              {{ order.vehicleLabel }}
             </p>
-          </template>
-          <template v-else-if="showCustomer">
-            <p class="font-medium text-primary">
-              {{ order.customerName }}
-            </p>
-            <p class="text-xs text-muted">
-              {{ formatPhone(order.customerPhone) }}
-            </p>
-          </template>
-          <template v-else>
-            <div class="flex flex-wrap items-center gap-2">
-              <p class="font-medium text-primary">
-                {{ order.vehicleLabel }}
-              </p>
-              <UBadge
-                v-if="order.vehicleColor"
-                :label="order.vehicleColor"
-                color="neutral"
-                variant="subtle"
-                size="sm"
-              />
-            </div>
             <UBadge
               v-if="order.licensePlate"
               :label="order.licensePlate"
               color="neutral"
               variant="subtle"
               size="sm"
-              class="mt-1"
             />
-            <p v-else class="mt-1 text-xs text-muted">
-              Sin placas
+            <span v-else class="text-xs text-muted">Sin placas</span>
+          </div>
+          <p class="mt-1 text-xs text-primary">
+            {{ order.customerName }}
+          </p>
+        </template>
+        <template v-else-if="showCustomer">
+          <p class="font-medium text-primary">
+            {{ order.customerName }}
+          </p>
+          <p class="text-xs text-muted">
+            {{ formatPhone(order.customerPhone) }}
+          </p>
+        </template>
+        <template v-else-if="showVehicle">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="font-medium text-primary">
+              {{ order.vehicleLabel }}
             </p>
-          </template>
-        </div>
-
-        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
-          <div v-if="showPromisedAt && order.promisedAt">
-            <dt class="text-xs text-muted">
-              Entrega
-            </dt>
-            <dd class="mt-0.5 text-sm text-default">
-              {{ formatDate(order.promisedAt) }}
-            </dd>
+            <UBadge
+              v-if="order.vehicleColor"
+              :label="order.vehicleColor"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+            />
           </div>
-          <div v-if="showFinancials !== false">
-            <dt class="text-xs text-muted">
-              Importe
-            </dt>
-            <dd class="mt-0.5 text-xl font-semibold break-words text-primary tabular-nums">
-              {{ formatCurrency(order.total) }}
-            </dd>
-          </div>
-        </dl>
+          <UBadge
+            v-if="order.licensePlate"
+            :label="order.licensePlate"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            class="mt-1"
+          />
+          <p v-else class="mt-1 text-xs text-muted">
+            Sin placas
+          </p>
+        </template>
+      </div>
 
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-default pt-3">
-          <OrdersWorkshopBadge :order="order" />
+      <DetailFields
+        v-if="showPromisedAt && order.promisedAt"
+        :fields="[{ label: 'Entrega', value: formatDate(order.promisedAt) }]"
+      />
+
+      <template #footer>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default pt-3">
+          <OrdersWorkshopBadge v-if="showWorkshop" :order="order" />
           <p class="flex min-w-0 items-center gap-1.5 text-xs text-muted">
             <UIcon name="i-lucide-user-round" class="size-4 shrink-0" aria-hidden="true" />
             <span class="break-words">{{ order.assignedToName || 'Sin responsable asignado' }}</span>
           </p>
         </div>
-      </article>
-    </DetailCard>
+      </template>
+    </ListRecordCard>
   </div>
 
   <DetailCard v-else>

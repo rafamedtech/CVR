@@ -39,41 +39,35 @@ const workshopIcons: Record<WorkshopType, string> = {
   </div>
 
   <div v-else-if="customers.length" class="space-y-3">
-    <UCard
+    <ListRecordCard
       v-for="customer in customers"
       :key="customer.id"
-      :ui="{ body: 'p-4 sm:p-4' }"
+      :title="customer.fullName"
+      :title-to="`/clientes/${customer.id}`"
     >
-      <article :aria-labelledby="`customer-${customer.id}`">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <NuxtLink
-              :id="`customer-${customer.id}`"
-              :to="`/clientes/${customer.id}`"
-              class="font-semibold text-primary hover:underline"
-            >
-              {{ customer.fullName }}
-            </NuxtLink>
-            <p class="mt-0.5 text-xs text-muted">
-              {{ customerTypeLabels[customer.type] }}
-              <template v-if="customer.taxId">
-                · RFC: {{ customer.taxId }}
-              </template>
-            </p>
-          </div>
+      <template #title-extra>
+        <p class="mt-0.5 text-xs text-muted">
+          {{ customerTypeLabels[customer.type] }}
+          <template v-if="customer.taxId">
+            · RFC: {{ customer.taxId }}
+          </template>
+        </p>
+      </template>
 
-          <UButton
-            icon="i-lucide-pencil"
-            label="Editar"
-            color="neutral"
-            variant="ghost"
-            :disabled="!canEdit"
-            :aria-label="`Editar a ${customer.fullName}`"
-            @click="emit('edit', customer)"
-          />
-        </div>
+      <template #actions>
+        <UButton
+          icon="i-lucide-pencil"
+          label="Editar"
+          color="neutral"
+          variant="ghost"
+          :disabled="!canEdit"
+          :aria-label="`Editar a ${customer.fullName}`"
+          @click="emit('edit', customer)"
+        />
+      </template>
 
-        <div class="mt-4 flex items-center justify-between gap-3 border-t border-muted pt-3">
+      <template #footer>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-3">
           <div class="flex flex-wrap items-center gap-2">
             <NuxtLink
               :to="{ path: '/vehiculos', query: { customer: customer.id } }"
@@ -131,8 +125,8 @@ const workshopIcons: Record<WorkshopType, string> = {
             />
           </div>
         </div>
-      </article>
-    </UCard>
+      </template>
+    </ListRecordCard>
   </div>
 
   <UCard v-else>

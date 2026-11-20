@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import type { PaymentListItem } from '~/types/crm'
 
-defineProps<{
+const props = defineProps<{
   payments: PaymentListItem[]
   loading?: boolean
   showWorkshop?: boolean
 }>()
+
+function paymentFields(payment: PaymentListItem) {
+  return [
+    { label: 'Vehículo', value: payment.order.vehicleLabel },
+    { label: 'Cliente', value: payment.order.customerName },
+    { label: 'Total de la orden', value: formatCurrency(payment.order.total) },
+    ...(payment.currency === 'USD' ? [{ label: 'Aplicado en MXN', value: formatCurrency(payment.amountMxn) }] : []),
+    ...(props.showWorkshop ? [{ label: 'Taller', value: payment.workshopName, fullWidth: true }] : [])
+  ]
+}
 </script>
 
 <template>
@@ -26,43 +36,22 @@ defineProps<{
   </div>
 
   <div v-else-if="payments.length" class="space-y-3">
-    <UCard
+    <ListRecordCard
       v-for="payment in payments"
       :key="payment.id"
-      :ui="{ body: 'p-4 sm:p-4' }"
+      :title="payment.order.orderNumber"
+      :title-to="`/ordenes/${payment.order.id}`"
+      :eyebrow="formatDate(payment.paidAt)"
+      :fields="paymentFields(payment)"
     >
-      <article :aria-labelledby="`payment-${payment.id}`">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <NuxtLink
-              :id="`payment-${payment.id}`"
-              :to="`/ordenes/${payment.order.id}`"
-              class="font-semibold text-primary hover:underline"
-            >
-              {{ payment.order.orderNumber }}
-            </NuxtLink>
-            <p class="mt-1 text-xs text-muted">
-              {{ formatDate(payment.paidAt) }}
-            </p>
-          </div>
-          <p class="shrink-0 font-semibold text-success">
-            {{ formatCurrency(payment.amount, payment.currency) }}
-          </p>
-        </div>
+      <template #trailing>
+        <p class="font-semibold text-success tabular-nums">
+          {{ formatCurrency(payment.amount, payment.currency) }}
+        </p>
+      </template>
 
-        <div class="mt-4 rounded-md bg-elevated/50 p-3">
-          <p class="font-medium text-highlighted">
-            {{ payment.order.vehicleLabel }}
-          </p>
-          <p class="mt-1 text-xs text-primary">
-            {{ payment.order.customerName }}
-          </p>
-          <p class="mt-1 text-xs text-muted">
-            Total de la orden: {{ formatCurrency(payment.order.total) }}
-          </p>
-        </div>
-
-        <div class="mt-3 flex flex-wrap gap-2">
+      <template #footer>
+        <div class="flex flex-wrap gap-2">
           <UBadge
             :label="paymentMethodLabels[payment.method]"
             color="neutral"
@@ -75,30 +64,8 @@ defineProps<{
             variant="soft"
           />
         </div>
-
-        <dl
-          v-if="payment.currency === 'USD' || showWorkshop"
-          class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3"
-        >
-          <div v-if="payment.currency === 'USD'">
-            <dt class="text-xs text-muted">
-              Aplicado en MXN
-            </dt>
-            <dd class="mt-0.5 text-sm font-medium text-default">
-              {{ formatCurrency(payment.amountMxn) }}
-            </dd>
-          </div>
-          <div v-if="showWorkshop" class="col-span-2">
-            <dt class="text-xs text-muted">
-              Taller
-            </dt>
-            <dd class="mt-0.5 text-sm text-default">
-              {{ payment.workshopName }}
-            </dd>
-          </div>
-        </dl>
-      </article>
-    </UCard>
+      </template>
+    </ListRecordCard>
   </div>
 
   <UCard v-else>
