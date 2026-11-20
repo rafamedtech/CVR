@@ -127,13 +127,12 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
       </UForm>
     </template>
     <template #footer="{ close }">
-      <UButton
+      <AppButton
         label="Cancelar"
-        color="neutral"
-        variant="outline"
+        intent="secondary"
         @click="close"
       />
-      <UButton
+      <AppButton
         type="submit"
         form="expense-edit-form"
         label="Guardar cambios"
