@@ -74,7 +74,7 @@ defineEmits<{
         label="Cerrar sesión"
         color="neutral"
         variant="ghost"
-        size="sm"
+        size="md"
         :disabled="pendingId !== null"
         @click="$emit('signOut')"
       />
