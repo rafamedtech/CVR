@@ -1,3 +1,4 @@
+import { addReportGroup, rankReportAmounts } from '@rafamedtech/nuxt-shared/utils'
 import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem, ReportSalesChannelKey } from '../../app/types/reports'
 import { reportChange, reportPercentage, reportDateKey, reportNextDay } from '../../shared/report'
 
@@ -28,20 +29,17 @@ interface ReportOrder extends ReportSale {
   items: Array<{ description: string, type: string, total: Numeric, taxTotal?: Numeric, quantity: Numeric }>
 }
 
-type GroupEntry = { key: string, label: string, amount: number, count: number }
+type GroupEntry = Omit<ReportBreakdownItem, 'percentage'>
 function add(groups: Map<string, GroupEntry>, key: string, label: string, amount: number, count = 1) {
-  const entry = groups.get(key) ?? { key, label, amount: 0, count: 0 }
-  entry.amount += amount
-  entry.count += count
-  groups.set(key, entry)
+  addReportGroup(groups, key, amount, () => ({ key, label, amount: 0, count: 0 }), count)
 }
-function breakdown(groups: Map<string, GroupEntry>): ReportBreakdownItem[] {
+function breakdown(groups: Map<string, GroupEntry>, limit?: number): ReportBreakdownItem[] {
   const total = [...groups.values()].reduce((sum, entry) => sum + entry.amount, 0)
-  return [...groups.values()].sort((a, b) => b.amount - a.amount)
+  return rankReportAmounts(groups.values(), limit)
     .map(entry => ({ ...entry, percentage: reportPercentage(entry.amount, total) ?? 0 }))
 }
 function ranking(groups: Map<string, GroupEntry>, detail: string): ReportRankingItem[] {
-  return breakdown(groups).slice(0, 5).map(entry => ({ ...entry, id: entry.key, detail }))
+  return breakdown(groups, 5).map(entry => ({ ...entry, id: entry.key, detail }))
 }
 function summarize(orders: ReportSale[], expenses: Pick<ReportExpense, 'category' | 'amountMxn'>[], beforeTax: boolean) {
   const sales = orders.reduce((sum, order) => sum + Number(order.total) - (beforeTax ? Number(order.taxTotal ?? 0) : 0), 0)

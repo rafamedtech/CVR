@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { filterBySearchText } from '@rafamedtech/nuxt-shared/utils'
 import type { CustomerListItem } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
@@ -17,18 +18,13 @@ const { data: customers, status, refresh } = useFetch<CustomerListItem[]>('/api/
   key: 'crm-customers'
 })
 
-const filteredCustomers = computed(() => {
-  const term = search.value.trim().toLocaleLowerCase('es-MX')
-  if (!term) return customers.value
-
-  return customers.value.filter(customer => [
-    customer.fullName,
-    customer.phone,
-    formatPhone(customer.phone),
-    customer.email,
-    customer.taxId
-  ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
-})
+const filteredCustomers = computed(() => filterBySearchText(customers.value, search.value, customer => [
+  customer.fullName,
+  customer.phone,
+  formatPhone(customer.phone),
+  customer.email,
+  customer.taxId
+]))
 const canEditCustomers = computed(() => canManageCustomers.value || isSuperAdmin.value)
 
 async function handleCreated() {

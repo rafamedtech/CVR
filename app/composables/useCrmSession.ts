@@ -30,6 +30,13 @@ export function useCrmSession() {
     && (isSuperAdmin.value || ['MANAGER', 'CASHIER'].includes(currentRole.value ?? ''))
   ))
 
+  function workshopTimeZone(workshopId?: string) {
+    const workshop = workshopId
+      ? session.value?.workshops.find(item => item.id === workshopId)
+      : activeWorkshop.value
+    return workshop?.timezone
+  }
+
   function setSession(value: CrmSession | null) {
     session.value = value
   }
@@ -46,6 +53,7 @@ export function useCrmSession() {
   return {
     session: readonly(session),
     activeWorkshop,
+    workshopTimeZone,
     isAllWorkshops,
     canCreateInWorkshop,
     currentRole,

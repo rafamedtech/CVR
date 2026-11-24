@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createNumberFormatter, formatCurrencyAmount } from '@rafamedtech/nuxt-shared/utils'
 import { CurveType } from '@unovis/ts'
 import {
   VisAxis,
@@ -32,31 +33,21 @@ const ordersColor = 'var(--ui-primary)'
 const deliveredColor = 'color-mix(in srgb, var(--ui-bg-inverted) 55%, var(--ui-bg-accented))'
 
 function formatAxisDate(value: number | Date) {
-  return new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'short'
-  }).format(new Date(value))
+  return formatTrendDayMonth(new Date(value))
 }
+
+const countFormatter = createNumberFormatter()
 
 function formatAxisValue(value: number | Date) {
   const amount = Number(value)
 
-  if (!props.canViewFinancials) return amount.toLocaleString('es-MX')
+  if (!props.canViewFinancials) return countFormatter.format(amount)
 
-  return new Intl.NumberFormat('es-MX', {
-    notation: 'compact',
-    style: 'currency',
-    currency: 'MXN',
-    maximumFractionDigits: 1
-  }).format(amount)
+  return formatCurrencyAmount(amount, 'MXN', { notation: 'compact', maximumFractionDigits: 1 })
 }
 
 function tooltipTemplate(datum: TrendDatum) {
-  const date = new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date(datum.date))
+  const date = formatTrendDate(datum.date.slice(0, 10))
 
   if (!props.canViewFinancials) {
     return `

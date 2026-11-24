@@ -30,16 +30,7 @@ export const taxRateOptions: Array<{ label: string, value: TaxRate }> = [
   { label: '16%', value: 16 }
 ]
 
-export function normalizePhone(value: string) {
-  return value.replace(/\D/g, '').slice(0, 10)
-}
-
-export function formatPhone(value: string | null | undefined) {
-  const digits = normalizePhone(value ?? '')
-  if (digits.length <= 3) return digits ? `(${digits}${digits.length === 3 ? ')' : ''}` : ''
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
-}
+export { formatPhone, normalizePhone } from '@rafamedtech/nuxt-shared/utils'
 
 export function formatCustomerAddress(address: CustomerAddress | null) {
   if (!address) return 'No registrado'
@@ -155,21 +146,4 @@ export const workshopTypeLabels: Record<WorkshopType, string> = {
 }
 
 export { formatCurrency } from './format/currency'
-
-export function formatDate(value: string | Date | null, withTime = false) {
-  if (!value) return '—'
-
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium',
-    ...(withTime ? { timeStyle: 'short' as const } : {})
-  }).format(new Date(value))
-}
-
-export function formatDayMonth(value: string | Date | null) {
-  if (!value) return '—'
-
-  return new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'short'
-  }).format(new Date(value))
-}
+export { formatWorkshopDate as formatDate, formatWorkshopDayMonth as formatDayMonth } from './datetime'

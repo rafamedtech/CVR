@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { getLocalTimeZone, type DateValue } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
+import { formatCalendarRange } from '#shared/date'
+import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 import type { ExpenseCategory } from '~/types/crm'
 
 const search = defineModel<string>('search', { default: '' })
@@ -8,7 +10,8 @@ const dateRange = defineModel<{
   start: DateValue | undefined
   end: DateValue | undefined
 } | null>('dateRange', { default: null })
-const dateFilterOpen = shallowRef(false)
+const { workshopTimeZone } = useCrmSession()
+const timeZone = computed(() => workshopTimeZone() ?? DEFAULT_WORKSHOP_TIME_ZONE)
 
 type CategoryOption = ExpenseCategory | 'ALL'
 const allCategories = Object.keys(expenseCategoryLabels) as ExpenseCategory[]
@@ -32,24 +35,8 @@ const categoryFilterLabel = computed(() => {
   if (categories.value.length === 1) return expenseCategoryLabels[categories.value[0]!]
   return `${categories.value.length} seleccionadas`
 })
-const dateFilterLabel = computed(() => {
-  const { start, end } = dateRange.value ?? {}
-  if (start && end) return `${formatCalendarDate(start)} – ${formatCalendarDate(end)}`
-  if (start) return `Elige fecha final · ${formatCalendarDate(start)}`
-  return 'Fecha de gasto'
-})
-
-function formatCalendarDate(date: DateValue) {
-  return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(date.toDate(getLocalTimeZone()))
-}
-
-function handleDateRangeUpdate(value: typeof dateRange.value) {
-  if (value?.start && value.end) dateFilterOpen.value = false
-}
-
-function clearDateFilter() {
-  dateRange.value = null
-  dateFilterOpen.value = false
+function formatExpenseRange(start: DateValue, end: DateValue) {
+  return formatCalendarRange(start.toString(), end.toString())
 }
 </script>
 
@@ -77,36 +64,15 @@ function clearDateFilter() {
             <span class="min-w-0 truncate">{{ categoryFilterLabel }}</span>
           </template>
         </USelectMenu>
-        <UPopover v-model:open="dateFilterOpen" class="min-w-0 w-full sm:w-auto">
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-calendar-days"
-            :label="dateFilterLabel"
-            class="w-full justify-start font-normal sm:w-auto"
-            :ui="{ label: 'truncate' }"
-          />
-
-          <template #content>
-            <div class="p-2">
-              <UCalendar
-                v-model="dateRange"
-                range
-                locale="es-MX"
-                @update:model-value="handleDateRangeUpdate"
-              />
-              <div class="flex justify-end border-t border-muted pt-2">
-                <UButton
-                  label="Limpiar fechas"
-                  color="neutral"
-                  variant="ghost"
-                  :disabled="!dateRange"
-                  @click="clearDateFilter"
-                />
-              </div>
-            </div>
-          </template>
-        </UPopover>
+        <CalendarRangePicker
+          v-model="dateRange"
+          :time-zone="timeZone"
+          :format-range="formatExpenseRange"
+          placeholder="Fecha de gasto"
+          icon="i-lucide-calendar-days"
+          class="w-full min-w-0 justify-start font-normal sm:w-auto"
+          :ui="{ label: 'truncate' }"
+        />
       </div>
     </template>
     <template #right>

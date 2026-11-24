@@ -1,11 +1,6 @@
-export interface ReportPeriod {
-  mode: 'monthly' | 'annual'
-  label: string
-  start: string
-  end: string
-  elapsedDays: number
-  totalDays: number
-}
+import type { ReportBreakdownItem, ReportDailyMovement, ReportPeriod, ReportRankingItem } from '@rafamedtech/nuxt-shared/utils'
+
+export type { ReportBreakdownItem, ReportDailyMovement, ReportPeriod, ReportRankingItem }
 
 export interface ReportMetrics {
   billedSales: number
@@ -32,36 +27,6 @@ export interface ReportMetrics {
   averageTicket: number
   outstandingBalance: number
   collectionCoveragePercentage: number
-}
-
-export interface ReportDailyMovement {
-  date: string
-  label: string
-  sales: number
-  orderCount: number
-  collections: number
-  expenses: number
-  netCashFlow: number
-  materialPurchases: number
-  operatingExpenses: number
-  netProfit: number
-}
-
-export interface ReportBreakdownItem {
-  key: string
-  label: string
-  amount: number
-  count: number
-  percentage: number
-}
-
-export interface ReportRankingItem {
-  id: string
-  label: string
-  detail: string
-  amount: number
-  count: number
-  percentage: number
 }
 
 export type ReportSalesChannelKey = 'counter' | 'seller' | 'internal' | 'workshop'

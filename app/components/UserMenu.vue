@@ -17,13 +17,12 @@ const initials = computed(() => session.value?.profile.fullName
   .join('')
   .toUpperCase() || 'U')
 
-const items = computed<DropdownMenuItem[][]>(() => [[{
-  type: 'label',
-  label: session.value?.profile.fullName ?? 'Usuario'
-}, {
+const identityItems = computed<DropdownMenuItem[]>(() => [{
   label: isReadOnly.value ? 'Sólo lectura' : session.value?.profile.isSuperAdmin ? 'Administrador general' : 'Usuario de taller',
   icon: session.value?.profile.isSuperAdmin ? 'i-lucide-shield-check' : 'i-lucide-user'
-}], [...switchItems.value, {
+}])
+
+const items = computed<DropdownMenuItem[][]>(() => [[...switchItems.value, {
   label: colorMode.value === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro',
   icon: colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
   onSelect: () => {
@@ -47,25 +46,17 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
 </script>
 
 <template>
-  <UDropdownMenu
+  <UserMenuBase
+    :name="session?.profile.fullName"
+    :identity-items="identityItems"
     :items="items"
-    :content="{ align: 'center', collisionPadding: 12 }"
-    :ui="{ content: collapsed ? 'w-52' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+    :collapsed="collapsed"
+    collapsed-content-class="w-52"
+    :loading="switching"
     @update:open="loadUsers"
   >
-    <UButton
-      :label="collapsed ? undefined : session?.profile.fullName"
-      :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
-      color="neutral"
-      variant="ghost"
-      block
-      :loading="switching"
-      :square="collapsed"
-      class="data-[state=open]:bg-elevated"
-    >
-      <template #leading>
-        <UAvatar :text="initials" size="2xs" />
-      </template>
-    </UButton>
-  </UDropdownMenu>
+    <template #leading>
+      <UAvatar :text="initials" size="2xs" />
+    </template>
+  </UserMenuBase>
 </template>

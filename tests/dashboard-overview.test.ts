@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import { addCalendarDays } from '@rafamedtech/nuxt-shared/utils'
 import * as reportDates from '../shared/report'
 import type { DashboardOverviewData } from '../app/types/crm'
 
@@ -40,7 +41,7 @@ function fixture(role = 'MANAGER') {
   const exports: { getDashboardOverview?: (context: unknown, now: Date) => Promise<DashboardOverviewData> } = {}
   runInNewContext(source, {
     exports, Date,
-    require: (path: string) => path.includes('/orders') ? { orderListSelect: { id: true } } : reportDates,
+    require: (path: string) => path.includes('/orders') ? { orderListSelect: { id: true } } : { ...reportDates, addCalendarDays },
     usePrisma: () => prisma,
     currentWorkshopRole: () => role,
     workshopWhere: () => ({ workshopId: 'workshop-1' }),

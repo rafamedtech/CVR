@@ -29,19 +29,13 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
 
 <template>
   <main class="flex min-h-dvh items-center justify-center bg-elevated/40 p-6">
-    <UPageCard class="w-full max-w-md">
-      <div v-if="sent" class="space-y-5 text-center">
-        <UIcon name="i-lucide-mail-check" class="mx-auto size-12 text-success" />
-        <div>
-          <h1 class="text-xl font-semibold text-highlighted">
-            Revisa tu correo
-          </h1>
-          <p class="mt-2 text-sm text-muted">
-            Si existe una cuenta con ese correo, recibirás un enlace para cambiar tu contraseña.
-          </p>
-        </div>
+    <AuthFormCard>
+      <AuthRecoveryNotice
+        v-if="sent"
+        description="Si existe una cuenta con ese correo, recibirás un enlace para cambiar tu contraseña."
+      >
         <UButton to="/login" label="Volver al inicio de sesión" block />
-      </div>
+      </AuthRecoveryNotice>
 
       <UForm
         v-else
@@ -58,9 +52,7 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
             Te enviaremos un enlace seguro.
           </p>
         </div>
-        <UFormField name="email" label="Correo electrónico" required>
-          <UInput v-model="state.email" type="email" class="w-full" />
-        </UFormField>
+        <AuthEmailField v-model="state.email" required />
         <UButton
           type="submit"
           label="Enviar enlace"
@@ -75,6 +67,6 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
           block
         />
       </UForm>
-    </UPageCard>
+    </AuthFormCard>
   </main>
 </template>

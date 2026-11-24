@@ -18,3 +18,8 @@ test('marca una orden sin saldo pendiente como Pagado', () => {
 test('conserva Sin pagos para una orden de total cero sin movimientos', () => {
   assert.equal(calculatePaymentStatus(0, 0, 0), 'NO_PAYMENTS')
 })
+
+test('el conteo distingue ausencia de pagos de movimientos que suman cero', () => {
+  assert.equal(calculatePaymentStatus(0, 0, 1), 'PAID')
+  assert.equal(calculatePaymentStatus(100, 0, 1), 'PARTIALLY_PAID')
+})

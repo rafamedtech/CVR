@@ -12,10 +12,10 @@ const source = ts.transpileModule(
 for (const email of ['rafamed.tech@gmail.com', 'admin@cvrtransportinc.com']) {
   test(`${email}: el superadministrador recibe ambos talleres sin depender de membresías`, async () => {
     const workshops = [
-      { id: 'body-shop', name: 'Taller de Carrocería', type: 'BODY_SHOP', taxRate: 8 },
-      { id: 'mechanical', name: 'Taller Mecánico', type: 'MECHANICAL', taxRate: 8 }
+      { id: 'body-shop', name: 'Taller de Carrocería', type: 'BODY_SHOP', taxRate: 8, timezone: 'America/Tijuana' },
+      { id: 'mechanical', name: 'Taller Mecánico', type: 'MECHANICAL', taxRate: 8, timezone: 'America/Mexico_City' }
     ]
-    const exports: { default?: (event: unknown) => Promise<{ workshops: Array<{ id: string }>, canViewAll: boolean, profile: { isSuperAdmin: boolean } }> } = {}
+    const exports: { default?: (event: unknown) => Promise<{ workshops: Array<{ id: string, timezone: string }>, canViewAll: boolean, profile: { isSuperAdmin: boolean } }> } = {}
     runInNewContext(source, {
       exports,
       defineEventHandler: (handler: unknown) => handler,
@@ -34,6 +34,9 @@ for (const email of ['rafamed.tech@gmail.com', 'admin@cvrtransportinc.com']) {
     const session = await exports.default!({})
     assert.equal(session.profile.isSuperAdmin, true)
     assert.equal(session.canViewAll, true)
-    assert.deepEqual(Array.from(session.workshops, item => item.id), ['body-shop', 'mechanical'])
+    assert.deepEqual(Array.from(session.workshops, item => [item.id, item.timezone]), [
+      ['body-shop', 'America/Tijuana'],
+      ['mechanical', 'America/Mexico_City']
+    ])
   })
 }

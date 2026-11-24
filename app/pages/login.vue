@@ -74,7 +74,7 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
     </section>
 
     <section class="flex items-center justify-center p-6 sm:p-10">
-      <UPageCard class="w-full max-w-md">
+      <AuthFormCard>
         <UAuthForm
           :schema="schema"
           :fields="fields"
@@ -95,7 +95,7 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
             </ULink>
           </template>
         </UAuthForm>
-      </UPageCard>
+      </AuthFormCard>
     </section>
   </main>
 </template>

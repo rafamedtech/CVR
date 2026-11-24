@@ -21,7 +21,7 @@ const sections = [
       <h2 id="report-summary" class="text-xl font-semibold text-primary">
         Resultado del {{ annual ? 'año' : 'mes' }}
       </h2>
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <ReportsSkeleton variant="metrics">
         <DetailStatCard
           v-for="card in summaryCards"
           :key="card.title"
@@ -45,7 +45,7 @@ const sections = [
           </p>
           <USkeleton v-else class="mt-4 h-3 w-3/4" />
         </DetailStatCard>
-      </div>
+      </ReportsSkeleton>
       <div class="grid gap-4 xl:grid-cols-3">
         <ReportsProfitStatement
           :annual="annual"
@@ -89,7 +89,7 @@ const sections = [
         <p v-if="!annual" class="text-xs text-muted">
           Tendencia de ventas semanales
         </p>
-        <USkeleton class="h-64 w-full" />
+        <ReportsSkeleton variant="chart" />
       </DetailCard>
       <template v-if="allBusinesses">
         <h3 class="text-xl font-semibold text-highlighted">

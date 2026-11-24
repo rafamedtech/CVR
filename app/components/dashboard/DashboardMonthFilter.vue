@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
+import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 
 const props = defineProps<{
   maxValue: DateValue
@@ -14,61 +15,30 @@ const emit = defineEmits<{
 }>()
 
 const selectedMonth = defineModel<DateValue>({ required: true })
-const open = shallowRef(false)
+const { workshopTimeZone } = useCrmSession()
+const timeZone = computed(() => workshopTimeZone() ?? DEFAULT_WORKSHOP_TIME_ZONE)
 
-const buttonLabel = computed(() => {
-  if (!props.hasSelection) return 'Resumen del mes actual'
+function formatPeriod(selected: DateValue) {
+  if (props.annual) return String(selected.year)
 
-  if (props.compact && !props.annual) {
-    const parts = new Intl.DateTimeFormat('es-MX', { month: 'short', year: 'numeric', timeZone: 'UTC' })
-      .formatToParts(selectedMonth.value.toDate('UTC'))
-    const month = parts.find(part => part.type === 'month')!.value.slice(0, 3).toUpperCase()
-    const year = parts.find(part => part.type === 'year')!.value
-    return `${month} ${year}`
-  }
+  const key = selected.toString().slice(0, 10)
+  if (props.compact) return `${formatMonth(key).slice(0, 3).toUpperCase()} ${selected.year}`
 
-  return new Intl.DateTimeFormat('es-MX', { month: props.annual ? undefined : 'long', year: 'numeric', timeZone: 'UTC' })
-    .format(selectedMonth.value.toDate('UTC'))
-})
-
-function isDateValue(value: unknown): value is DateValue {
-  return typeof value === 'object'
-    && value !== null
-    && 'year' in value
-    && 'month' in value
-    && 'toDate' in value
-}
-
-function selectMonth(month: unknown) {
-  if (!isDateValue(month)) return
-
-  selectedMonth.value = month
-  open.value = false
-  emit('select')
+  return formatReportMonth(key)
 }
 </script>
 
 <template>
-  <UPopover v-model:open="open">
-    <UButton
-      color="neutral"
-      variant="outline"
-      icon="i-lucide-calendar-days"
-      trailing-icon="i-lucide-chevron-down"
-      :label="buttonLabel"
-      :block="props.block"
-    />
-
-    <template #content>
-      <UCalendar
-        :type="annual ? 'year' : 'month'"
-        locale="es-MX"
-        prevent-deselect
-        :model-value="props.hasSelection ? selectedMonth : undefined"
-        :placeholder="selectedMonth"
-        :max-value="props.maxValue"
-        @update:model-value="selectMonth"
-      />
-    </template>
-  </UPopover>
+  <CalendarMonthPicker
+    v-model="selectedMonth"
+    :type="annual ? 'year' : 'month'"
+    :time-zone="timeZone"
+    :format-value="formatPeriod"
+    :show-selection="hasSelection"
+    :max-value="maxValue"
+    placeholder="Resumen del mes actual"
+    trailing-icon="i-lucide-chevron-down"
+    :block="block"
+    @select="emit('select')"
+  />
 </template>

@@ -82,6 +82,23 @@ test('rechaza un tipo de cambio no positivo', () => {
   assert.equal(result.error?.issues[0]?.path.join('.'), 'exchangeRate')
 })
 
+test('conserva la coerción y la precisión de importes y tipos de cambio de CVR', () => {
+  const input = { ...baseExpense, assignmentType: 'WORKSHOP', orderId: '', currency: 'USD' }
+  const result = expenseMutationSchema.parse({ ...input, amount: '0.001', exchangeRate: '17.1234567' })
+  assert.equal(result.amount, 0.001)
+  assert.equal(result.exchangeRate, 17.1234567)
+
+  const invalid = expenseMutationSchema.safeParse({ ...input, amount: '0', exchangeRate: -1, expenseDate: '' })
+  assert.deepEqual(invalid.error?.issues.map(issue => issue.message), [
+    'El importe debe ser mayor a cero.',
+    'El tipo de cambio debe ser mayor a cero.',
+    'Selecciona la fecha.'
+  ])
+  for (const amount of ['importe', Number.NaN, Infinity]) {
+    assert.equal(expenseMutationSchema.safeParse({ ...input, amount }).success, false)
+  }
+})
+
 test('acepta un gasto global sin orden', () => {
   assert.equal(expenseMutationSchema.safeParse({
     ...baseExpense, category: 'TAXES', assignmentType: 'GLOBAL', orderId: ''

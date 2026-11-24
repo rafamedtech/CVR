@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { z } from 'zod'
+import { parseDate, type DateValue } from '@internationalized/date'
+import { calendarDateKeyInTimeZone, isIsoCalendarDate } from '@rafamedtech/nuxt-shared/utils'
+import { formatDateOnly } from '#shared/date'
+import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { ExpenseListItem } from '~/types/crm'
 
@@ -9,6 +13,8 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ updated: [] }>()
 
+const { workshopTimeZone } = useCrmSession()
+const timeZone = computed(() => workshopTimeZone(props.expense?.workshopId ?? undefined) ?? DEFAULT_WORKSHOP_TIME_ZONE)
 const toast = useToast()
 const loading = shallowRef(false)
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
@@ -27,8 +33,13 @@ const state = reactive<ExpenseSchema>({
   description: '',
   vendor: '',
   amount: 0,
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: calendarDateKeyInTimeZone(new Date(), timeZone.value),
   notes: ''
+})
+
+const expenseDate = computed<DateValue | undefined>({
+  get: () => isIsoCalendarDate(state.expenseDate) ? parseDate(state.expenseDate) : undefined,
+  set: (value) => { state.expenseDate = value?.toString() ?? '' }
 })
 
 watch([open, () => props.expense], ([isOpen, expense]) => {
@@ -93,10 +104,11 @@ async function onSubmit(event: FormSubmitEvent<ExpenseSchema>) {
             />
           </UFormField>
           <UFormField name="expenseDate" label="Fecha" required>
-            <UInput
-              v-model="state.expenseDate"
-              type="date"
-              class="w-full"
+            <CalendarDatePicker
+              v-model="expenseDate"
+              :time-zone="timeZone"
+              :format-value="value => formatDateOnly(value.toString())"
+              class="w-full justify-start"
             />
           </UFormField>
         </div>

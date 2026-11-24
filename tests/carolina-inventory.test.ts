@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildCarolinaInventory } from '../server/utils/carolina-inventory'
+import { createClient } from '@supabase/supabase-js'
+import { buildCarolinaInventory, readCarolinaInventory } from '../server/utils/carolina-inventory'
 
 const warehouses = [{ id: 'a', code: '2', name: 'Principal' }, { id: 'b', code: '10', name: 'Secundario' }, { id: 'c', code: '1', name: 'Vacío' }]
 const balance = (warehouse_id: string, product_id: string, quantity: string, unit_cost: string | null, cost_currency: string | null = 'MXN') => ({ warehouse_id, product_id, quantity, product: { unit_cost, cost_currency } })
@@ -28,4 +29,39 @@ test('inventory excludes missing costs and currencies and counts distinct produc
   assert.equal(result.warehouses[1]?.productsWithoutCost, 2)
   assert.equal(result.warehouses[2]?.productsWithoutCost, 1)
   assert.deepEqual(buildCarolinaInventory([], []), { totals: [], productsWithoutCost: 0, warehouses: [] })
+})
+
+test('Carolina inventory matches the Pinturas T00 valuation fixture', async () => {
+  const centro = { id: 'w1', code: 'CTR', name: 'Centro' }
+  const norte = { id: 'w2', code: 'NTE', name: 'Norte' }
+  const sur = { id: 'w3', code: 'SUR', name: 'Sur' }
+  const client = createClient('https://carolina.example', 'test-key', {
+    global: {
+      fetch: async (input) => {
+        const url = new URL(String(input))
+        if (url.pathname.endsWith('/inventory_warehouses')) {
+          return Response.json([sur, norte, centro])
+        }
+        assert.equal(url.pathname, '/rest/v1/inventory_balances')
+        assert.equal(url.searchParams.get('quantity'), 'gt.0')
+        return Response.json([
+          balance('w1', 'p1', '2.5', '10.50'),
+          balance('w1', 'p3', '1', null, null),
+          balance('w2', 'p1', '1.5', '10.50'),
+          balance('w2', 'p2', '3', '4', 'USD'),
+          balance('w2', 'p3', '3', null, null)
+        ])
+      }
+    }
+  })
+
+  assert.deepEqual(await readCarolinaInventory(client, new AbortController().signal), {
+    totals: [{ currencyCode: 'MXN', amount: 42 }, { currencyCode: 'USD', amount: 12 }],
+    productsWithoutCost: 1,
+    warehouses: [
+      { ...centro, totals: [{ currencyCode: 'MXN', amount: 26.25 }], productsWithoutCost: 1 },
+      { ...norte, totals: [{ currencyCode: 'MXN', amount: 15.75 }, { currencyCode: 'USD', amount: 12 }], productsWithoutCost: 1 },
+      { ...sur, totals: [], productsWithoutCost: 0 }
+    ]
+  })
 })

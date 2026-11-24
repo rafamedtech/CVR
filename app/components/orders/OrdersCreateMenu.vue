@@ -21,19 +21,14 @@ const items = computed<DropdownMenuItem[]>(() => (session.value?.workshops ?? []
 </script>
 
 <template>
-  <UDropdownMenu v-if="isAllWorkshops" :items="items" :content="{ align: 'end' }">
-    <UButton
-      :label="label"
-      icon="i-lucide-file-plus-2"
-      trailing-icon="i-lucide-chevron-down"
-      :disabled="!items.some(item => !item.disabled)"
-    />
-  </UDropdownMenu>
-  <UButton
-    v-else
-    :label="label"
-    icon="i-lucide-file-plus-2"
-    :disabled="disabled"
-    @click="emit('create')"
+  <ListCreateButton
+    :action="{
+      label,
+      icon: 'i-lucide-file-plus-2',
+      items: isAllWorkshops ? items : undefined,
+      disabled: isAllWorkshops ? !items.some(item => !item.disabled) : disabled
+    }"
+    compact
+    @create="emit('create')"
   />
 </template>

@@ -2,6 +2,8 @@
 import type { OrderDetail } from '~/types/crm'
 import { formatPhone } from '~/utils/crm'
 
+const { workshopTimeZone } = useCrmSession()
+
 defineProps<{ order: OrderDetail }>()
 </script>
 
@@ -25,7 +27,7 @@ defineProps<{ order: OrderDetail }>()
     </DetailStatCard>
     <DetailStatCard title="Entrega prometida" icon="i-lucide-calendar-clock">
       <template #value>
-        <span class="text-lg leading-tight tracking-tight">{{ formatDate(order.promisedAt) }}</span>
+        <span class="text-lg leading-tight tracking-tight">{{ formatDate(order.promisedAt, false, workshopTimeZone(order.workshopId)) }}</span>
       </template>
       <p class="mt-auto pt-3 text-sm text-muted">
         Responsable: {{ order.assignedToName || 'Sin responsable asignado' }}

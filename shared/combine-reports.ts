@@ -1,3 +1,4 @@
+import { rankReportAmounts } from '@rafamedtech/nuxt-shared/utils'
 import type { BusinessReportSummary, ReportBreakdownItem, ReportRankingItem, ReportSalesChannel } from '../app/types/reports'
 import { reportChange, reportPercentage } from './report'
 
@@ -44,10 +45,11 @@ export function combineBusinessReports(sources: Array<{ id: string, name: string
     return [...groups.values()].map(item => ({ ...item, percentage: reportPercentage(item.amount, total) ?? 0 })).sort((a, b) => b.amount - a.amount)
   }
   function ranking(key: 'topCustomers' | 'topDebtors' | 'topServices' | 'topMaterialProviders', denominator: number): ReportRankingItem[] {
-    return sources.flatMap(source => source.report[key].map(item => ({
+    const entries = sources.flatMap(source => source.report[key].map(item => ({
       ...item, id: `${source.id}:${item.id}`, detail: source.name,
       percentage: reportPercentage(item.amount, denominator) ?? 0
-    }))).sort((a, b) => b.amount - a.amount).slice(0, 5)
+    })))
+    return rankReportAmounts(entries, 5)
   }
   const movements = new Map<string, BusinessReportSummary['dailyMovements'][number]>()
   const dailyKeys = ['sales', 'orderCount', 'collections', 'expenses', 'netCashFlow', 'materialPurchases', 'operatingExpenses', 'netProfit'] as const

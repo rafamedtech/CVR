@@ -90,55 +90,33 @@ useHead({
 </script>
 
 <template>
-  <UDashboardGroup unit="rem">
-    <UDashboardSidebar
-      id="crm"
-      v-model:open="open"
-      collapsible
-      resizable
-      class="bg-elevated/40"
-      :ui="{
-        header: 'h-auto py-2',
-        footer: 'lg:border-t lg:border-default'
-      }"
-    >
-      <template #header="{ collapsed }">
-        <AppBrand :collapsed="collapsed" />
-      </template>
-
-      <template #default="{ collapsed }">
-        <UDashboardSearchButton
-          :collapsed="collapsed"
-          label="Buscar"
-          class="bg-transparent ring-default"
-        />
-
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[0]"
-          orientation="vertical"
-          tooltip
-          popover
-          :ui="{
-            link: 'max-lg:gap-2 max-lg:px-3 max-lg:py-2 max-lg:text-base',
-            linkLeadingIcon: 'max-lg:size-6',
-            linkTrailingIcon: 'max-lg:size-6'
-          }"
-        />
-
-        <div v-if="!collapsed && !sessionData?.profile.isReadOnly" class="mt-auto px-3 pb-2">
-          <p class="text-xs text-muted">
-            {{ sessionData?.selectedWorkshop?.name ?? 'Vista consolidada' }}
-          </p>
-        </div>
-      </template>
-
-      <template #footer="{ collapsed }">
-        <UserMenu :collapsed="collapsed" />
-      </template>
-    </UDashboardSidebar>
-
-    <UDashboardSearch :groups="groups" />
+  <DashboardShell
+    v-model:open="open"
+    sidebar-id="crm"
+    sidebar-class="bg-elevated/40"
+    :items="links[0]"
+    :groups="groups"
+    :sidebar-ui="{ header: 'h-auto py-2' }"
+    search-label="Buscar"
+    :navigation-ui="{
+      link: 'max-lg:gap-2 max-lg:px-3 max-lg:py-2 max-lg:text-base',
+      linkLeadingIcon: 'max-lg:size-6',
+      linkTrailingIcon: 'max-lg:size-6'
+    }"
+  >
+    <template #header="{ collapsed }">
+      <AppBrand :collapsed="collapsed" />
+    </template>
+    <template #sidebar="{ collapsed }">
+      <div v-if="!collapsed && !sessionData?.profile.isReadOnly" class="mt-auto px-3 pb-2">
+        <p class="text-xs text-muted">
+          {{ sessionData?.selectedWorkshop?.name ?? 'Vista consolidada' }}
+        </p>
+      </div>
+    </template>
+    <template #footer="{ collapsed }">
+      <UserMenu :collapsed="collapsed" />
+    </template>
     <slot />
-  </UDashboardGroup>
+  </DashboardShell>
 </template>

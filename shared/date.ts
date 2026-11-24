@@ -1,8 +1,7 @@
-export function formatDateOnly(value: string | null) {
-  if (!value) return '—'
+import { createDateFormatters } from '@rafamedtech/nuxt-shared/utils'
 
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium',
-    timeZone: 'UTC'
-  }).format(new Date(value))
-}
+// Gastos guarda las fechas de calendario históricas a medianoche UTC.
+const calendarDates = createDateFormatters({ timeZone: 'UTC' })
+
+export const formatDateOnly = calendarDates.formatDate
+export const formatCalendarRange = calendarDates.formatDateRange

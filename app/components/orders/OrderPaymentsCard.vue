@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatDateOnly } from '#shared/date'
 import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Currency, OrderPayment } from '~/types/crm'
@@ -6,8 +7,11 @@ import { convertFromMxn, convertToMxn } from '#shared/currency'
 import { paymentFormSchema, type PaymentForm } from '#shared/payment'
 import { currencyOptions } from '~/utils/crm'
 
+const { workshopTimeZone } = useCrmSession()
+
 const props = defineProps<{
   orderId: string
+  workshopId: string
   payments: OrderPayment[]
   balance: number
   total: number
@@ -54,9 +58,7 @@ const maximumPayment = computed(() => state.exchangeRate > 0
 function formatPaymentDate(date: CalendarDate | undefined) {
   if (!date) return 'Selecciona una fecha'
 
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium'
-  }).format(date.toDate(getLocalTimeZone()))
+  return formatDateOnly(date.toString())
 }
 
 function finishInitialization() {
@@ -215,7 +217,7 @@ async function removePayment() {
             {{ paymentMethodLabels[payment.method] }}
           </p>
           <p class="text-xs text-muted">
-            {{ formatDate(payment.paidAt) }} · {{ payment.recordedByName }}
+            {{ formatDate(payment.paidAt, false, workshopTimeZone(workshopId)) }} · {{ payment.recordedByName }}
           </p>
           <p v-if="payment.reference" class="text-xs text-muted">
             Ref. {{ payment.reference }}
@@ -236,18 +238,10 @@ async function removePayment() {
     </div>
 
     <template #footer>
-      <div class="space-y-2">
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-muted">Pagado</span>
-          <span class="font-medium text-success">{{ formatCurrency(total - balance) }}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="font-medium text-highlighted">Saldo</span>
-          <span class="text-lg font-semibold" :class="balance > 0 ? 'text-warning' : 'text-success'">
-            {{ formatCurrency(balance) }}
-          </span>
-        </div>
-      </div>
+      <PaymentSummary
+        :amounts="{ paid: formatCurrency(total - balance), balance: formatCurrency(balance) }"
+        :balance-color="balance > 0 ? 'warning' : 'success'"
+      />
     </template>
 
     <UModal

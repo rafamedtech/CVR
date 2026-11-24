@@ -6,7 +6,7 @@ import type { ConsolidationInfo } from '../../app/types/reports'
 import { combineBusinessReports } from '../../shared/combine-reports'
 import { readCarolinaReport, isCarolinaReportsConfigured } from './carolina-reports'
 import { buildBusinessReport } from './business-report'
-import { reportDateKey, reportDayStart, reportNextDay, reportPreviousPeriod } from '../../shared/report'
+import { reportDateKey, reportDayEnd, reportDayStart, reportNextDay, reportPreviousPeriod } from '../../shared/report'
 
 const openStatuses = ['ESTIMATE', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY'] as const
 const salesStatuses = ['APPROVED', 'IN_PROGRESS', 'QUALITY_CONTROL', 'READY', 'DELIVERED', 'LIQUIDATED'] as const
@@ -29,8 +29,8 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
   }
   const { startKey, endKey, fullEndKey, annual } = bounds
   const from = reportDayStart(startKey, timeZone)
-  const to = new Date(reportDayStart(reportNextDay(endKey), timeZone).getTime() - 1)
-  const monthEnd = new Date(reportDayStart(reportNextDay(fullEndKey), timeZone).getTime() - 1)
+  const to = reportDayEnd(endKey, timeZone)
+  const monthEnd = reportDayEnd(fullEndKey, timeZone)
   const previousStartKey = reportPreviousPeriod(startKey, annual)
   const previousFrom = reportDayStart(previousStartKey, timeZone)
   const previousTo = new Date(from.getTime() - 1)

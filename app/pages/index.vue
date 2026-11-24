@@ -2,18 +2,26 @@
 import type { DashboardOverviewData } from '~/types/crm'
 
 useHead({ title: 'Resumen' })
-const { activeWorkshop, isReadOnly, isSuperAdmin, currentRole, canManageOrders, canViewReports } = useCrmSession()
-const { data, status, error, refresh } = useFetch<DashboardOverviewData>('/api/dashboard/overview', {
+const { session, activeWorkshop, isReadOnly, isSuperAdmin, currentRole, canManageOrders, canViewReports } = useCrmSession()
+const contextKey = computed(() => `${session.value?.profile.id ?? ''}:${activeWorkshop.value?.id ?? ''}`)
+const { data: response, status, error, refresh } = useFetch<DashboardOverviewData>('/api/dashboard/overview', {
   lazy: true,
   server: false,
-  key: 'crm-overview',
+  key: computed(() => `crm-overview:${contextKey.value}`),
   immediate: Boolean(activeWorkshop.value) || isReadOnly.value
 })
+const lastSuccessful = shallowRef<{ context: string, data: DashboardOverviewData }>()
+watch([response, status], ([result, state]) => {
+  if (state === 'success' && result) lastSuccessful.value = { context: contextKey.value, data: result }
+}, { immediate: true })
+const data = computed(() => response.value ?? (lastSuccessful.value?.context === contextKey.value
+  ? lastSuccessful.value.data
+  : undefined))
 const initialLoading = computed(() => !data.value && (status.value === 'idle' || status.value === 'pending'))
 const canViewFinancials = computed(() => data.value?.canViewFinancials
   ?? (isSuperAdmin.value || isReadOnly.value || ['MANAGER', 'CASHIER', 'READ_ONLY'].includes(currentRole.value ?? '')))
 const updatedLabel = computed(() => data.value
-  ? new Intl.DateTimeFormat('es-MX', { timeZone: data.value.timeZone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(data.value.updatedAt))
+  ? formatDashboardUpdatedAt(data.value.updatedAt, data.value.timeZone)
   : '')
 </script>
 
@@ -47,23 +55,14 @@ const updatedLabel = computed(() => data.value
         icon="i-lucide-building-2"
         class="py-16"
       />
-      <UAlert
-        v-else-if="error"
+      <RetryAlert
+        v-if="error && (activeWorkshop || isReadOnly)"
         title="No se pudo actualizar el resumen"
         description="Intenta cargar la actividad de nuevo."
-        color="error"
-        icon="i-lucide-circle-alert"
-      >
-        <template #actions>
-          <UButton
-            label="Reintentar"
-            color="error"
-            variant="soft"
-            @click="refresh()"
-          />
-        </template>
-      </UAlert>
-      <div v-else-if="data || initialLoading" class="space-y-6" :aria-busy="status === 'pending' || initialLoading">
+        :loading="status === 'pending'"
+        @retry="refresh()"
+      />
+      <div v-if="(activeWorkshop || isReadOnly) && (data || initialLoading)" class="space-y-6" :aria-busy="status === 'pending' || initialLoading">
         <span v-if="initialLoading" role="status" class="sr-only">Cargando resumen…</span>
         <DetailSectionHeading
           title="Actividad reciente"

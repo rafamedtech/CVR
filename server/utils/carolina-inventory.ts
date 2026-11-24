@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/client'
+import { calculateInventoryValuation } from '@rafamedtech/nuxt-shared/utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { CarolinaInventoryValuation } from '../../app/types/reports'
 import { readReportPages } from './report-pagination'
@@ -12,34 +12,14 @@ interface BalanceRow {
 }
 
 export function buildCarolinaInventory(warehouses: WarehouseRow[], balances: BalanceRow[]): CarolinaInventoryValuation {
-  const inventoryTotals = new Map<string, Decimal>()
-  const missingProducts = new Set<string>()
-  const byWarehouse = new Map<string, BalanceRow[]>()
-  for (const balance of balances) {
-    if (!new Decimal(balance.quantity).greaterThan(0)) continue
-    const rows = byWarehouse.get(balance.warehouse_id) ?? []
-    rows.push(balance)
-    byWarehouse.set(balance.warehouse_id, rows)
-  }
-  const serialize = (totals: Map<string, Decimal>) => [...totals].sort(([a], [b]) => a.localeCompare(b))
-    .map(([currencyCode, amount]) => ({ currencyCode, amount: amount.toNumber() }))
-  const locations = [...warehouses].sort((a, b) => a.code.localeCompare(b.code, 'es', { numeric: true })).map((warehouse) => {
-    const totals = new Map<string, Decimal>()
-    let productsWithoutCost = 0
-    for (const balance of byWarehouse.get(warehouse.id) ?? []) {
-      const { unit_cost: cost, cost_currency: currency } = balance.product
-      if (cost === null || !currency) {
-        missingProducts.add(balance.product_id)
-        productsWithoutCost++
-        continue
-      }
-      const amount = new Decimal(balance.quantity).times(cost)
-      totals.set(currency, (totals.get(currency) ?? new Decimal(0)).plus(amount))
-      inventoryTotals.set(currency, (inventoryTotals.get(currency) ?? new Decimal(0)).plus(amount))
-    }
-    return { ...warehouse, totals: serialize(totals), productsWithoutCost }
-  })
-  return { totals: serialize(inventoryTotals), productsWithoutCost: missingProducts.size, warehouses: locations }
+  const orderedWarehouses = [...warehouses].sort((a, b) => a.code.localeCompare(b.code, 'es', { numeric: true }))
+  return calculateInventoryValuation(orderedWarehouses, balances.map(balance => ({
+    warehouseId: balance.warehouse_id,
+    productId: balance.product_id,
+    quantity: balance.quantity,
+    unitCost: balance.product.unit_cost,
+    costCurrency: balance.product.cost_currency
+  })))
 }
 
 export async function readCarolinaInventory(client: SupabaseClient, signal: AbortSignal) {

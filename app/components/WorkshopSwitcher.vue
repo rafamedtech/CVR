@@ -58,6 +58,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
   >
     <UButton
       :label="current.name"
+      :aria-label="`Cambiar taller: ${current.name}`"
       :icon="'icon' in current ? current.icon : workshopIcons[current.type]"
       trailing-icon="i-lucide-chevrons-up-down"
       color="neutral"

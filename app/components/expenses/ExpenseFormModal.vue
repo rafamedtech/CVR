@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
+import { formatDateOnly } from '#shared/date'
+import { parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { expenseMutationSchema, type ExpenseAssignmentType, type ExpenseMutation } from '#shared/expense'
 import type { Currency, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
+import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 import { currencyOptions } from '~/utils/crm'
 
 const props = defineProps<{
@@ -19,7 +21,7 @@ const emit = defineEmits<{
   deleted: []
 }>()
 const toast = useToast()
-const { isSuperAdmin, activeWorkshop, canRecordExpenses } = useCrmSession()
+const { isSuperAdmin, activeWorkshop, canRecordExpenses, workshopTimeZone } = useCrmSession()
 const scopeOptions = computed(() => [{
   label: 'Global · Todos los negocios', value: 'GLOBAL', disabled: !isSuperAdmin.value
 }, {
@@ -29,8 +31,10 @@ const scopeOptions = computed(() => [{
 const loading = shallowRef(false)
 const deleting = shallowRef(false)
 const deleteConfirmationOpen = shallowRef(false)
-const expenseDate = shallowRef<CalendarDate | undefined>(today(getLocalTimeZone()))
-const expenseDateOpen = shallowRef(false)
+const timeZone = computed(() => workshopTimeZone(activeWorkshop.value?.id) ?? DEFAULT_WORKSHOP_TIME_ZONE)
+const expenseDate = shallowRef<DateValue | undefined>(today(timeZone.value))
+const deleteError = shallowRef('')
+const deleteButton = useTemplateRef<{ $el: HTMLElement }>('deleteButton')
 const expenseForm = useTemplateRef('expenseForm')
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
@@ -57,7 +61,7 @@ const modalDescription = computed(() => isEditing.value
     : 'Los gastos se descuentan para calcular la utilidad neta.')
 const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Guardar gasto')
 function emptyExpenseState(): ExpenseMutation {
-  const currentDate = today(getLocalTimeZone())
+  const currentDate = today(timeZone.value)
 
   return {
     category: 'OTHER',
@@ -74,7 +78,7 @@ function emptyExpenseState(): ExpenseMutation {
   }
 }
 
-const state = reactive<ExpenseMutation>({
+const state = reactive<Omit<ExpenseMutation, 'amount' | 'exchangeRate'> & { amount?: number, exchangeRate?: number }>({
   ...emptyExpenseState()
 })
 const expenseScope = computed({
@@ -85,12 +89,10 @@ const expenseScope = computed({
   }
 })
 
-function formatExpenseDate(date: CalendarDate | undefined) {
+function formatExpenseDate(date: DateValue | undefined) {
   if (!date) return 'Selecciona una fecha'
 
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium'
-  }).format(date.toDate(getLocalTimeZone()))
+  return formatDateOnly(date.toString())
 }
 
 watch(expenseDate, (date) => {
@@ -132,7 +134,6 @@ watch([open, () => props.expense, () => props.duplicateExpense], ([isOpen, editi
 
   Object.assign(state, nextState)
   expenseDate.value = parseDate(nextState.expenseDate)
-  expenseDateOpen.value = false
 }, { immediate: true })
 
 async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
@@ -171,10 +172,20 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
   }
 }
 
+function openDeleteConfirmation() {
+  deleteError.value = ''
+  deleteConfirmationOpen.value = true
+}
+
+function restoreDeleteFocus() {
+  if (open.value && !deleteConfirmationOpen.value) deleteButton.value?.$el.focus()
+}
+
 async function removeExpense() {
   if (!props.expense || loading.value || deleting.value) return
 
   deleting.value = true
+  deleteError.value = ''
   try {
     await $fetch(`/api/expenses/${props.expense.id}`, { method: 'DELETE' })
     toast.add({ title: 'Gasto eliminado', color: 'success', icon: 'i-lucide-check' })
@@ -182,11 +193,7 @@ async function removeExpense() {
     open.value = false
     emit('deleted')
   } catch (error) {
-    toast.add({
-      title: 'No se pudo eliminar el gasto',
-      description: getApiErrorMessage(error),
-      color: 'error'
-    })
+    deleteError.value = getApiErrorMessage(error) || 'No se pudo eliminar el gasto.'
   } finally {
     deleting.value = false
   }
@@ -225,23 +232,13 @@ async function removeExpense() {
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-3">
               <UFormField name="expenseDate" label="Fecha" required>
-                <UPopover v-model:open="expenseDateOpen">
-                  <UButton
-                    color="neutral"
-                    variant="outline"
-                    icon="i-lucide-calendar-days"
-                    :label="formatExpenseDate(expenseDate)"
-                    class="w-full justify-start font-normal"
-                    :ui="{ label: 'truncate' }"
-                  />
-                  <template #content>
-                    <UCalendar
-                      v-model="expenseDate"
-                      locale="es-MX"
-                      @update:model-value="expenseDateOpen = false"
-                    />
-                  </template>
-                </UPopover>
+                <CalendarDatePicker
+                  v-model="expenseDate"
+                  :time-zone="timeZone"
+                  :format-value="formatExpenseDate"
+                  placeholder="Selecciona una fecha"
+                  class="w-full justify-start font-normal"
+                />
               </UFormField>
               <UFormField name="category" label="Categoría" required>
                 <USelect
@@ -368,40 +365,15 @@ async function removeExpense() {
           :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
         >
           <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <UFormField name="currency" label="Moneda" required>
-              <USelect
-                v-model="state.currency"
-                :items="currencyOptions"
-                value-key="value"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField
-              name="exchangeRate"
-              label="Tipo de cambio"
-              :required="state.currency === 'USD'"
-              :ui="{ label: state.currency === 'MXN' ? 'text-dimmed' : undefined }"
-            >
-              <AppNumberInput
-                v-model="state.exchangeRate"
-                :disabled="state.currency === 'MXN'"
-                :min="0.000001"
-                :step="0.01"
-                :step-snapping="false"
-                :maximum-fraction-digits="6"
-                class="[&_input:disabled]:bg-elevated/50 [&_input:disabled]:text-dimmed [&_button:disabled]:text-dimmed"
-              />
-            </UFormField>
-            <UFormField name="amount" label="Importe" required>
-              <AppNumberInput
-                v-model="state.amount"
-                format="currency"
-                :currency="state.currency"
-                :min="0.01"
-                :step="0.01"
-                :step-snapping="false"
-              />
-            </UFormField>
+            <MoneyFormFields
+              v-model:currency="state.currency"
+              v-model:rate="state.exchangeRate"
+              v-model:amount="state.amount"
+              :currencies="currencyOptions"
+              :rate-disabled="state.currency === 'MXN'"
+              :rate-required="state.currency === 'USD'"
+              :disabled="loading || deleting"
+            />
             <UFormField name="method" label="Método de pago" required>
               <USelect
                 v-model="state.method"
@@ -431,13 +403,14 @@ async function removeExpense() {
     <template #footer>
       <AppButton
         v-if="isEditing"
+        ref="deleteButton"
         label="Eliminar gasto"
         icon="i-lucide-trash-2"
         intent="danger"
         variant="ghost"
         class="mr-auto"
         :disabled="loading || deleting"
-        @click="deleteConfirmationOpen = true"
+        @click="openDeleteConfirmation"
       />
       <AppButton
         type="submit"
@@ -450,29 +423,17 @@ async function removeExpense() {
     </template>
   </UModal>
 
-  <UModal
+  <DestructiveConfirmModal
     v-model:open="deleteConfirmationOpen"
     title="Eliminar gasto"
     :description="`¿Deseas eliminar el gasto «${expense?.description}»? Esta acción no se puede deshacer.`"
+    confirm-label="Sí, eliminar gasto"
+    confirm-icon="i-lucide-trash-2"
     :close="false"
     :dismissible="false"
-    :ui="{ footer: 'justify-end' }"
-  >
-    <template #footer>
-      <AppButton
-        label="Cancelar"
-        intent="secondary"
-        :disabled="deleting"
-        @click="deleteConfirmationOpen = false"
-      />
-      <AppButton
-        label="Sí, eliminar gasto"
-        icon="i-lucide-trash-2"
-        intent="danger"
-        variant="solid"
-        :loading="deleting"
-        @click="removeExpense"
-      />
-    </template>
-  </UModal>
+    :loading="deleting"
+    :error="deleteError"
+    @confirm="removeExpense"
+    @after-close="restoreDeleteFocus"
+  />
 </template>

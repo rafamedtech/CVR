@@ -57,7 +57,7 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
 
 <template>
   <main class="flex min-h-dvh items-center justify-center bg-elevated/40 p-6">
-    <UPageCard class="w-full max-w-md">
+    <AuthFormCard>
       <div v-if="checking" class="flex items-center justify-center gap-3 py-10 text-muted">
         <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
         Validando enlace…
@@ -88,12 +88,12 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
             Se utilizará para ingresar al Control de Talleres.
           </p>
         </div>
-        <UFormField name="password" label="Nueva contraseña" required>
-          <UInput v-model="state.password" type="password" class="w-full" />
-        </UFormField>
-        <UFormField name="confirmation" label="Confirmar contraseña" required>
-          <UInput v-model="state.confirmation" type="password" class="w-full" />
-        </UFormField>
+        <AuthPasswordFields
+          v-model:password="state.password"
+          v-model:confirmation="state.confirmation"
+          confirmation-name="confirmation"
+          required
+        />
         <UButton
           type="submit"
           label="Guardar contraseña"
@@ -101,6 +101,6 @@ async function onSubmit(event: FormSubmitEvent<z.output<typeof schema>>) {
           block
         />
       </UForm>
-    </UPageCard>
+    </AuthFormCard>
   </main>
 </template>

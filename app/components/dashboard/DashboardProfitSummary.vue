@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createNumberFormatter } from '@rafamedtech/nuxt-shared/utils'
 import type { DashboardData } from '~/types/crm'
 
 const props = defineProps<{
@@ -15,12 +16,7 @@ function share(value: number) {
   return sales.value ? value / sales.value : 0
 }
 
-function formatPercent(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'percent',
-    maximumFractionDigits: 1
-  }).format(value)
-}
+const formatPercent = createNumberFormatter({ style: 'percent', maximumFractionDigits: 1 }).format
 
 const topExpenses = computed(() => {
   const top = props.expenseBreakdown.slice(0, 3)

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { PaymentListItem } from '~/types/crm'
 
+const { workshopTimeZone } = useCrmSession()
+
 const props = defineProps<{
   payments: PaymentListItem[]
   loading?: boolean
+  filtered?: boolean
   showWorkshop?: boolean
 }>()
 
@@ -41,7 +44,7 @@ function paymentFields(payment: PaymentListItem) {
       :key="payment.id"
       :title="payment.order.orderNumber"
       :title-to="`/ordenes/${payment.order.id}`"
-      :eyebrow="formatDate(payment.paidAt)"
+      :eyebrow="formatDate(payment.paidAt, false, workshopTimeZone(payment.workshopId))"
       :fields="paymentFields(payment)"
     >
       <template #trailing>
@@ -72,7 +75,7 @@ function paymentFields(payment: PaymentListItem) {
     <div class="py-8 text-center">
       <UIcon name="i-lucide-hand-coins" class="mx-auto size-9 text-dimmed" />
       <p class="mt-3 font-medium text-highlighted">
-        No hay pagos registrados
+        {{ filtered ? 'No hay pagos que coincidan con la búsqueda' : 'No hay pagos registrados' }}
       </p>
       <p class="text-sm text-muted">
         Los pagos de las órdenes aparecerán aquí.

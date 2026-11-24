@@ -1,3 +1,4 @@
+import { addCalendarDays } from '@rafamedtech/nuxt-shared/utils'
 import type { DashboardActivityItem, DashboardOverviewData } from '../../app/types/crm'
 import type { CrmRequestContext } from './auth'
 import { orderListSelect } from './orders'
@@ -11,9 +12,9 @@ export async function getDashboardOverview(context: CrmRequestContext, now = new
   const today = reportDateKey(now, timeZone)
   const startOfToday = reportDayStart(today, timeZone)
   // Thirty calendar days, including today, in the workshop's timezone.
-  const sinceKey = new Date(Date.parse(`${today}T12:00:00Z`) - 29 * 86_400_000).toISOString().slice(0, 10)
+  const sinceKey = addCalendarDays(today, -29)
   const since = reportDayStart(sinceKey, timeZone)
-  const activitySinceKey = new Date(Date.parse(`${today}T12:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10)
+  const activitySinceKey = addCalendarDays(today, -6)
   const activitySince = reportDayStart(activitySinceKey, timeZone)
   const activityRange = { gte: activitySince, lte: now }
   let nextWeekKey = today

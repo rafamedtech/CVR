@@ -7,10 +7,9 @@ const isMobileViewport = useMobileViewport()
 </script>
 
 <template>
-  <UBadge
+  <StatusBadge
     :label="orderStatusLabels[status]"
     :color="orderStatusColors[status]"
-    variant="subtle"
     :size="isMobileViewport ? appConfig.orderStatusBadge.mobileSize : appConfig.orderStatusBadge.size"
   />
 </template>

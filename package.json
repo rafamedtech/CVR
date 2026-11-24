@@ -29,7 +29,7 @@
     "@nuxtjs/supabase": "^2.0.9",
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
-    "@rafamedtech/nuxt-shared": "0.7.0",
+    "@rafamedtech/nuxt-shared": "0.8.0",
     "@supabase/supabase-js": "^2.110.8",
     "@tanstack/table-core": "^8.21.3",
     "@unovis/ts": "^1.6.7",

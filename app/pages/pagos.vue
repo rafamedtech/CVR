@@ -1,32 +1,42 @@
 <script setup lang="ts">
+import { filterBySearchText, type CsvColumn } from '@rafamedtech/nuxt-shared/utils'
 import type { PaymentListItem } from '~/types/crm'
 
 useHead({ title: 'Pagos' })
 
 const search = shallowRef('')
-const { isAllWorkshops, isReadOnly } = useCrmSession()
-const { data: payments, status } = useFetch<PaymentListItem[]>('/api/payments', {
+const { isAllWorkshops, isReadOnly, workshopTimeZone } = useCrmSession()
+const { data: payments, status, error, refresh } = useFetch<PaymentListItem[]>('/api/payments', {
   lazy: true,
   server: false,
   default: () => [],
   key: 'crm-payments'
 })
 
-const filteredPayments = computed(() => {
-  const term = search.value.trim().toLocaleLowerCase('es-MX')
-  if (!term) return payments.value
+const filteredPayments = computed(() => filterBySearchText(payments.value, search.value, payment => [
+  payment.order.orderNumber,
+  payment.order.customerName,
+  payment.order.vehicleLabel,
+  payment.order.licensePlate,
+  payment.reference,
+  payment.recordedByName,
+  payment.workshopName,
+  paymentMethodLabels[payment.method]
+]))
 
-  return payments.value.filter(payment => [
-    payment.order.orderNumber,
-    payment.order.customerName,
-    payment.order.vehicleLabel,
-    payment.order.licensePlate,
-    payment.reference,
-    payment.recordedByName,
-    payment.workshopName,
-    paymentMethodLabels[payment.method]
-  ].some(value => value?.toLocaleLowerCase('es-MX').includes(term)))
-})
+function csvText(value: string) {
+  return /^[\s\uFEFF]*[=+@-]/.test(value) ? `'${value}` : value
+}
+
+const csvColumns: CsvColumn<PaymentListItem>[] = [
+  { key: 'date', label: 'Fecha', value: row => formatDate(row.paidAt, true, workshopTimeZone(row.workshopId)) },
+  { key: 'order', label: 'Orden', value: row => csvText(row.order.orderNumber) },
+  { key: 'customer', label: 'Cliente', value: row => csvText(row.order.customerName) },
+  { key: 'method', label: 'Método', value: row => paymentMethodLabels[row.method] },
+  { key: 'amount', label: 'Importe', value: row => row.amount },
+  { key: 'currency', label: 'Moneda', value: row => row.currency },
+  { key: 'amountMxn', label: 'Importe en MXN', value: row => row.amountMxn }
+]
 
 const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum + payment.amountMxn, 0))
 </script>
@@ -40,6 +50,12 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
         </template>
         <template #right>
           <WorkshopSwitcher />
+          <AppCsvExportButton
+            filename="pagos-cvr"
+            :columns="csvColumns"
+            :rows="filteredPayments"
+            :disabled="status !== 'success'"
+          />
         </template>
       </UDashboardNavbar>
 
@@ -80,6 +96,9 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
         :payments="filteredPayments"
         :loading="status === 'idle' || status === 'pending'"
         :show-workshop="isAllWorkshops"
+        :filtered="Boolean(search.trim())"
+        :error="Boolean(error)"
+        @retry="refresh()"
       />
     </template>
   </UDashboardPanel>

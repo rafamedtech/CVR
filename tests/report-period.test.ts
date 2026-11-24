@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { resolveReportPeriod } from '../shared/report-period'
+import { reportDayEnd } from '../shared/report'
 
 const now = new Date('2026-11-10T04:00:00Z')
 
@@ -31,4 +32,18 @@ test('report periods reject future dates, invalid days, unknown views and mismat
   assert.throws(() => resolveReportPeriod({ from: '2026-11-01', to: '2026-11-30', monthEnd: '2026-11-30' }, now))
   assert.throws(() => resolveReportPeriod({ from: '2026-09-02', to: '2026-09-30', monthEnd: '2026-09-30' }, now))
   assert.throws(() => resolveReportPeriod({ from: '2026-09-01', to: '2026-09-30', monthEnd: '2026-10-31' }, now))
+})
+
+test('year boundaries follow the workshop calendar and end at the last local millisecond', () => {
+  const timeZone = 'America/Tijuana'
+  const localYearEnd = new Date('2026-01-01T07:59:59.999Z')
+  const { startKey, endKey, fullEndKey, period } = resolveReportPeriod({ view: 'annual' }, localYearEnd, timeZone)
+  assert.equal(startKey, '2025-01-01')
+  assert.equal(endKey, '2025-12-31')
+  assert.equal(fullEndKey, endKey)
+  assert.equal(period.elapsedDays, 365)
+  assert.deepEqual(reportDayEnd(endKey, timeZone), localYearEnd)
+  assert.equal(reportDayEnd('2026-03-08', timeZone).toISOString(), '2026-03-09T06:59:59.999Z')
+  assert.throws(() => resolveReportPeriod({ from: '2026-01-01', to: '2026-01-01', monthEnd: '2026-01-31' }, localYearEnd, timeZone), /Rango de fechas inválido/)
+  assert.equal(resolveReportPeriod({}, new Date('2026-01-01T08:00:00Z'), timeZone).period.elapsedDays, 1)
 })

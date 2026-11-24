@@ -8,22 +8,24 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ deleted: [] }>()
 const toast = useToast()
 const deleting = shallowRef(false)
+const errorMessage = ref('')
+
+watch(open, (value) => {
+  if (value) errorMessage.value = ''
+})
 
 async function removeExpense() {
   if (!props.expense || deleting.value) return
 
   deleting.value = true
+  errorMessage.value = ''
   try {
     await $fetch(`/api/expenses/${props.expense.id}`, { method: 'DELETE' })
     toast.add({ title: 'Gasto eliminado', color: 'success', icon: 'i-lucide-check' })
     open.value = false
     emit('deleted')
   } catch (error) {
-    toast.add({
-      title: 'No se pudo eliminar el gasto',
-      description: getApiErrorMessage(error),
-      color: 'error'
-    })
+    errorMessage.value = getApiErrorMessage(error)
   } finally {
     deleting.value = false
   }
@@ -31,29 +33,17 @@ async function removeExpense() {
 </script>
 
 <template>
-  <UModal
+  <DestructiveConfirmModal
     v-model:open="open"
     title="Eliminar gasto"
     :description="`¿Deseas eliminar el gasto «${expense?.description}»? Esta acción no se puede deshacer.`"
     :close="false"
     :dismissible="false"
-    :ui="{ footer: 'justify-end' }"
-  >
-    <template #footer>
-      <AppButton
-        label="Cancelar"
-        intent="secondary"
-        :disabled="deleting"
-        @click="open = false"
-      />
-      <AppButton
-        label="Sí, eliminar gasto"
-        icon="i-lucide-trash-2"
-        intent="danger"
-        variant="solid"
-        :loading="deleting"
-        @click="removeExpense"
-      />
-    </template>
-  </UModal>
+    confirm-label="Sí, eliminar gasto"
+    confirm-icon="i-lucide-trash-2"
+    :confirm-disabled="!expense"
+    :loading="deleting"
+    :error="errorMessage"
+    @confirm="removeExpense"
+  />
 </template>

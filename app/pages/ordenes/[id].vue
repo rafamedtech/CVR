@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { tableReturnPath } from '@rafamedtech/nuxt-shared/utils'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { OrderDetail, OrderStatus } from '~/types/crm'
 
 const route = useRoute()
+const returnTo = computed(() => tableReturnPath(route.query.returnTo, '/ordenes'))
 const toast = useToast()
 const savingStatus = shallowRef(false)
 const editOpen = shallowRef(false)
@@ -75,7 +77,7 @@ async function deleteOrder() {
   try {
     await $fetch(`/api/orders/${order.value.id}`, { method: 'DELETE' })
     toast.add({ title: 'Orden eliminada', color: 'success', icon: 'i-lucide-check' })
-    await navigateTo('/ordenes')
+    await navigateTo(returnTo.value)
   } catch (error) {
     toast.add({ title: 'No se pudo eliminar la orden', description: getApiErrorMessage(error), color: 'error' })
   } finally {
@@ -93,7 +95,7 @@ async function deleteOrder() {
         </template>
         <template #right>
           <UButton
-            to="/ordenes"
+            :to="returnTo"
             label="Volver"
             icon="i-lucide-arrow-left"
             color="neutral"
@@ -256,6 +258,7 @@ async function deleteOrder() {
           <template #body>
             <OrdersOrderPaymentsCard
               :order-id="order.id"
+              :workshop-id="order.workshopId"
               :payments="order.payments"
               :balance="order.balance"
               :total="order.total"

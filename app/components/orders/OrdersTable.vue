@@ -3,6 +3,8 @@ import type { TableColumn } from '@nuxt/ui'
 import type { OrderListItem } from '~/types/crm'
 import OrdersMobileList from './OrdersMobileList.vue'
 
+const { workshopTimeZone } = useCrmSession()
+
 const props = withDefaults(defineProps<{
   orders: OrderListItem[]
   loading?: boolean
@@ -10,30 +12,30 @@ const props = withDefaults(defineProps<{
   showCustomer?: boolean
   showVehicle?: boolean
   showCreatedAt?: boolean
+  pageSize?: number
+  returnTo?: string
 }>(), {
   showCustomer: true,
-  showVehicle: true
+  showVehicle: true,
+  pageSize: 10
 })
 
-const page = shallowRef(1)
-const pageSize = 10
-const orderIds = computed(() => props.orders.map(order => order.id).join(','))
-const paginatedOrders = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return props.orders.slice(start, start + pageSize)
-})
-const visibleRange = computed(() => {
-  if (!props.orders.length) return null
-
-  const start = (page.value - 1) * pageSize + 1
-  return {
-    start,
-    end: Math.min(start + pageSize - 1, props.orders.length)
+const pageModel = defineModel<number>('page')
+const localPage = shallowRef(1)
+const page = computed({
+  get: () => pageModel.value ?? localPage.value,
+  set: (value) => {
+    if (pageModel.value === undefined) localPage.value = value
+    else pageModel.value = value
   }
 })
-
+const orderIds = computed(() => props.orders.map(order => order.id).join(','))
+const paginatedOrders = computed(() => {
+  const start = (page.value - 1) * props.pageSize
+  return props.orders.slice(start, start + props.pageSize)
+})
 watch(orderIds, () => {
-  page.value = 1
+  if (pageModel.value === undefined) localPage.value = 1
 })
 
 const columns = computed<TableColumn<OrderListItem>[]>(() => {
@@ -84,6 +86,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       :show-customer="showCustomer"
       :show-vehicle="showVehicle"
       :show-created-at="showCreatedAt"
+      :return-to="returnTo"
       show-promised-at
     />
 
@@ -95,11 +98,14 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
         :ui="{ thead: 'motion-reduce:after:animate-none', loading: 'p-0' }"
       >
         <template #createdAt-cell="{ row }">
-          <span class="text-sm">{{ formatDate(row.original.createdAt) }}</span>
+          <span class="text-sm">{{ formatDate(row.original.createdAt, false, workshopTimeZone(row.original.workshopId)) }}</span>
         </template>
         <template #orderNumber-cell="{ row }">
           <div>
-            <NuxtLink :to="`/ordenes/${row.original.id}`" class="font-medium text-primary hover:underline">
+            <NuxtLink
+              :to="{ path: `/ordenes/${row.original.id}`, query: returnTo ? { returnTo } : undefined }"
+              class="font-medium text-primary hover:underline"
+            >
               {{ row.original.orderNumber }}
             </NuxtLink>
             <div class="mt-1 flex gap-1">
@@ -176,7 +182,7 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
           <span class="font-semibold text-primary tabular-nums">{{ formatCurrency(row.original.total) }}</span>
         </template>
         <template #promisedAt-cell="{ row }">
-          <span class="text-sm">{{ formatDayMonth(row.original.promisedAt) }}</span>
+          <span class="text-sm">{{ formatDayMonth(row.original.promisedAt, workshopTimeZone(row.original.workshopId)) }}</span>
         </template>
         <template #workshopName-cell="{ row }">
           <OrdersWorkshopBadge :order="row.original" />
@@ -203,19 +209,15 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
       </UTable>
     </UCard>
 
-    <div
-      v-if="!loading && orders.length > pageSize"
-      class="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row"
-    >
-      <p v-if="visibleRange" class="text-sm text-muted" aria-live="polite">
-        Mostrando {{ visibleRange.start }}–{{ visibleRange.end }} de {{ orders.length }} órdenes
-      </p>
-      <UPagination
-        v-model:page="page"
-        :total="orders.length"
-        :items-per-page="pageSize"
-        aria-label="Paginación de órdenes"
-      />
-    </div>
+    <ListPagination
+      v-if="!loading"
+      v-model:page="page"
+      :total-results="orders.length"
+      :page-size="pageSize"
+      label="órdenes"
+      aria-label="Paginación de órdenes"
+      hide-single-page
+      class="mt-4"
+    />
   </div>
 </template>

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { DateValue } from '@internationalized/date'
+import { DEFAULT_WORKSHOP_TIME_ZONE, formatReportMonth } from '~/utils/datetime'
 import type { BusinessReportData } from '~/types/reports'
 import type { WorkshopType } from '~/types/crm'
 
 useHead({ title: 'Reportes' })
-const route = useRoute()
-const { session, canViewReports } = useCrmSession()
+const { query } = useRouter().currentRoute.value
+const { session, canViewReports, workshopTimeZone } = useCrmSession()
+const timeZone = computed(() => workshopTimeZone() ?? DEFAULT_WORKSHOP_TIME_ZONE)
 const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
 const workshopIcons: Record<WorkshopType, string> = {
   BODY_SHOP: 'i-lucide-paintbrush',
@@ -16,7 +19,7 @@ const businessOptions = computed(() => [
   { label: 'Carolina Pinturas', value: 'carolina-pinturas', icon: 'i-lucide-palette' },
   ...(session.value?.workshops ?? []).map(workshop => ({ label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type] }))
 ])
-const business = shallowRef(typeof route.query.business === 'string' && businessOptions.value.some(option => option.value === route.query.business) ? route.query.business : 'all')
+const business = shallowRef(typeof query.business === 'string' && businessOptions.value.some(option => option.value === query.business) ? query.business : 'all')
 const { data, status, error, refresh } = useFetch<BusinessReportData>('/api/reports/summary', {
   lazy: true,
   server: false,
@@ -31,6 +34,15 @@ const unavailableTitle = computed(() => isCombined.value ? 'Reporte parcial: sol
 const unavailableMessage = computed(() => data.value?.status === 'not-configured'
   ? 'Falta configurar la conexión de reportes de Carolina Pinturas en este entorno.'
   : 'No se pudo consultar Carolina Pinturas. Sus importes no están incluidos en los resultados mostrados.')
+function formatSelectedMonth(value: DateValue) {
+  return formatReportMonth(value.toString().slice(0, 10))
+}
+
+function updateView(view: 'monthly' | 'annual') {
+  annual.value = view === 'annual'
+  return updateReport()
+}
+
 async function updateReport() {
   await syncPeriod({ business: business.value })
   if (canViewReports.value) await refresh()
@@ -45,23 +57,14 @@ async function updateReport() {
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <div class="hidden lg:block">
-            <DashboardMonthFilter
-              v-model="selectedMonth"
-              :max-value="currentMonth"
-              :annual="annual"
-              :has-selection="true"
-              @select="updateReport"
-            />
-          </div>
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-calendar-range"
-            :label="annual ? 'Anual' : 'Mensual'"
-            :aria-pressed="annual"
-            aria-label="Cambiar entre reporte mensual y anual"
-            @click="annual = !annual; updateReport()"
+          <ReportsPeriodControls
+            v-model:month="selectedMonth"
+            :view="annual ? 'annual' : 'monthly'"
+            :time-zone="timeZone"
+            :format-month="formatSelectedMonth"
+            :max-value="currentMonth"
+            @update:view="updateView"
+            @select="updateReport"
           />
         </template>
       </UDashboardNavbar>
@@ -72,16 +75,6 @@ async function updateReport() {
             :options="businessOptions"
             @change="updateReport"
           />
-          <div class="shrink-0 lg:hidden">
-            <DashboardMonthFilter
-              v-model="selectedMonth"
-              compact
-              :max-value="currentMonth"
-              :annual="annual"
-              :has-selection="true"
-              @select="updateReport"
-            />
-          </div>
         </div>
       </UDashboardToolbar>
     </template>

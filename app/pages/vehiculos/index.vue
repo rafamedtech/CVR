@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { filterBySearchText } from '@rafamedtech/nuxt-shared/utils'
 import type { CustomerListItem, VehicleListItem } from '~/types/crm'
 
 useHead({ title: 'Vehículos' })
@@ -25,19 +26,14 @@ const { data: customers, status: customersStatus } = useFetch<CustomerListItem[]
 
 const filteredVehicles = computed(() => {
   const customerId = typeof route.query.customer === 'string' ? route.query.customer : null
-  const term = search.value.trim().toLocaleLowerCase('es-MX')
-
-  return vehicles.value.filter((vehicle) => {
-    if (customerId && vehicle.customerId !== customerId) return false
-    if (!term) return true
-    return [
-      vehicle.licensePlate,
-      vehicle.vin,
-      vehicle.make,
-      vehicle.model,
-      vehicle.customerName
-    ].some(value => value?.toLocaleLowerCase('es-MX').includes(term))
-  })
+  const visibleVehicles = customerId ? vehicles.value.filter(vehicle => vehicle.customerId === customerId) : vehicles.value
+  return filterBySearchText(visibleVehicles, search.value, vehicle => [
+    vehicle.licensePlate,
+    vehicle.vin,
+    vehicle.make,
+    vehicle.model,
+    vehicle.customerName
+  ])
 })
 const canEditVehicles = computed(() => canManageCustomers.value || isSuperAdmin.value)
 

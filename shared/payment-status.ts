@@ -1,3 +1,5 @@
+import { binaryBalanceInCents } from '@rafamedtech/nuxt-shared/utils'
+
 export type PaymentStatus = 'NO_PAYMENTS' | 'PARTIALLY_PAID' | 'PAID'
 
 export function calculatePaymentStatus(
@@ -6,6 +8,6 @@ export function calculatePaymentStatus(
   paymentCount: number
 ): PaymentStatus {
   if (paymentCount === 0) return 'NO_PAYMENTS'
-  const balanceInCents = Math.round(total * 100) - Math.round(paid * 100)
+  const balanceInCents = binaryBalanceInCents(total, paid)
   return balanceInCents > 0 ? 'PARTIALLY_PAID' : 'PAID'
 }

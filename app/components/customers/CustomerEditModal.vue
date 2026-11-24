@@ -121,10 +121,10 @@ async function onSubmit(event: FormSubmitEvent<CustomerSchema>) {
           />
         </UFormField>
         <UFormField name="phone" label="Teléfono" required>
-          <PhoneInput v-model="state.phone" />
+          <AppPhoneInput v-model="state.phone" placeholder="(664) 259-1920" />
         </UFormField>
         <UFormField name="alternatePhone" label="Teléfono alterno">
-          <PhoneInput v-model="state.alternatePhone" />
+          <AppPhoneInput v-model="state.alternatePhone" placeholder="(664) 259-1920" />
         </UFormField>
         <UFormField name="email" label="Correo">
           <UInput v-model="state.email" type="email" class="w-full" />

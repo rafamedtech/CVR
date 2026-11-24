@@ -18,7 +18,7 @@ const props = defineProps<{
   customerColor?: 'primary' | 'neutral'
 }>()
 
-const { isAllWorkshops } = useCrmSession()
+const { isAllWorkshops, workshopTimeZone } = useCrmSession()
 const mobileOrders = computed(() => props.orders.slice(0, 3))
 
 const columns = computed<TableColumn<OrderListItem>[]>(() => {
@@ -111,13 +111,13 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 
       <template #createdAt-cell="{ row }">
         <span class="text-sm text-default">
-          {{ formatDate(row.original.createdAt) }}
+          {{ formatDate(row.original.createdAt, false, workshopTimeZone(row.original.workshopId)) }}
         </span>
       </template>
 
       <template #promisedAt-cell="{ row }">
         <span class="text-sm text-default">
-          {{ row.original.promisedAt ? formatDate(row.original.promisedAt) : 'Sin fecha' }}
+          {{ row.original.promisedAt ? formatDate(row.original.promisedAt, false, workshopTimeZone(row.original.workshopId)) : 'Sin fecha' }}
         </span>
       </template>
 

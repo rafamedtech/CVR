@@ -3,36 +3,8 @@ import {
   CUSTOMER_COLONY_MAX_LENGTH,
   type CustomerAddressForm
 } from '#shared/customer-address'
-import {
-  SIIGO_MEXICO_STATES,
-  getSiigoMexicoMunicipalities,
-  isSiigoMexicoMunicipalityCode,
-  isSiigoMexicoStateCode
-} from '#shared/siigo-mexico-locations'
 
 const address = defineModel<CustomerAddressForm>({ required: true })
-
-const municipalityOptions = computed(() =>
-  getSiigoMexicoMunicipalities(address.value.city.state_code)
-)
-const isMunicipalityDisabled = computed(() =>
-  !isSiigoMexicoStateCode(address.value.city.state_code)
-)
-const municipalityPlaceholder = computed(() =>
-  isMunicipalityDisabled.value
-    ? 'Selecciona primero un estado'
-    : 'Selecciona una ciudad o municipio'
-)
-
-watch(
-  () => address.value.city.state_code,
-  (stateCode) => {
-    const cityCode = address.value.city.city_code
-    if (cityCode && !isSiigoMexicoMunicipalityCode(stateCode, cityCode)) {
-      address.value.city.city_code = ''
-    }
-  }
-)
 </script>
 
 <template>
@@ -104,41 +76,13 @@ watch(
       />
     </UFormField>
 
-    <UFormField
-      name="address.city.state_code"
-      label="Estado"
-      required
-    >
-      <USelectMenu
-        v-model="address.city.state_code"
-        :items="SIIGO_MEXICO_STATES"
-        value-key="value"
-        label-key="label"
-        :filter-fields="['label', 'value']"
-        :search-input="{ placeholder: 'Buscar estado o código…' }"
-        placeholder="Selecciona un estado"
-        class="w-full"
-      />
-    </UFormField>
-
-    <UFormField
-      name="address.city.city_code"
-      label="Ciudad o municipio"
-      required
-    >
-      <USelectMenu
-        v-model="address.city.city_code"
-        :items="municipalityOptions"
-        value-key="value"
-        label-key="label"
-        :filter-fields="['label']"
-        :search-input="{ placeholder: 'Buscar ciudad o municipio…' }"
-        :placeholder="municipalityPlaceholder"
-        :disabled="isMunicipalityDisabled"
-        virtualize
-        class="w-full"
-      />
-    </UFormField>
+    <SiigoMexicoLocationFields
+      v-model:state-code="address.city.state_code"
+      v-model:municipality-code="address.city.city_code"
+      state-name="address.city.state_code"
+      municipality-name="address.city.city_code"
+      virtualize-municipalities
+    />
 
     <UFormField name="address.postal_code" label="Código postal">
       <UInput

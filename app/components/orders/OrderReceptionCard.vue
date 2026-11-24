@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { OrderDetail } from '~/types/crm'
 
+const { workshopTimeZone } = useCrmSession()
+
 const props = defineProps<{ order: OrderDetail }>()
 const fields = computed(() => [
-  { key: 'created', label: 'Fecha de la orden', value: formatDate(props.order.createdAt) },
+  { key: 'created', label: 'Fecha de la orden', value: formatDate(props.order.createdAt, false, workshopTimeZone(props.order.workshopId)) },
   { key: 'complaint', label: 'Servicio solicitado', value: props.order.complaint },
   { key: 'intake', label: 'Condiciones de recepción', value: props.order.intakeNotes || 'Sin observaciones' },
   { key: 'notes', label: 'Notas internas', value: props.order.internalNotes || 'Sin notas internas' }

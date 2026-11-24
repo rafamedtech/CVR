@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { OrderListItem } from '~/types/crm'
 
+const { workshopTimeZone } = useCrmSession()
+
 withDefaults(defineProps<{
   orders: OrderListItem[]
   loading?: boolean
@@ -11,6 +13,7 @@ withDefaults(defineProps<{
   showPromisedAt?: boolean
   showFinancials?: boolean
   emptyMessage?: string
+  returnTo?: string
 }>(), {
   showFinancials: true
 })
@@ -38,8 +41,8 @@ withDefaults(defineProps<{
       v-for="order in orders"
       :key="order.id"
       :title="order.orderNumber"
-      :title-to="`/ordenes/${order.id}`"
-      :eyebrow="showCreatedAt ? formatDate(order.createdAt) : undefined"
+      :title-to="returnTo ? { path: `/ordenes/${order.id}`, query: { returnTo } } : `/ordenes/${order.id}`"
+      :eyebrow="showCreatedAt ? formatDate(order.createdAt, false, workshopTimeZone(order.workshopId)) : undefined"
       :summary-label="showFinancials ? 'Importe' : undefined"
       :summary-value="showFinancials ? formatCurrency(order.total) : undefined"
       summary-color="primary"
@@ -115,7 +118,7 @@ withDefaults(defineProps<{
 
       <DetailFields
         v-if="showPromisedAt && order.promisedAt"
-        :fields="[{ label: 'Entrega', value: formatDate(order.promisedAt) }]"
+        :fields="[{ label: 'Entrega', value: formatDate(order.promisedAt, false, workshopTimeZone(order.workshopId)) }]"
       />
 
       <template #footer>

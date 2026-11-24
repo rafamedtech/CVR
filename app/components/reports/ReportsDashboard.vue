@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { BusinessReportSummary, ConsolidationInfo } from '~/types/reports'
 import type { ExpenseCategory, LineItemType, PaymentMethod } from '~/types/crm'
-import { reportFormatDate } from '~/utils/datetime'
+import { formatReportPeriod } from '~/utils/datetime'
 
 const props = withDefaults(defineProps<{ report: BusinessReportSummary, consolidated: boolean, allBusinesses?: boolean, carolina?: boolean, detailsLinks?: boolean, businesses?: ConsolidationInfo['businesses'] }>(), { detailsLinks: true })
 const annual = computed(() => props.report.period.mode === 'annual')
-const periodLabel = computed(() => `${reportFormatDate(props.report.period.start)} – ${reportFormatDate(props.report.period.end)}`)
+const periodLabel = computed(() => formatReportPeriod(props.report.period.start, props.report.period.end))
 const lines = computed(() => props.report.salesByLine.map(item => ({ ...item, label: lineItemTypeLabels[item.key as LineItemType] ?? item.label })))
 const categories = computed(() => props.report.operatingExpenseCategories.map(item => ({ ...item, label: expenseCategoryLabels[item.key as ExpenseCategory] ?? item.label })))
 const methods = computed(() => props.report.paymentMethods.map(item => ({ ...item, label: paymentMethodLabels[item.key as PaymentMethod] ?? item.label })))
@@ -23,7 +23,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           {{ periodLabel }} · MXN · {{ report.taxBasis === 'before-tax' ? 'ventas antes de IVA' : 'ventas con IVA cuando aplica' }}
         </p>
       </div>
-      <ReportsSummaryCards :metrics="report.metrics" :annual="annual" :before-tax="report.taxBasis === 'before-tax'" />
+      <ReportsSummaryCardsAdapter :metrics="report.metrics" :annual="annual" :before-tax="report.taxBasis === 'before-tax'" />
       <div class="grid gap-4 xl:grid-cols-3">
         <ReportsProfitStatement
           :metrics="report.metrics"
@@ -31,7 +31,7 @@ const countOrders = (count: number) => `${count} ${count === 1 ? 'orden' : 'órd
           :before-tax="report.taxBasis === 'before-tax'"
           class="xl:col-span-2"
         />
-        <ReportsMonthPace :report="report" />
+        <ReportsMonthPace :period="report.period" :metrics="report.metrics" />
       </div>
     </section>
 

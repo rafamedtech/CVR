@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
       name: workshop.name,
       type: workshop.type,
       taxRate: Number(workshop.taxRate),
+      timezone: workshop.timezone,
       role: context.isReadOnly ? 'READ_ONLY' : 'role' in workshop ? workshop.role : undefined
     })),
     selectedWorkshopId: context.workshopId,
@@ -38,7 +39,8 @@ export default defineEventHandler(async (event) => {
           slug: context.selectedWorkshop.slug,
           name: context.selectedWorkshop.name,
           type: context.selectedWorkshop.type,
-          taxRate: Number(context.selectedWorkshop.taxRate)
+          taxRate: Number(context.selectedWorkshop.taxRate),
+          timezone: context.selectedWorkshop.timezone
         }
       : null,
     canViewAll: context.isSuperAdmin || context.isReadOnly

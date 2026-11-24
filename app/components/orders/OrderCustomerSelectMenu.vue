@@ -17,31 +17,21 @@ const props = withDefaults(defineProps<{
 })
 const customerId = defineModel<string>({ required: true })
 
-const options = computed(() => {
-  const customerOptions = props.customers.map(customer => ({
-    label: customer.fullName,
-    value: customer.id
-  }))
-
-  if (props.selectedCustomer && !customerOptions.some(option => option.value === props.selectedCustomer?.id)) {
-    customerOptions.unshift({
-      label: props.selectedCustomer.fullName,
-      value: props.selectedCustomer.id
-    })
-  }
-
-  return customerOptions
+const options = computed(() => props.customers.map(customer => ({
+  label: customer.fullName,
+  value: customer.id
+})))
+const selected = computed(() => {
+  const customer = props.selectedCustomer
+  return customer ? { label: customer.fullName, value: customer.id } : undefined
 })
 </script>
 
 <template>
-  <USelectMenu
+  <CustomerPicker
     v-model="customerId"
     :items="options"
-    value-key="value"
-    searchable
-    placeholder="Selecciona un cliente"
-    class="w-full"
+    :selected="selected"
     :disabled="disabled"
   />
 </template>

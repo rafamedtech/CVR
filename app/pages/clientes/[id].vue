@@ -5,7 +5,7 @@ const route = useRoute()
 const customerId = computed(() => route.params.id as string)
 const { isAllWorkshops } = useCrmSession()
 
-const { data: customer, error, status } = useFetch<CustomerDetail>(
+const { data: customer, error, status, refresh } = useFetch<CustomerDetail>(
   () => `/api/customers/${customerId.value}`,
   { key: `crm-customer-${customerId.value}`, lazy: true, server: false }
 )
@@ -18,21 +18,18 @@ useHead({
 <template>
   <UDashboardPanel id="customer-detail">
     <template #header>
-      <UDashboardNavbar title="Detalle del cliente">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-        <template #right>
-          <UButton
-            to="/clientes"
-            label="Volver"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-          />
+      <DetailHeader
+        title="Detalle del cliente"
+        :back="{ to: '/clientes', label: 'Volver a clientes' }"
+        show-sidebar-collapse
+        refresh-label="Actualizar cliente"
+        :loading="status === 'idle' || status === 'pending'"
+        @refresh="refresh()"
+      >
+        <template #actions>
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DetailHeader>
     </template>
 
     <template #body>
@@ -53,6 +50,8 @@ useHead({
       />
 
       <div v-else-if="customer" class="space-y-8">
+        <DetailPageHeader :title="customer.fullName" :ui="{ root: 'pt-0 pb-0' }" />
+
         <CustomersCustomerDetailProfile
           :customer="customer"
           :show-workshop-badge="isAllWorkshops"

@@ -1,3 +1,5 @@
+import { convertBinaryMoney, roundBinaryMoney } from '@rafamedtech/nuxt-shared/utils'
+
 export type Currency = 'MXN' | 'USD'
 
 export const BASE_CURRENCY: Currency = 'MXN'
@@ -7,14 +9,14 @@ export function normalizeExchangeRate(currency: Currency, exchangeRate: number) 
 }
 
 export function roundMoney(value: number) {
-  return Math.round((Number(value) + Number.EPSILON) * 100) / 100
+  return roundBinaryMoney(Number(value))
 }
 
 export function convertToMxn(amount: number, currency: Currency, exchangeRate: number) {
-  return roundMoney(Number(amount) * normalizeExchangeRate(currency, exchangeRate))
+  return convertBinaryMoney(Number(amount), normalizeExchangeRate(currency, exchangeRate))
 }
 
 export function convertFromMxn(amountMxn: number, currency: Currency, exchangeRate: number) {
   const rate = normalizeExchangeRate(currency, exchangeRate)
-  return roundMoney(Number(amountMxn) / rate)
+  return convertBinaryMoney(Number(amountMxn), rate, 'fromBase')
 }

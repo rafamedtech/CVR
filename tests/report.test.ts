@@ -3,7 +3,7 @@ import test from 'node:test'
 import { Prisma } from '../generated/prisma/client'
 import { buildBusinessReport } from '../server/utils/business-report'
 import { reportChange, reportDateKey, reportDayStart, reportNextDay, reportPercentage, reportPreviousPeriod } from '../shared/report'
-import { reportWeeks, reportMonths } from '../app/utils/reportPeriods'
+import { reportWeeks, reportMonths, reportVisibleMonths } from '../app/utils/reportPeriods'
 
 type Input = Parameters<typeof buildBusinessReport>[0]
 type Order = Input['orders'][number]
@@ -60,12 +60,33 @@ test('collections include payments for older orders and balances use all payment
   assert.equal(report.topDebtors[0]?.amount, 650)
 })
 
+test('customer rankings retain input order on ties and include every customer in the percentage base', () => {
+  const orders = ['F', 'E', 'D', 'C', 'B', 'A'].map(customerId => ({
+    ...order(100), customerId, customer: { fullName: customerId }
+  }))
+  orders.push({ ...order(50), customerId: 'D', customer: { fullName: 'Nombre posterior' } })
+
+  const { topCustomers } = buildBusinessReport(input({ orders }))
+
+  assert.deepEqual(topCustomers.map(({ id, label, amount, count, percentage }) => [id, label, amount, count, percentage]), [
+    ['D', 'D', 150, 2, 23.1],
+    ['F', 'F', 100, 1, 15.4],
+    ['E', 'E', 100, 1, 15.4],
+    ['C', 'C', 100, 1, 15.4],
+    ['B', 'B', 100, 1, 15.4]
+  ])
+})
+
 test('weekly and monthly chart totals reconcile with the financial statement', () => {
   const report = buildBusinessReport(input({ orders: [order(1000)], expenses: [expense(400, 'SUPPLIES'), expense(200, 'PAYROLL')] }))
   const weeks = reportWeeks(report.dailyMovements)
-  assert.equal(weeks.length, 5)
-  assert.equal(weeks[0]?.start, '2026-09-01')
-  assert.equal(weeks.at(-1)?.end, '2026-09-30')
+  assert.deepEqual(weeks.map(({ start, end, days }) => [start, end, days]), [
+    ['2026-09-01', '2026-09-06', 6],
+    ['2026-09-07', '2026-09-13', 7],
+    ['2026-09-14', '2026-09-20', 7],
+    ['2026-09-21', '2026-09-27', 7],
+    ['2026-09-28', '2026-09-30', 3]
+  ])
   assert.equal(weeks.reduce((sum, week) => sum + week.netProfit, 0), report.metrics.netProfit)
   assert.equal(reportMonths(report.dailyMovements)[0]?.sales, report.metrics.sales)
   assert.equal(report.period.elapsedDays, 30)
@@ -83,7 +104,24 @@ test('empty periods, losses, zero comparison base and leap years remain meaningf
   assert.equal(loss.metrics.netMarginPercentage, -100)
   assert.equal(reportChange(100, -100), 200)
   assert.equal(reportPercentage(100, 0), null)
+  assert.equal(reportPercentage(100, -100), null)
   const annual = buildBusinessReport(input({ start: '2024-01-01', end: '2024-12-31', fullEnd: '2024-12-31', annual: true }))
   assert.equal(annual.period.totalDays, 366)
   assert.equal(reportMonths(annual.dailyMovements).length, 12)
+})
+
+test('omits inactive months from the annual chart while totals cover the full year', () => {
+  const report = buildBusinessReport(input({
+    start: '2026-01-01', end: '2026-12-31', fullEnd: '2026-12-31', annual: true,
+    orders: [order(1000)], payments: [payment(250)]
+  }))
+  const visibleMonths = reportVisibleMonths(report.dailyMovements)
+  const months = reportMonths(report.dailyMovements)
+
+  assert.equal(visibleMonths[0]?.date, '2026-09-01')
+  assert.equal(visibleMonths.length, 4)
+  assert.equal(months.length, 12)
+  assert.equal(months.reduce((sum, month) => sum + month.days, 0), report.period.elapsedDays)
+  assert.equal(months.reduce((sum, month) => sum + month.sales, 0), report.metrics.sales)
+  assert.equal(months.reduce((sum, month) => sum + month.collections, 0), report.metrics.collections)
 })

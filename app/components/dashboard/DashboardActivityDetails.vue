@@ -6,9 +6,7 @@ const props = defineProps<{
   canViewFinancials: boolean
   timeZone: string
 }>()
-const dateLabel = computed(() => new Intl.DateTimeFormat('es-MX', {
-  timeZone: props.timeZone, day: 'numeric', month: 'short'
-}).format(new Date(props.item.date)))
+const dateLabel = computed(() => formatDayMonth(props.item.date, props.timeZone))
 </script>
 
 <template>

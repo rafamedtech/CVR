@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { formatDateOnly } from '#shared/date'
 import { z } from 'zod'
-import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
+import { getLocalTimeZone, parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type {
   CustomerListItem,
@@ -28,12 +29,11 @@ const toast = useToast()
 const loading = shallowRef(false)
 const formId = 'order-form'
 const unassignedMemberValue = '__unassigned__'
-const defaultOrderDate = today(getLocalTimeZone())
-const defaultPromisedDate = today(getLocalTimeZone())
-const promisedDate = shallowRef<CalendarDate | undefined>(defaultPromisedDate)
-const promisedDateOpen = ref(false)
-const orderDate = shallowRef<CalendarDate | undefined>(defaultOrderDate)
-const orderDateOpen = ref(false)
+const timeZone = getLocalTimeZone()
+const defaultOrderDate = today(timeZone)
+const defaultPromisedDate = today(timeZone)
+const promisedDate = shallowRef<DateValue | undefined>(defaultPromisedDate)
+const orderDate = shallowRef<DateValue | undefined>(defaultOrderDate)
 const isEditing = computed(() => Boolean(props.order))
 const modalTitle = computed(() => isEditing.value ? 'Editar orden de trabajo' : 'Nueva orden de trabajo')
 const modalDescription = computed(() => isEditing.value
@@ -146,12 +146,8 @@ function toLocalDate(value: string | null) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 10)
 }
 
-function formatCalendarDate(date: CalendarDate | undefined) {
-  if (!date) return 'Selecciona una fecha'
-
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium'
-  }).format(date.toDate(getLocalTimeZone()))
+function formatCalendarDate(date: DateValue) {
+  return formatDateOnly(date.toString())
 }
 
 function initializeForm(order?: OrderDetail | null) {
@@ -187,7 +183,7 @@ function initializeForm(order?: OrderDetail | null) {
     return
   }
 
-  const currentOrderDate = today(getLocalTimeZone())
+  const currentOrderDate = today(timeZone)
   Object.assign(state, {
     customerId: '',
     vehicleId: '',
@@ -413,46 +409,28 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
               required
               class="min-w-0"
             >
-              <UPopover v-model:open="orderDateOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar-days"
-                  :label="formatCalendarDate(orderDate)"
-                  class="w-full justify-start font-normal"
-                />
-
-                <template #content>
-                  <UCalendar
-                    v-model="orderDate"
-                    locale="es-MX"
-                    @update:model-value="orderDateOpen = false"
-                  />
-                </template>
-              </UPopover>
+              <CalendarDatePicker
+                v-model="orderDate"
+                :time-zone="timeZone"
+                :format-value="formatCalendarDate"
+                placeholder="Selecciona una fecha"
+                class="w-full justify-start font-normal"
+                :aria-label="`Fecha de la orden: ${orderDate ? formatCalendarDate(orderDate) : 'Selecciona una fecha'}`"
+              />
             </UFormField>
             <UFormField
               name="promisedAt"
               label="Entrega prometida"
               class="min-w-0 sm:col-span-2 md:col-span-1"
             >
-              <UPopover v-model:open="promisedDateOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar-days"
-                  :label="formatCalendarDate(promisedDate)"
-                  class="w-full justify-start font-normal"
-                />
-
-                <template #content>
-                  <UCalendar
-                    v-model="promisedDate"
-                    locale="es-MX"
-                    @update:model-value="promisedDateOpen = false"
-                  />
-                </template>
-              </UPopover>
+              <CalendarDatePicker
+                v-model="promisedDate"
+                :time-zone="timeZone"
+                :format-value="formatCalendarDate"
+                placeholder="Selecciona una fecha"
+                class="w-full justify-start font-normal"
+                :aria-label="`Entrega prometida: ${promisedDate ? formatCalendarDate(promisedDate) : 'Selecciona una fecha'}`"
+              />
             </UFormField>
           </div>
         </DetailCard>

@@ -22,6 +22,7 @@ export interface WorkshopSummary {
   name: string
   type: WorkshopType
   taxRate: TaxRate
+  timezone?: string
   role?: WorkshopRole
 }
 
