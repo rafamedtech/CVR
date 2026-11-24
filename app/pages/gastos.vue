@@ -225,8 +225,10 @@ function openDuplicateModal(expense: ExpenseListItem) {
       <ExpensesTable
         :expenses="filteredExpenses"
         :loading="status === 'idle' || status === 'pending'"
+        :error="status === 'error'"
         :show-workshop="isAllWorkshops"
         :can-edit="canRecordExpenses || isSuperAdmin"
+        @retry="refresh()"
         @edit="openEditModal"
         @duplicate="openDuplicateModal"
         @delete="openDeleteModal"

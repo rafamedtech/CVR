@@ -23,7 +23,7 @@ const workshopIcons: Record<WorkshopType, string> = {
 
 <template>
   <UCard :ui="{ body: 'p-0 sm:p-0' }">
-    <UTable :data="vehicles" :columns="columns">
+    <DetailTable :data="vehicles" :columns="columns">
       <template #licensePlate-cell="{ row }">
         <div>
           <div class="flex items-center gap-2">
@@ -70,6 +70,6 @@ const workshopIcons: Record<WorkshopType, string> = {
           </p>
         </div>
       </template>
-    </UTable>
+    </DetailTable>
   </UCard>
 </template>
