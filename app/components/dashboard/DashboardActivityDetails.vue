@@ -11,14 +11,14 @@ const dateLabel = computed(() => formatDayMonth(props.item.date, props.timeZone)
 
 <template>
   <div class="space-y-1 md:text-right">
-    <p v-if="item.type === 'order'" class="text-xs text-muted">
+    <p v-if="item.type === 'order'" class="text-sm text-muted">
       <time :datetime="item.date">{{ dateLabel }}</time>
     </p>
     <OrdersStatusBadge
       v-if="item.status"
       :status="item.status"
     />
-    <p v-if="item.type !== 'order'" class="text-xs text-muted">
+    <p v-if="item.type !== 'order'" class="text-sm text-muted">
       <time :datetime="item.date">{{ dateLabel }}</time>
     </p>
     <p

@@ -216,7 +216,7 @@ async function removePayment() {
           <p class="font-medium text-highlighted">
             {{ paymentMethodLabels[payment.method] }}
           </p>
-          <p class="text-xs text-muted">
+          <p class="text-sm text-muted">
             {{ formatDate(payment.paidAt, false, workshopTimeZone(workshopId)) }} · {{ payment.recordedByName }}
           </p>
           <p v-if="payment.reference" class="text-xs text-muted">

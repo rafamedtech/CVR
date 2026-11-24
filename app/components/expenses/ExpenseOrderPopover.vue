@@ -10,7 +10,7 @@ defineProps<{ order: ExpenseOrderOption }>()
       :label="order.orderNumber"
       icon="i-lucide-clipboard-list"
       variant="link"
-      size="sm"
+      size="md"
       class="p-0"
       :aria-label="`Ver información de la orden ${order.orderNumber}`"
     />

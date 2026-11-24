@@ -89,7 +89,7 @@ async function deleteOrder() {
 <template>
   <UDashboardPanel id="order-detail" :ui="{ body: 'pt-0 sm:pt-0' }">
     <template #header>
-      <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
+      <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -176,8 +176,7 @@ async function deleteOrder() {
                       :label="orderPriorityLabels[order.priority]"
                       :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
                       variant="subtle"
-                      size="lg"
-                      class="col-span-2 h-9 w-full justify-center sm:w-auto md:h-8"
+                      class="col-span-2 h-9 w-full justify-center max-md:text-sm sm:w-auto md:h-8"
                     />
                     <USelectMenu
                       :model-value="order.status"

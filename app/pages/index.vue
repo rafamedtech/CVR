@@ -28,7 +28,7 @@ const updatedLabel = computed(() => data.value
 <template>
   <UDashboardPanel id="dashboard">
     <template #header>
-      <UDashboardNavbar title="Resumen" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
+      <UDashboardNavbar title="Resumen" :toggle="{ size: 'xl' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>

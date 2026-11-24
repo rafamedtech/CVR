@@ -51,7 +51,7 @@ const totalExpenses = computed(() => props.expenses.reduce((total, expense) => t
             <h3 :id="`order-expense-${expense.id}`" class="font-semibold break-words text-primary">
               {{ expense.description }}
             </h3>
-            <p class="mt-1 text-xs text-muted">
+            <p class="mt-1 text-sm text-muted">
               {{ formatDateOnly(expense.expenseDate) }}
             </p>
           </div>

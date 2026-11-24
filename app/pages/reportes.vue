@@ -52,7 +52,7 @@ async function updateReport() {
 <template>
   <UDashboardPanel id="business-reports">
     <template #header>
-      <UDashboardNavbar :title="annual ? 'Reporte anual' : 'Reporte mensual'" :toggle="{ size: 'xl' }" :ui="{ title: 'text-base lg:text-sm' }">
+      <UDashboardNavbar :title="annual ? 'Reporte anual' : 'Reporte mensual'" :toggle="{ size: 'xl' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>

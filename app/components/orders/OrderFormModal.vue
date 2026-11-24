@@ -390,7 +390,7 @@ async function onSubmit(event: FormSubmitEvent<OrderSchema>) {
                   label="Reintentar"
                   color="neutral"
                   variant="link"
-                  size="sm"
+                  size="md"
                   @click="loadMembers()"
                 />
               </div>
