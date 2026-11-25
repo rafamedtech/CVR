@@ -89,7 +89,7 @@ async function deleteOrder() {
 <template>
   <UDashboardPanel id="order-detail" :ui="{ body: 'pt-0 sm:pt-0' }">
     <template #header>
-      <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }">
+      <DashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }">
         <template #right>
           <UButton
             :to="returnTo"
@@ -100,7 +100,7 @@ async function deleteOrder() {
           />
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
     </template>
 
     <template #body>

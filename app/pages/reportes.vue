@@ -52,7 +52,7 @@ async function updateReport() {
 <template>
   <UDashboardPanel id="business-reports">
     <template #header>
-      <UDashboardNavbar :title="annual ? 'Reporte anual' : 'Reporte mensual'" :toggle="{ size: 'xl' }">
+      <DashboardNavbar :title="annual ? 'Reporte anual' : 'Reporte mensual'" :toggle="{ size: 'xl' }">
         <template #right>
           <ReportsPeriodControls
             v-model:month="selectedMonth"
@@ -64,7 +64,7 @@ async function updateReport() {
             @select="updateReport"
           />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
       <UDashboardToolbar v-if="canViewReports" class="py-3 lg:py-0">
         <div class="flex w-full min-w-0 items-center gap-3">
           <ReportsBusinessSelector

@@ -44,7 +44,7 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
 <template>
   <UDashboardPanel id="pagos">
     <template #header>
-      <UDashboardNavbar title="Pagos registrados">
+      <DashboardNavbar title="Pagos registrados">
         <template #right>
           <WorkshopSwitcher />
           <AppCsvExportButton
@@ -54,7 +54,7 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
             :disabled="status !== 'success'"
           />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
 
       <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>

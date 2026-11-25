@@ -16,7 +16,7 @@ useHead({ title: 'Detalle del vehículo' })
 <template>
   <UDashboardPanel id="vehicle-detail">
     <template #header>
-      <UDashboardNavbar title="Detalle del vehículo">
+      <DashboardNavbar title="Detalle del vehículo">
         <template #right>
           <UButton
             to="/vehiculos"
@@ -27,7 +27,7 @@ useHead({ title: 'Detalle del vehículo' })
           />
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
     </template>
 
     <template #body>

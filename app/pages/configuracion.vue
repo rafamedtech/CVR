@@ -21,11 +21,11 @@ const links = computed<NavigationMenuItem[]>(() => [{
 <template>
   <UDashboardPanel id="configuracion" :ui="{ body: 'lg:py-10' }">
     <template #header>
-      <UDashboardNavbar title="Configuración">
+      <DashboardNavbar title="Configuración">
         <template #right>
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
       <UDashboardToolbar>
         <UNavigationMenu :items="links" highlight class="-mx-1 flex-1" />
       </UDashboardToolbar>
