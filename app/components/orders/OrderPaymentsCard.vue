@@ -189,15 +189,19 @@ async function removePayment() {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h2 class="font-semibold text-highlighted">
-            Pagos
-          </h2>
-          <p class="text-sm text-muted">
-            {{ payments.length }} movimientos
+  <div class="space-y-4">
+    <DetailCard :ui="{ container: 'p-4 sm:p-5 gap-0' }">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="min-w-0">
+          <p class="flex items-center gap-2 text-xs text-muted uppercase">
+            <span class="h-3.5 w-1 rounded-full bg-success" aria-hidden="true" />
+            Total pagado · MXN
+          </p>
+          <p class="mt-2 text-2xl font-semibold tracking-tight break-words text-success tabular-nums">
+            {{ formatCurrency(total - balance) }}
+          </p>
+          <p class="mt-1 text-xs text-muted">
+            {{ payments.length }} {{ payments.length === 1 ? 'movimiento registrado' : 'movimientos registrados' }}
           </p>
         </div>
         <UButton
@@ -208,48 +212,98 @@ async function removePayment() {
           @click="openCreateModal"
         />
       </div>
-    </template>
+      <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t border-default pt-3">
+        <div>
+          <dt class="text-xs text-muted">
+            Total de la orden
+          </dt>
+          <dd class="mt-0.5 font-medium text-highlighted tabular-nums">
+            {{ formatCurrency(total) }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">
+            Saldo pendiente
+          </dt>
+          <dd class="mt-0.5 font-semibold tabular-nums" :class="balance > 0 ? 'text-warning' : 'text-success'">
+            {{ formatCurrency(balance) }}
+          </dd>
+        </div>
+      </dl>
+    </DetailCard>
 
-    <div v-if="payments.length" class="divide-y divide-default">
-      <button
+    <div v-if="payments.length" class="space-y-3">
+      <DetailCard
         v-for="payment in payments"
         :key="payment.id"
-        type="button"
-        :disabled="!canRecord"
-        class="group flex w-full items-start justify-between gap-3 rounded-lg px-2 py-3 text-left transition-colors first:pt-0 enabled:cursor-pointer enabled:hover:bg-elevated enabled:focus-visible:outline-2 enabled:focus-visible:outline-primary"
-        @click="openEditModal(payment)"
+        as="article"
+        :aria-labelledby="`order-payment-${payment.id}`"
+        :ui="{ container: 'p-4 sm:p-5 gap-0' }"
       >
-        <div>
-          <p class="font-medium text-highlighted">
-            {{ paymentMethodLabels[payment.method] }}
-          </p>
-          <p class="text-sm text-muted">
-            {{ formatDate(payment.paidAt, false, workshopTimeZone(workshopId)) }} · {{ payment.recordedByName }}
-          </p>
-          <p v-if="payment.reference" class="text-xs text-muted">
-            Ref. {{ payment.reference }}
-          </p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h3 :id="`order-payment-${payment.id}`" class="font-semibold break-words text-primary">
+              {{ paymentMethodLabels[payment.method] }}
+            </h3>
+            <p class="mt-1 text-sm text-muted">
+              {{ formatDate(payment.paidAt, false, workshopTimeZone(workshopId)) }}
+            </p>
+          </div>
+          <div class="min-w-0 text-right">
+            <p class="text-xs text-muted">
+              Importe
+            </p>
+            <p class="mt-0.5 text-lg font-semibold text-success tabular-nums">
+              {{ formatCurrency(payment.amount, payment.currency) }}
+            </p>
+          </div>
         </div>
-        <div class="shrink-0 text-right">
-          <p class="font-semibold text-success">
-            {{ formatCurrency(payment.amount, payment.currency) }}
-          </p>
-          <p v-if="payment.currency === 'USD'" class="text-xs text-muted">
-            TC {{ payment.exchangeRate.toFixed(4) }} · {{ formatCurrency(payment.amountMxn) }} MXN
-          </p>
-        </div>
-      </button>
-    </div>
-    <div v-else class="py-8 text-center text-sm text-muted">
-      No hay pagos registrados.
-    </div>
+        <p v-if="payment.currency === 'USD'" class="mt-2 text-xs text-muted tabular-nums">
+          TC {{ payment.exchangeRate.toFixed(4) }} · {{ formatCurrency(payment.amountMxn) }} MXN
+        </p>
 
-    <template #footer>
-      <PaymentSummary
-        :amounts="{ paid: formatCurrency(total - balance), balance: formatCurrency(balance) }"
-        :balance-color="balance > 0 ? 'warning' : 'success'"
-      />
-    </template>
+        <dl class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3 border-t border-default pt-3">
+          <div v-if="payment.reference" class="min-w-0">
+            <dt class="mb-1 text-xs text-muted">
+              Referencia
+            </dt>
+            <dd class="text-sm break-words text-highlighted">
+              {{ payment.reference }}
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="mb-1 text-xs text-muted">
+              Registró
+            </dt>
+            <dd class="text-sm break-words text-highlighted">
+              {{ payment.recordedByName }}
+            </dd>
+          </div>
+          <UButton
+            v-if="canRecord"
+            label="Editar"
+            icon="i-lucide-pencil"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="ml-auto"
+            :aria-label="`Editar pago del ${formatDate(payment.paidAt, false, workshopTimeZone(workshopId))}`"
+            @click="openEditModal(payment)"
+          />
+        </dl>
+      </DetailCard>
+    </div>
+    <DetailCard v-else :ui="{ container: 'p-6 sm:p-8 gap-0' }">
+      <div class="text-center">
+        <UIcon name="i-lucide-hand-coins" class="size-9 text-dimmed" />
+        <h3 class="mt-3 font-semibold text-primary">
+          Sin pagos registrados
+        </h3>
+        <p class="mt-1 text-sm text-muted">
+          Los pagos de esta orden aparecerán aquí.
+        </p>
+      </div>
+    </DetailCard>
 
     <UModal
       v-model:open="open"
@@ -443,5 +497,5 @@ async function removePayment() {
       @confirm="removePayment"
       @after-close="restoreDeleteFocus"
     />
-  </UCard>
+  </div>
 </template>
