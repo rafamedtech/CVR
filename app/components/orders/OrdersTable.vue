@@ -83,7 +83,6 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
-    show-mobile-sort
     :loading="loading"
     loading-label="Cargando órdenes de trabajo"
     @update:sorting="page = 1"

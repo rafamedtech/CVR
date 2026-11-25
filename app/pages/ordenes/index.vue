@@ -26,19 +26,36 @@ const page = shallowRef(1)
 const pageSize = 10
 const sorting = shallowRef<SortingState>([])
 const sortableColumns = new Set(['createdAt', 'orderNumber', 'customerName', 'assignedToName', 'status', 'total', 'promisedAt', 'workshopName'])
-const sortOptions = [
-  { label: 'Más recientes primero', value: 'recent' },
-  { label: 'Más antiguas primero', value: 'oldest' }
-]
+const sortColumnLabels: Record<string, string> = {
+  orderNumber: 'Orden',
+  customerName: 'Vehículo',
+  assignedToName: 'Responsable',
+  status: 'Estado',
+  total: 'Importe',
+  promisedAt: 'Entrega',
+  workshopName: 'Taller'
+}
+const sortOptions = computed(() => [
+  { label: 'Más recientes primero', value: 'createdAt:desc' },
+  { label: 'Más antiguas primero', value: 'createdAt:asc' },
+  ...Object.entries(sortColumnLabels)
+    .filter(([id]) => id !== 'workshopName' || isAllWorkshops.value)
+    .flatMap(([id, label]) => [
+      { label: `${label} (ascendente)`, value: `${id}:asc` },
+      { label: `${label} (descendente)`, value: `${id}:desc` }
+    ])
+])
 const sortOrder = computed({
   get: () => {
     const [sort] = sorting.value
-    if (!sort) return 'recent'
-    if (sort.id === 'createdAt') return sort.desc ? 'recent' : 'oldest'
-    return undefined
+    if (!sort) return 'createdAt:desc'
+    return `${sort.id}:${sort.desc ? 'desc' : 'asc'}`
   },
   set: (value: string | undefined) => {
-    sorting.value = value === 'oldest' ? [{ id: 'createdAt', desc: false }] : []
+    const [id, direction] = (value ?? '').split(':')
+    sorting.value = !id || !sortableColumns.has(id) || (id === 'createdAt' && direction !== 'asc')
+      ? []
+      : [{ id, desc: direction === 'desc' }]
   }
 })
 const orderStatuses = Object.keys(orderStatusLabels) as OrderStatus[]
@@ -191,8 +208,9 @@ function clearFilters() {
           <USelect
             v-model="sortOrder"
             :items="sortOptions"
-            placeholder="Orden por fecha"
-            aria-label="Ordenar por fecha de creación"
+            placeholder="Ordenar"
+            aria-label="Ordenar órdenes"
+            class="md:hidden"
           />
         </template>
         <template #right>
