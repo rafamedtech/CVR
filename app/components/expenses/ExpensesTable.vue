@@ -32,16 +32,20 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
   accessorKey: 'description',
   header: 'Gasto'
 }, {
-  accessorKey: 'category',
+  id: 'category',
+  accessorFn: row => expenseCategoryLabels[row.category],
   header: 'Categoría'
 }, {
-  accessorKey: 'method',
+  id: 'method',
+  accessorFn: row => paymentMethodLabels[row.method],
   header: 'Método de pago'
 }, {
-  accessorKey: 'amount',
+  id: 'amount',
+  accessorFn: row => row.amountMxn,
   header: 'Importe'
 }, {
   id: 'assignment',
+  accessorFn: row => row.order?.orderNumber ?? (row.workshopId === null ? 'Gasto global' : 'Gasto del taller'),
   header: 'Asignación'
 }, ...(props.showWorkshop
   ? [{
@@ -60,11 +64,13 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
+    show-mobile-sort
     :loading="loading"
     loading-label="Cargando gastos operativos"
     :error="error"
     error-title="Gastos no disponibles"
     error-message="No se pudieron cargar los gastos registrados."
+    @update:sorting="page = 1"
     @retry="emit('retry')"
   >
     <template #mobile="{ rows }">

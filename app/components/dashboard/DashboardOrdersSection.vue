@@ -29,7 +29,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'customerName',
     header: 'Cliente / vehículo'
   }, {
-    accessorKey: 'status',
+    id: 'status',
+    accessorFn: row => orderStatusLabels[row.status],
     header: 'Estado'
   }, {
     id: 'actions'

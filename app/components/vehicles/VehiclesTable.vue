@@ -39,7 +39,8 @@ watch(vehicleIds, () => {
 
 const columns = computed<TableColumn<VehicleListItem>[]>(() => {
   const baseColumns: TableColumn<VehicleListItem>[] = [{
-    accessorKey: 'licensePlate',
+    id: 'licensePlate',
+    accessorFn: row => [row.make, row.model, row.year].join(' '),
     header: 'Vehículo'
   }, {
     accessorKey: 'customerName',
@@ -50,7 +51,11 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
 
   return [
     ...baseColumns.slice(0, -1),
-    { id: 'workshops', header: 'Taller' },
+    {
+      id: 'workshops',
+      accessorFn: row => row.workshops.map(workshop => workshop.name).sort().join(', '),
+      header: 'Taller'
+    },
     baseColumns.at(-1)!
   ]
 })
@@ -63,8 +68,10 @@ const columns = computed<TableColumn<VehicleListItem>[]>(() => {
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
+    show-mobile-sort
     :loading="loading"
     loading-label="Cargando vehículos"
+    @update:sorting="page = 1"
   >
     <template #mobile="{ rows }">
       <VehicleMobileList

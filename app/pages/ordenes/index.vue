@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getLocalTimeZone } from '@internationalized/date'
+import type { SortingState } from '@tanstack/table-core'
 import {
   calendarDateKeyInTimeZone,
   normalizeSearchText, tableQueryField, tableQueryPage, tableQueryRange,
@@ -23,14 +24,22 @@ const workshopFilter = shallowRef('all')
 const customerFilter = shallowRef('')
 const page = shallowRef(1)
 const pageSize = 10
-const oldestFirst = shallowRef(false)
+const sorting = shallowRef<SortingState>([])
+const sortableColumns = new Set(['createdAt', 'orderNumber', 'customerName', 'assignedToName', 'status', 'total', 'promisedAt', 'workshopName'])
 const sortOptions = [
   { label: 'Más recientes primero', value: 'recent' },
   { label: 'Más antiguas primero', value: 'oldest' }
 ]
 const sortOrder = computed({
-  get: () => oldestFirst.value ? 'oldest' : 'recent',
-  set: (value: string) => { oldestFirst.value = value === 'oldest' }
+  get: () => {
+    const [sort] = sorting.value
+    if (!sort) return 'recent'
+    if (sort.id === 'createdAt') return sort.desc ? 'recent' : 'oldest'
+    return undefined
+  },
+  set: (value: string | undefined) => {
+    sorting.value = value === 'oldest' ? [{ id: 'createdAt', desc: false }] : []
+  }
 })
 const orderStatuses = Object.keys(orderStatusLabels) as OrderStatus[]
 const { returnTo } = useTableQuery([
@@ -47,12 +56,12 @@ const { returnTo } = useTableQuery([
     serialize: statuses => statuses.length ? statuses.join(',') : undefined
   }),
   tableQueryRange(createdAtRange, 'date_from', 'date_to'),
-  tableQueryField('sort', oldestFirst, {
-    parse: value => tableQuerySorting.parse(value).some(entry => entry.id === 'createdAt' && !entry.desc),
-    serialize: oldest => tableQuerySorting.serialize(oldest ? [{ id: 'createdAt', desc: false }] : [])
+  tableQueryField('sort', sorting, {
+    parse: value => tableQuerySorting.parse(value).filter(entry => sortableColumns.has(entry.id)).slice(0, 1),
+    serialize: tableQuerySorting.serialize
   }),
   tableQueryField('page', page, tableQueryPage)
-], { page, resetOn: [search, customerFilter, workshopFilter, statusFilter, createdAtRange, oldestFirst] })
+], { page, resetOn: [search, customerFilter, workshopFilter, statusFilter, createdAtRange, sorting] })
 const returnToOrders = computed(() => {
   const { path, query, hash } = router.resolve(returnTo.value)
   return router.resolve({ path, query: { ...query, create: undefined }, hash }).fullPath
@@ -122,11 +131,7 @@ const filteredOrders = computed(() => {
     ].some(value => normalizeSearchText(value).includes(term))
   })
 })
-const sortedOrders = computed(() => oldestFirst.value
-  ? filteredOrders.value.toSorted((a, b) => a.createdAt.localeCompare(b.createdAt))
-  : filteredOrders.value)
-
-watch([status, () => sortedOrders.value.length, page], ([requestStatus, total, currentPage]) => {
+watch([status, () => filteredOrders.value.length, page], ([requestStatus, total, currentPage]) => {
   if (requestStatus === 'success') page.value = Math.min(currentPage, Math.max(1, Math.ceil(total / pageSize)))
 }, { immediate: true })
 
@@ -186,7 +191,12 @@ function clearFilters() {
             icon="i-lucide-x"
             @click="customerFilter = ''"
           />
-          <USelect v-model="sortOrder" :items="sortOptions" aria-label="Ordenar por fecha de creación" />
+          <USelect
+            v-model="sortOrder"
+            :items="sortOptions"
+            placeholder="Orden por fecha"
+            aria-label="Ordenar por fecha de creación"
+          />
         </template>
         <template #right>
           <OrdersCreateMenu
@@ -212,8 +222,9 @@ function clearFilters() {
 
       <OrdersTable
         v-model:page="page"
+        v-model:sorting="sorting"
         :page-size="pageSize"
-        :orders="sortedOrders"
+        :orders="filteredOrders"
         :loading="status === 'idle' || status === 'pending'"
         :show-workshop="isAllWorkshops"
         :return-to="returnToOrders"
