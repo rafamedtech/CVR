@@ -171,7 +171,7 @@ function openDuplicateModal(expense: ExpenseListItem) {
 <template>
   <UDashboardPanel id="gastos">
     <template #header>
-      <UDashboardNavbar title="Gastos operativos">
+      <DashboardNavbar title="Gastos operativos">
         <template #right>
           <span v-if="!isReadOnly" class="inline-flex md:hidden">
             <ExpensesCreateMenu
@@ -182,7 +182,7 @@ function openDuplicateModal(expense: ExpenseListItem) {
           </span>
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
       <UDashboardToolbar v-if="isAllWorkshops" class="py-3 lg:py-0">
         <div class="flex w-full min-w-0 items-center gap-3">
           <ReportsBusinessSelector

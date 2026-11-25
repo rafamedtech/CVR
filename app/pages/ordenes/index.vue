@@ -149,7 +149,7 @@ function clearFilters() {
 <template>
   <UDashboardPanel id="ordenes">
     <template #header>
-      <UDashboardNavbar title="Órdenes de trabajo">
+      <DashboardNavbar title="Órdenes de trabajo">
         <template #right>
           <OrdersCreateMenu
             v-if="!isReadOnly"
@@ -160,7 +160,7 @@ function clearFilters() {
           />
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
 
       <UDashboardToolbar v-if="isAllWorkshops" class="py-3 lg:py-0">
         <div class="flex w-full min-w-0 items-center gap-3">

@@ -51,7 +51,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
 <template>
   <UDashboardPanel id="vehiculos">
     <template #header>
-      <UDashboardNavbar title="Vehículos">
+      <DashboardNavbar title="Vehículos">
         <template #right>
           <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
@@ -65,7 +65,7 @@ function handleAssignWorkshops(vehicle: VehicleListItem) {
           </UTooltip>
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
       <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>
           <UInput

@@ -49,7 +49,7 @@ async function handleUpdated() {
 <template>
   <UDashboardPanel id="customers">
     <template #header>
-      <UDashboardNavbar title="Clientes">
+      <DashboardNavbar title="Clientes">
         <template #right>
           <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
@@ -63,7 +63,7 @@ async function handleUpdated() {
           </UTooltip>
           <WorkshopSwitcher />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
 
       <UDashboardToolbar :ui="{ left: 'w-full sm:w-auto' }">
         <template #left>

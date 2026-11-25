@@ -28,7 +28,7 @@ const updatedLabel = computed(() => data.value
 <template>
   <UDashboardPanel id="dashboard">
     <template #header>
-      <UDashboardNavbar title="Resumen" :toggle="{ size: 'xl' }">
+      <DashboardNavbar title="Resumen" :toggle="{ size: 'xl' }">
         <template #right>
           <UButton
             color="neutral"
@@ -41,7 +41,7 @@ const updatedLabel = computed(() => data.value
           />
           <WorkshopSwitcher :allow-all="false" />
         </template>
-      </UDashboardNavbar>
+      </DashboardNavbar>
     </template>
 
     <template #body>
