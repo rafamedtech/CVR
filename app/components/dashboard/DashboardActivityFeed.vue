@@ -31,7 +31,17 @@ const visibleItems = computed(() => props.items
   .slice(0, 12))
 const columns = computed<TableColumn<DashboardActivityItem>[]>(() => [
   { accessorKey: 'title', header: 'Movimiento' },
-  ...(!isMobileViewport.value ? [{ id: 'assignment', header: 'Asignación' }, { id: 'details', header: 'Detalle' }] : [])
+  ...(!isMobileViewport.value
+    ? [{
+        id: 'assignment',
+        accessorFn: (row: DashboardActivityItem) => row.order?.orderNumber ?? (row.type === 'vehicle' ? row.title : undefined),
+        header: 'Asignación'
+      }, {
+        id: 'details',
+        accessorKey: 'date',
+        header: 'Detalle'
+      }]
+    : [])
 ])
 </script>
 

@@ -59,6 +59,7 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
     ...baseColumns.slice(0, -1),
     {
       id: 'workshops',
+      accessorFn: row => row.workshops.map(workshop => workshop.name).sort().join(', '),
       header: 'Taller'
     },
     baseColumns.at(-1)!
@@ -73,8 +74,10 @@ const columns = computed<TableColumn<CustomerListItem>[]>(() => {
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
+    show-mobile-sort
     :loading="loading"
     loading-label="Cargando clientes"
+    @update:sorting="page = 1"
   >
     <template #mobile="{ rows }">
       <CustomerMobileList

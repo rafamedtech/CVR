@@ -27,15 +27,18 @@ const columns: TableColumn<PaymentListItem>[] = [{
   header: 'Fecha'
 }, {
   id: 'order',
+  accessorFn: row => row.order.orderNumber,
   header: 'Orden'
 }, {
-  accessorKey: 'method',
+  id: 'method',
+  accessorFn: row => paymentMethodLabels[row.method],
   header: 'Método'
 }, {
   accessorKey: 'reference',
   header: 'Referencia'
 }, {
-  accessorKey: 'amount',
+  id: 'amount',
+  accessorFn: row => row.amountMxn,
   header: 'Importe'
 }, {
   accessorKey: 'workshopName',
@@ -50,11 +53,13 @@ const columns: TableColumn<PaymentListItem>[] = [{
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
+    show-mobile-sort
     :loading="loading"
     loading-label="Cargando pagos"
     :error="error"
     error-title="Pagos no disponibles"
     error-message="No se pudieron cargar los pagos registrados."
+    @update:sorting="page = 1"
     @retry="emit('retry')"
   >
     <template #mobile="{ rows }">

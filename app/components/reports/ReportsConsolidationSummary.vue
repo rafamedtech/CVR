@@ -6,11 +6,11 @@ defineProps<{ info: ConsolidationInfo, month: string, annual: boolean, carolinaO
 type Business = ConsolidationInfo['businesses'][number]
 const columns: TableColumn<Business>[] = [
   { accessorKey: 'name', header: 'Negocio' },
-  { id: 'sales', header: 'Ventas netas' },
-  { id: 'material', header: 'Material' },
-  { id: 'operating', header: 'Operación' },
-  { id: 'profit', header: 'Utilidad neta' },
-  { id: 'collections', header: 'Cobrado' }
+  { id: 'sales', accessorFn: row => row.metrics.sales, header: 'Ventas netas' },
+  { id: 'material', accessorFn: row => row.metrics.materialPurchases, header: 'Material' },
+  { id: 'operating', accessorFn: row => row.metrics.operatingExpenses, header: 'Operación' },
+  { id: 'profit', accessorFn: row => row.metrics.netProfit, header: 'Utilidad neta' },
+  { id: 'collections', accessorFn: row => row.metrics.collections, header: 'Cobrado' }
 ]
 </script>
 

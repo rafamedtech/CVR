@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import type { SortingState } from '@tanstack/table-core'
 import type { OrderListItem } from '~/types/crm'
 import OrdersMobileList from './OrdersMobileList.vue'
 
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
   pageSize: 10
 })
 
+const sorting = defineModel<SortingState>('sorting', { default: () => [] })
 const pageModel = defineModel<number>('page')
 const localPage = shallowRef(1)
 const page = computed({
@@ -44,7 +46,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'orderNumber',
     header: 'Orden'
   }, {
-    accessorKey: 'customerName',
+    id: 'customerName',
+    accessorFn: row => props.showVehicle ? row.vehicleLabel : row.customerName,
     header: props.showCustomer && props.showVehicle
       ? 'Vehículo y cliente'
       : props.showCustomer ? 'Cliente' : 'Vehículo'
@@ -52,7 +55,8 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
     accessorKey: 'assignedToName',
     header: 'Responsable'
   }, {
-    accessorKey: 'status',
+    id: 'status',
+    accessorFn: row => orderStatusLabels[row.status],
     header: 'Estado'
   }, {
     accessorKey: 'total',
@@ -74,12 +78,15 @@ const columns = computed<TableColumn<OrderListItem>[]>(() => {
 <template>
   <ListTable
     v-model:page="page"
+    v-model:sorting="sorting"
     :data="orders"
     :columns="columns"
     :get-row-id="row => row.id"
     :page-size="pageSize"
+    show-mobile-sort
     :loading="loading"
     loading-label="Cargando órdenes de trabajo"
+    @update:sorting="page = 1"
   >
     <template #mobile="{ rows }">
       <OrdersMobileList

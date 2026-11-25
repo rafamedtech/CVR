@@ -7,10 +7,12 @@ defineProps<{
 }>()
 
 const columns: TableColumn<VehicleListItem>[] = [{
-  accessorKey: 'licensePlate',
+  id: 'licensePlate',
+  accessorFn: row => [row.make, row.model, row.year].join(' '),
   header: 'Vehículo'
 }, {
   id: 'workshops',
+  accessorFn: row => row.workshops.map(workshop => workshop.name).sort().join(', '),
   header: 'Taller'
 }]
 
