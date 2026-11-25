@@ -21,7 +21,6 @@ useHead({
       <DetailHeader
         title="Detalle del cliente"
         :back="{ to: '/clientes', label: 'Volver a clientes' }"
-        show-sidebar-collapse
         refresh-label="Actualizar cliente"
         :loading="status === 'idle' || status === 'pending'"
         @refresh="refresh()"

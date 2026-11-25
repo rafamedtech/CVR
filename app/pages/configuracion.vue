@@ -22,9 +22,6 @@ const links = computed<NavigationMenuItem[]>(() => [{
   <UDashboardPanel id="configuracion" :ui="{ body: 'lg:py-10' }">
     <template #header>
       <UDashboardNavbar title="Configuración">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <WorkshopSwitcher />
         </template>

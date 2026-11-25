@@ -50,9 +50,6 @@ async function handleUpdated() {
   <UDashboardPanel id="customers">
     <template #header>
       <UDashboardNavbar title="Clientes">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <UTooltip v-if="!isReadOnly" :text="isAllWorkshops ? 'Selecciona una ubicación para poder usar este botón.' : undefined">
             <span class="inline-flex">
