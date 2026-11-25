@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { formatDateOnly } from '#shared/date'
-import { getLocalTimeZone, parseDate, today, type CalendarDate } from '@internationalized/date'
+import { parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Currency, OrderPayment } from '~/types/crm'
 import { convertFromMxn, convertToMxn } from '#shared/currency'
 import { paymentFormSchema, type PaymentForm } from '#shared/payment'
 import { currencyOptions } from '~/utils/crm'
+import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 
 const { workshopTimeZone } = useCrmSession()
 
@@ -19,16 +20,17 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ updated: [] }>()
 const toast = useToast()
-const isMobileViewport = useMobileViewport()
 const open = shallowRef(false)
 const loading = shallowRef(false)
 const deleting = shallowRef(false)
 const deleteConfirmationOpen = shallowRef(false)
 const initializing = shallowRef(false)
 const editingPayment = shallowRef<OrderPayment | null>(null)
-const defaultPaymentDate = today(getLocalTimeZone())
-const paymentDate = shallowRef<CalendarDate | undefined>(defaultPaymentDate)
-const paymentDateOpen = shallowRef(false)
+const deleteError = shallowRef('')
+const deleteButton = useTemplateRef<{ $el: HTMLElement }>('deleteButton')
+const timeZone = computed(() => workshopTimeZone(props.workshopId) ?? DEFAULT_WORKSHOP_TIME_ZONE)
+const defaultPaymentDate = today(timeZone.value)
+const paymentDate = shallowRef<DateValue | undefined>(defaultPaymentDate)
 const methodOptions = Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))
 const state = reactive<PaymentForm>({
   amount: 0,
@@ -42,10 +44,10 @@ const state = reactive<PaymentForm>({
 
 const isEditing = computed(() => editingPayment.value !== null)
 const modalTitle = computed(() => isEditing.value ? 'Editar pago' : 'Registrar pago')
-const submitLabel = computed(() => isEditing.value
-  ? (isMobileViewport.value ? 'Guardar' : 'Guardar cambios')
-  : 'Registrar pago')
-const deleteLabel = computed(() => isMobileViewport.value ? 'Eliminar' : 'Eliminar pago')
+const modalDescription = computed(() => isEditing.value
+  ? 'Actualiza la información del pago registrado.'
+  : 'Los pagos se descuentan del saldo pendiente de la orden.')
+const submitLabel = computed(() => isEditing.value ? 'Guardar cambios' : 'Guardar pago')
 const deleteConfirmationDescription = computed(() => editingPayment.value
   ? `Se eliminará el pago de ${formatCurrency(editingPayment.value.amount, editingPayment.value.currency)}. Esta acción no se puede deshacer.`
   : 'Esta acción no se puede deshacer.')
@@ -55,7 +57,7 @@ const maximumPayment = computed(() => state.exchangeRate > 0
   ? convertFromMxn(availableBalanceMxn.value, state.currency, state.exchangeRate)
   : 0)
 
-function formatPaymentDate(date: CalendarDate | undefined) {
+function formatPaymentDate(date: DateValue | undefined) {
   if (!date) return 'Selecciona una fecha'
 
   return formatDateOnly(date.toString())
@@ -66,7 +68,7 @@ function finishInitialization() {
 }
 
 function openCreateModal() {
-  const currentDate = today(getLocalTimeZone())
+  const currentDate = today(timeZone.value)
   editingPayment.value = null
   deleteConfirmationOpen.value = false
   initializing.value = true
@@ -80,7 +82,6 @@ function openCreateModal() {
     notes: ''
   })
   paymentDate.value = currentDate
-  paymentDateOpen.value = false
   open.value = true
   finishInitialization()
 }
@@ -102,7 +103,6 @@ function openEditModal(payment: OrderPayment) {
     notes: payment.notes ?? ''
   })
   paymentDate.value = date
-  paymentDateOpen.value = false
   open.value = true
   finishInitialization()
 }
@@ -125,6 +125,7 @@ watch(() => state.exchangeRate, () => {
 })
 
 async function onSubmit(event: FormSubmitEvent<PaymentForm>) {
+  if (loading.value || deleting.value || deleteConfirmationOpen.value) return
   if (paymentEquivalentMxn.value > availableBalanceMxn.value + 0.01) {
     toast.add({ title: 'El importe no puede superar el saldo disponible.', color: 'error' })
     return
@@ -157,10 +158,20 @@ async function onSubmit(event: FormSubmitEvent<PaymentForm>) {
   }
 }
 
+function openDeleteConfirmation() {
+  deleteError.value = ''
+  deleteConfirmationOpen.value = true
+}
+
+function restoreDeleteFocus() {
+  if (open.value && !deleteConfirmationOpen.value) deleteButton.value?.$el.focus()
+}
+
 async function removePayment() {
-  if (!editingPayment.value) return
+  if (!editingPayment.value || loading.value || deleting.value) return
 
   deleting.value = true
+  deleteError.value = ''
   try {
     await $fetch(`/api/orders/${props.orderId}/payments/${editingPayment.value.id}`, {
       method: 'DELETE'
@@ -170,11 +181,7 @@ async function removePayment() {
     open.value = false
     emit('updated')
   } catch (error) {
-    toast.add({
-      title: 'No se pudo eliminar el pago',
-      description: getApiErrorMessage(error),
-      color: 'error'
-    })
+    deleteError.value = getApiErrorMessage(error) || 'No se pudo eliminar el pago.'
   } finally {
     deleting.value = false
   }
@@ -247,163 +254,194 @@ async function removePayment() {
     <UModal
       v-model:open="open"
       :title="modalTitle"
-      :close="isEditing ? false : undefined"
-      :ui="{ footer: 'justify-end' }"
+      :description="modalDescription"
+      :close="{ disabled: loading || deleting || deleteConfirmationOpen }"
+      :dismissible="false"
+      :ui="{
+        content: 'max-w-4xl',
+        header: 'pr-12 sm:pr-14',
+        title: 'text-lg font-semibold text-primary',
+        body: 'p-4 sm:p-6',
+        footer: 'flex-wrap gap-2 justify-end bg-elevated/30'
+      }"
     >
       <template #body>
         <UForm
           id="payment-form"
           :schema="paymentFormSchema"
           :state="state"
-          class="space-y-4"
+          class="grid items-stretch gap-4 md:grid-cols-2"
           @submit="onSubmit"
         >
-          <UAlert
-            :title="isEditing
-              ? `Disponible para este pago: ${formatCurrency(availableBalanceMxn)}`
-              : `Saldo pendiente: ${formatCurrency(balance)}`"
-            icon="i-lucide-wallet"
-            color="info"
-            variant="subtle"
-          />
-          <div class="grid gap-4 sm:grid-cols-2">
-            <UFormField name="paidAt" label="Fecha del pago" required>
-              <UPopover v-model:open="paymentDateOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar-days"
-                  :label="formatPaymentDate(paymentDate)"
+          <DetailCard
+            title="Datos del pago"
+            icon="i-lucide-hand-coins"
+            :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+          >
+            <div class="space-y-4">
+              <UFormField name="paidAt" label="Fecha del pago" required>
+                <CalendarDatePicker
+                  v-model="paymentDate"
+                  :time-zone="timeZone"
+                  :format-value="formatPaymentDate"
+                  placeholder="Selecciona una fecha"
                   class="w-full justify-start font-normal"
                 />
+              </UFormField>
+              <UFormField name="reference" label="Referencia" hint="Opcional">
+                <UInput
+                  v-model="state.reference"
+                  placeholder="Folio, autorización o número de transferencia"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </DetailCard>
 
-                <template #content>
-                  <UCalendar
-                    v-model="paymentDate"
-                    locale="es-MX"
-                    @update:model-value="paymentDateOpen = false"
-                  />
-                </template>
-              </UPopover>
-            </UFormField>
-            <UFormField name="method" label="Método de pago" required>
-              <USelect
-                v-model="state.method"
-                :items="methodOptions"
-                value-key="value"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField name="currency" label="Moneda" required>
-              <USelect
-                v-model="state.currency"
-                :items="currencyOptions"
-                value-key="value"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField
-              name="exchangeRate"
-              label="Tipo de cambio"
-              required
-            >
-              <AppNumberInput
-                v-model="state.exchangeRate"
-                :disabled="state.currency === 'MXN'"
-                :min="0.000001"
-                :step="0.01"
-                :step-snapping="false"
-                :maximum-fraction-digits="6"
-              />
-            </UFormField>
-            <UFormField
-              name="amount"
-              label="Importe"
-              required
-              class="sm:col-span-2"
-            >
-              <AppNumberInput
-                v-model="state.amount"
-                format="currency"
-                :currency="state.currency"
-                :min="0.01"
-                :max="maximumPayment"
-                :step="1"
-                :step-snapping="false"
-              />
-            </UFormField>
-          </div>
-          <UAlert
-            v-if="state.currency === 'USD'"
-            :title="`Equivalente aplicado: ${formatCurrency(paymentEquivalentMxn)} MXN`"
-            icon="i-lucide-arrow-left-right"
-            color="neutral"
-            variant="subtle"
-          />
-          <UFormField name="reference" label="Referencia">
-            <UInput v-model="state.reference" class="w-full" />
-          </UFormField>
-          <UFormField name="notes" label="Notas">
-            <UTextarea
-              v-model="state.notes"
-              class="w-full"
-              :rows="2"
-              autoresize
-            />
-          </UFormField>
+          <DetailCard
+            title="Saldo de la orden"
+            icon="i-lucide-wallet"
+            :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+          >
+            <dl class="space-y-3 text-sm">
+              <div class="flex items-center justify-between gap-3">
+                <dt class="text-muted">
+                  Total de la orden
+                </dt>
+                <dd class="font-medium text-highlighted tabular-nums">
+                  {{ formatCurrency(total) }}
+                </dd>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <dt class="text-muted">
+                  Pagado
+                </dt>
+                <dd class="font-medium text-success tabular-nums">
+                  {{ formatCurrency(total - balance) }}
+                </dd>
+              </div>
+              <div class="flex items-center justify-between gap-3 border-t border-default pt-3">
+                <dt class="text-muted">
+                  {{ isEditing ? 'Disponible para este pago' : 'Saldo pendiente' }}
+                </dt>
+                <dd class="text-lg font-semibold text-warning tabular-nums">
+                  {{ formatCurrency(availableBalanceMxn) }}
+                </dd>
+              </div>
+            </dl>
+          </DetailCard>
+
+          <DetailCard
+            title="Importe y método"
+            class="md:col-span-2"
+            icon="i-lucide-banknote"
+            :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
+          >
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <UFormField name="currency" label="Moneda" required>
+                <USelect
+                  v-model="state.currency"
+                  :items="currencyOptions"
+                  value-key="value"
+                  :disabled="loading || deleting"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField
+                name="exchangeRate"
+                label="Tipo de cambio"
+                :required="state.currency === 'USD'"
+                :ui="{ label: state.currency === 'MXN' ? 'text-dimmed' : undefined }"
+              >
+                <AppNumberInput
+                  v-model="state.exchangeRate"
+                  :disabled="loading || deleting || state.currency === 'MXN'"
+                  :min="0.000001"
+                  :step="0.01"
+                  :step-snapping="false"
+                  :maximum-fraction-digits="6"
+                />
+              </UFormField>
+              <UFormField name="amount" label="Importe" required>
+                <AppNumberInput
+                  v-model="state.amount"
+                  format="currency"
+                  :currency="state.currency"
+                  :disabled="loading || deleting"
+                  :min="0.01"
+                  :max="maximumPayment"
+                  :step="1"
+                  :step-snapping="false"
+                />
+              </UFormField>
+              <UFormField name="method" label="Método de pago" required>
+                <USelect
+                  v-model="state.method"
+                  :items="methodOptions"
+                  value-key="value"
+                  class="w-full"
+                />
+              </UFormField>
+              <p
+                v-if="state.currency === 'USD'"
+                class="col-span-2 flex items-center gap-2 text-xs text-muted tabular-nums md:col-span-4"
+              >
+                <UIcon name="i-lucide-arrow-left-right" class="size-3.5 shrink-0" />
+                Equivalente aplicado: {{ formatCurrency(paymentEquivalentMxn) }} MXN
+              </p>
+              <UFormField
+                name="notes"
+                label="Notas"
+                hint="Opcional"
+                class="col-span-2 md:col-span-4"
+              >
+                <UTextarea
+                  v-model="state.notes"
+                  placeholder="Detalles adicionales del pago"
+                  class="w-full"
+                  :rows="2"
+                  autoresize
+                />
+              </UFormField>
+            </div>
+          </DetailCard>
         </UForm>
       </template>
-      <template #footer="{ close }">
-        <UButton
-          label="Cancelar"
-          color="neutral"
-          variant="outline"
-          :disabled="loading || deleting"
-          @click="close"
-        />
-        <UButton
+      <template #footer>
+        <AppButton
           v-if="isEditing"
-          :label="deleteLabel"
-          color="error"
-          variant="soft"
-          :loading="deleting"
-          :disabled="loading"
-          @click="deleteConfirmationOpen = true"
+          ref="deleteButton"
+          label="Eliminar pago"
+          icon="i-lucide-trash-2"
+          intent="danger"
+          variant="ghost"
+          class="mr-auto"
+          :disabled="loading || deleting"
+          @click="openDeleteConfirmation"
         />
-        <UButton
+        <AppButton
           type="submit"
           form="payment-form"
           :label="submitLabel"
+          icon="i-lucide-check"
           :loading="loading"
-          :disabled="deleting"
+          :disabled="deleting || deleteConfirmationOpen"
         />
       </template>
     </UModal>
 
-    <UModal
+    <DestructiveConfirmModal
       v-model:open="deleteConfirmationOpen"
       title="Eliminar pago"
       :description="deleteConfirmationDescription"
+      confirm-label="Sí, eliminar pago"
+      confirm-icon="i-lucide-trash-2"
       :close="false"
       :dismissible="false"
-      :ui="{ footer: 'justify-end' }"
-    >
-      <template #footer>
-        <UButton
-          label="Cancelar"
-          color="neutral"
-          variant="outline"
-          :disabled="deleting"
-          @click="deleteConfirmationOpen = false"
-        />
-        <UButton
-          label="Sí, eliminar pago"
-          icon="i-lucide-trash-2"
-          color="error"
-          :loading="deleting"
-          @click="removePayment"
-        />
-      </template>
-    </UModal>
+      :loading="deleting"
+      :error="deleteError"
+      @confirm="removePayment"
+      @after-close="restoreDeleteFocus"
+    />
   </UCard>
 </template>
