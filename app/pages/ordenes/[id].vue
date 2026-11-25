@@ -148,65 +148,72 @@ async function deleteOrder() {
         <section aria-labelledby="order-overview" class="space-y-3">
           <ReportsSectionHeading id="order-overview" title="Detalle de la orden" marker="bg-primary">
             <template #actions>
-              <div class="flex justify-end">
-                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                  <div class="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+              <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+                <div class="flex items-center gap-2 sm:order-2">
+                  <USelectMenu
+                    :model-value="order.status"
+                    :color="orderStatusColors[order.status]"
+                    variant="subtle"
+                    :items="statusOptions"
+                    value-key="value"
+                    :search-input="false"
+                    :loading="savingStatus"
+                    :disabled="!isSuperAdmin"
+                    aria-label="Estado de la orden"
+                    class="min-w-0 flex-1 sm:w-48 sm:flex-none"
+                    :ui="{
+                      base: statusSelectClasses[order.status],
+                      trailingIcon: 'text-current',
+                      content: 'max-h-none',
+                      viewport: 'overflow-y-visible'
+                    }"
+                    @update:model-value="updateStatus($event as OrderStatus)"
+                  />
+                  <UBadge
+                    v-if="order.priority !== 'NORMAL'"
+                    :label="orderPriorityLabels[order.priority]"
+                    :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
+                    variant="subtle"
+                    icon="i-lucide-flag"
+                    class="h-8 shrink-0 justify-center"
+                  />
+                  <UDropdownMenu
+                    v-if="isSuperAdmin"
+                    :items="orderActionItems"
+                    :content="{ align: 'end' }"
+                  >
                     <UButton
-                      v-if="order.canViewFinancials"
-                      label="Gastos"
-                      icon="i-lucide-receipt-text"
+                      aria-label="Opciones"
+                      icon="i-lucide-ellipsis-vertical"
                       color="neutral"
                       variant="outline"
-                      class="w-full justify-center sm:w-auto"
-                      @click="expensesOpen = true"
+                      square
+                      class="shrink-0"
                     />
-                    <UButton
-                      :label="paymentStatusLabels[order.paymentStatus]"
-                      icon="i-lucide-hand-coins"
-                      :color="paymentStatusColors[order.paymentStatus]"
-                      variant="subtle"
-                      class="w-full justify-center sm:w-auto"
-                      @click="paymentsOpen = true"
-                    />
-                    <UBadge
-                      v-if="order.priority !== 'NORMAL'"
-                      :label="orderPriorityLabels[order.priority]"
-                      :color="order.priority === 'URGENT' ? 'error' : order.priority === 'HIGH' ? 'warning' : 'neutral'"
-                      variant="subtle"
-                      class="col-span-2 h-9 w-full justify-center max-md:text-sm sm:w-auto md:h-8"
-                    />
-                    <USelectMenu
-                      :model-value="order.status"
-                      :color="orderStatusColors[order.status]"
-                      variant="subtle"
-                      :items="statusOptions"
-                      value-key="value"
-                      :search-input="false"
-                      :loading="savingStatus"
-                      :disabled="!isSuperAdmin"
-                      class="col-span-2 min-w-40 w-full sm:min-w-0 sm:w-48"
-                      :ui="{
-                        base: statusSelectClasses[order.status],
-                        trailingIcon: 'text-current',
-                        content: 'max-h-none',
-                        viewport: 'overflow-y-visible'
-                      }"
-                      @update:model-value="updateStatus($event as OrderStatus)"
-                    />
-                    <UDropdownMenu
-                      v-if="isSuperAdmin"
-                      :items="orderActionItems"
-                      :content="{ align: 'end' }"
-                    >
-                      <UButton
-                        aria-label="Opciones"
-                        icon="i-lucide-settings-2"
-                        color="neutral"
-                        variant="outline"
-                        class="col-span-2 justify-self-end"
-                      />
-                    </UDropdownMenu>
-                  </div>
+                  </UDropdownMenu>
+                </div>
+                <div
+                  class="grid gap-2 sm:order-1 sm:flex sm:items-center"
+                  :class="order.canViewFinancials ? 'grid-cols-2' : 'grid-cols-1'"
+                >
+                  <UButton
+                    v-if="order.canViewFinancials"
+                    label="Gastos"
+                    icon="i-lucide-receipt-text"
+                    color="neutral"
+                    variant="outline"
+                    class="min-w-0 justify-center"
+                    @click="expensesOpen = true"
+                  />
+                  <UButton
+                    :label="paymentStatusLabels[order.paymentStatus]"
+                    icon="i-lucide-hand-coins"
+                    :color="paymentStatusColors[order.paymentStatus]"
+                    variant="subtle"
+                    class="min-w-0 justify-center"
+                    :ui="{ label: 'truncate' }"
+                    @click="paymentsOpen = true"
+                  />
                 </div>
               </div>
             </template>
