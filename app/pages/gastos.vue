@@ -172,9 +172,6 @@ function openDuplicateModal(expense: ExpenseListItem) {
   <UDashboardPanel id="gastos">
     <template #header>
       <UDashboardNavbar title="Gastos operativos">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <span v-if="!isReadOnly" class="inline-flex md:hidden">
             <ExpensesCreateMenu

@@ -90,9 +90,6 @@ async function deleteOrder() {
   <UDashboardPanel id="order-detail" :ui="{ body: 'pt-0 sm:pt-0' }">
     <template #header>
       <UDashboardNavbar :title="order?.orderNumber ?? 'Orden de trabajo'" :toggle="{ size: 'xl' }">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <UButton
             :to="returnTo"

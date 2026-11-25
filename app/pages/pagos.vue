@@ -45,9 +45,6 @@ const total = computed(() => filteredPayments.value.reduce((sum, payment) => sum
   <UDashboardPanel id="pagos">
     <template #header>
       <UDashboardNavbar title="Pagos registrados">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <WorkshopSwitcher />
           <AppCsvExportButton

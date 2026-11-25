@@ -17,9 +17,6 @@ useHead({ title: 'Detalle del vehículo' })
   <UDashboardPanel id="vehicle-detail">
     <template #header>
       <UDashboardNavbar title="Detalle del vehículo">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <UButton
             to="/vehiculos"

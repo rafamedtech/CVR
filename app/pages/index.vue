@@ -29,9 +29,6 @@ const updatedLabel = computed(() => data.value
   <UDashboardPanel id="dashboard">
     <template #header>
       <UDashboardNavbar title="Resumen" :toggle="{ size: 'xl' }">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <UButton
             color="neutral"

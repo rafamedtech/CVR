@@ -150,9 +150,6 @@ function clearFilters() {
   <UDashboardPanel id="ordenes">
     <template #header>
       <UDashboardNavbar title="Órdenes de trabajo">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <OrdersCreateMenu
             v-if="!isReadOnly"
