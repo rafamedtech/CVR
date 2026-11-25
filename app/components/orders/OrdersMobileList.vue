@@ -117,14 +117,17 @@ withDefaults(defineProps<{
       </div>
 
       <DetailFields
-        v-if="showPromisedAt && order.promisedAt"
-        :fields="[{ label: 'Entrega', value: formatDate(order.promisedAt, false, workshopTimeZone(order.workshopId)) }]"
+        v-if="showPromisedAt"
+        :fields="[
+          { label: 'Entrega', value: order.promisedAt ? formatDate(order.promisedAt, false, workshopTimeZone(order.workshopId)) : null },
+          { label: 'Responsable', value: order.assignedToName || 'Sin asignar' }
+        ]"
       />
 
-      <template #footer>
+      <template v-if="showWorkshop || !showPromisedAt" #footer>
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default pt-3">
           <OrdersWorkshopBadge v-if="showWorkshop" :order="order" />
-          <p class="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+          <p v-if="!showPromisedAt" class="flex min-w-0 items-center gap-1.5 text-xs text-muted">
             <UIcon name="i-lucide-user-round" class="size-4 shrink-0" aria-hidden="true" />
             <span class="break-words">{{ order.assignedToName || 'Sin responsable asignado' }}</span>
           </p>
