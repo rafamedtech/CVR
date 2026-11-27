@@ -15,6 +15,7 @@ ServiceOrder (service_orders) — único `workshopId + orderNumber` → workshop
 OrderItem (order_items) → order
 Payment (payments) → order, recordedBy
 Expense (expenses) → workshop? (null = centro global), order?, recordedBy
+AuditEvent (audit_events) — solo inserción (trigger), sin FK: entidad, acción, taller, actor, rol, `switchedFromId`, motivo, fecha efectiva, documento origen, foto y cambios. Ver `docs/permisos.md`
 
 ## Enums
 WorkshopType: BODY_SHOP MECHANICAL PAINT_STORE

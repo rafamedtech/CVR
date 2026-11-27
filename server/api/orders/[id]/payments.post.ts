@@ -47,6 +47,15 @@ export default defineEventHandler(async (event) => {
         recordedById: context.profile.id
       }
     })
+    await recordAudit(transaction, context, {
+      entityType: 'payment',
+      entityId: payment.id,
+      action: 'create',
+      workshopId: order.workshopId,
+      snapshot: payment,
+      effectiveDate: payment.paidAt,
+      source: { type: 'service_order', id: order.id }
+    })
     const payments = await transaction.payment.findMany({
       where: { orderId: order.id },
       select: { amountMxn: true }

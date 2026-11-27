@@ -13,8 +13,7 @@ export default defineEventHandler(async (event) => {
   const workshopId = resolveExpenseWorkshopId(context, body.assignmentType)
   const prisma = usePrisma()
   const expense = await prisma.expense.findFirst({
-    where: { id, ...expenseAccessWhere(context) },
-    select: { id: true, workshopId: true }
+    where: { id, ...expenseAccessWhere(context) }
   })
 
   if (!expense) {
@@ -29,21 +28,35 @@ export default defineEventHandler(async (event) => {
   const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
   const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
-  return prisma.expense.update({
-    where: { id: expense.id },
-    data: {
-      workshopId,
-      category: body.category,
-      method: body.method,
-      description: body.description,
-      vendor: body.vendor || null,
-      amount: body.amount,
-      amountMxn,
-      currency: body.currency,
-      exchangeRate,
-      expenseDate: new Date(body.expenseDate),
-      notes: body.notes || null,
-      orderId
-    }
+  return prisma.$transaction(async (transaction) => {
+    const previous = await lockForAudit(transaction, 'expense', expense.id, () => transaction.expense.findUnique({ where: { id: expense.id } }))
+    const updated = await transaction.expense.update({
+      where: { id: expense.id },
+      data: {
+        workshopId,
+        category: body.category,
+        method: body.method,
+        description: body.description,
+        vendor: body.vendor || null,
+        amount: body.amount,
+        amountMxn,
+        currency: body.currency,
+        exchangeRate,
+        expenseDate: new Date(body.expenseDate),
+        notes: body.notes || null,
+        orderId
+      }
+    })
+    await recordAudit(transaction, context, {
+      entityType: 'expense',
+      entityId: expense.id,
+      action: 'update',
+      workshopId: updated.workshopId,
+      snapshot: previous,
+      changes: updated,
+      effectiveDate: updated.expenseDate,
+      source: updated.orderId ? { type: 'service_order', id: updated.orderId } : null
+    })
+    return updated
   })
 })

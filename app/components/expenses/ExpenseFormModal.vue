@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { deletionReasonSchema } from '#shared/audit'
 import { formatDateOnly } from '#shared/date'
 import { parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
@@ -34,6 +35,8 @@ const deleteConfirmationOpen = shallowRef(false)
 const timeZone = computed(() => workshopTimeZone(activeWorkshop.value?.id) ?? DEFAULT_WORKSHOP_TIME_ZONE)
 const expenseDate = shallowRef<DateValue | undefined>(today(timeZone.value))
 const deleteError = shallowRef('')
+const deleteReason = shallowRef('')
+const deleteReasonValid = computed(() => deletionReasonSchema.safeParse({ reason: deleteReason.value }).success)
 const deleteButton = useTemplateRef<{ $el: HTMLElement }>('deleteButton')
 const expenseForm = useTemplateRef('expenseForm')
 const categoryOptions = Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label }))
@@ -174,6 +177,7 @@ async function onSubmit(event: FormSubmitEvent<ExpenseMutation>) {
 
 function openDeleteConfirmation() {
   deleteError.value = ''
+  deleteReason.value = ''
   deleteConfirmationOpen.value = true
 }
 
@@ -182,12 +186,12 @@ function restoreDeleteFocus() {
 }
 
 async function removeExpense() {
-  if (!props.expense || loading.value || deleting.value) return
+  if (!props.expense || loading.value || deleting.value || !deleteReasonValid.value) return
 
   deleting.value = true
   deleteError.value = ''
   try {
-    await $fetch(`/api/expenses/${props.expense.id}`, { method: 'DELETE' })
+    await $fetch(`/api/expenses/${props.expense.id}`, { method: 'DELETE', body: { reason: deleteReason.value } })
     toast.add({ title: 'Gasto eliminado', color: 'success', icon: 'i-lucide-check' })
     deleteConfirmationOpen.value = false
     open.value = false
@@ -431,9 +435,14 @@ async function removeExpense() {
     confirm-icon="i-lucide-trash-2"
     :close="false"
     :dismissible="false"
+    :confirm-disabled="!deleteReasonValid"
     :loading="deleting"
     :error="deleteError"
     @confirm="removeExpense"
     @after-close="restoreDeleteFocus"
-  />
+  >
+    <template #reason="{ loading: removing }">
+      <DeletionReasonField v-model="deleteReason" :disabled="removing" />
+    </template>
+  </DestructiveConfirmModal>
 </template>

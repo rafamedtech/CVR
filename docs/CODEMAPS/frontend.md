@@ -7,7 +7,7 @@ Sesión: `app/middleware/crm-session.global.ts` + `useCrmSession()` (perfil, tal
 ## Páginas → componentes → API
 / → Dashboard{KpiGrid,ActivityFeed,Attention,UpcomingDeliveries,RecentOrders}, RetryAlert → /api/dashboard/overview
 /ordenes → OrdersFilters, OrdersTable, OrdersCreateMenu, OrdersOrderFormModal, ReportsBusinessSelector · `useTableQuery` (estado en URL) → /api/orders, /api/customers, /api/vehicles
-/ordenes/[id] → Orders{OrderOverviewCards,OrderReceptionCard,OrderFinancialSummaryCard,OrderItemsCard,OrderPaymentsCard,OrderExpensesCard,OrderFormModal}, DetailStatCard → /api/orders/[id] (+ items, payments)
+/ordenes/[id] → Orders{OrderOverviewCards,OrderReceptionCard,OrderFinancialSummaryCard,OrderItemsCard,OrderPaymentsCard,OrderExpensesCard,OrderFormModal,OrderAuditCard}, DetailStatCard → /api/orders/[id] (+ items, payments), /api/audit (SA y consulta global)
 /clientes → CustomersTable, Customers{CustomerFormModal,CustomerEditModal,CustomerWorkshopsModal} → /api/customers
 /clientes/[id] → DetailHeader, DetailPageHeader, Customers{CustomerDetailProfile,CustomerDetailVehicles}, OrdersTable → /api/customers/[id]
 /vehiculos → VehiclesTable, Vehicles{VehicleFormModal,VehicleEditModal,VehicleWorkshopsModal} → /api/vehicles, /api/customers
@@ -20,11 +20,11 @@ Sesión: `app/middleware/crm-session.global.ts` + `useCrmSession()` (perfil, tal
 /login, /forgot-password, /confirm → AuthFormCard, AuthEmailField, AuthPasswordFields, AuthRecoveryNotice (capa) · `useSupabaseClient` (sin layout)
 
 ## Componentes (`app/components`)
-raíz: AppBrand, TeamsMenu, UserMenu, WorkshopStartModal, WorkshopSwitcher
+raíz: AppBrand, DeletionReasonField (motivo en DestructiveConfirmModal #reason), TeamsMenu, UserMenu, WorkshopStartModal, WorkshopSwitcher
 customers/: CustomerAddressFields, CustomerDetailProfile, CustomerDetailVehicles, CustomerEditModal, CustomerFormModal, CustomerWorkshopsModal, CustomersMobileList, CustomersTable
 dashboard/: ActivityDetails, ActivityFeed, Attention, KpiGrid, MonthFilter, OrdersSection, ProfitSummary, RecentOrders, StatusBreakdown, Trend, UpcomingDeliveries, WorkshopPerformance
 expenses/: ExpenseDeleteModal, ExpenseEditModal, ExpenseFormModal, ExpenseOrderPopover, ExpensesActionsMenu, ExpensesAssignment, ExpensesCreateMenu, ExpensesFilters, ExpensesMobileList, ExpensesTable, ExpensesWorkshopBadge
-orders/: OrderCustomerSelectMenu, OrderExpensesCard, OrderFinancialSummaryCard, OrderFormModal, OrderItemFields, OrderItemsCard, OrderItemsEditor, OrderOverviewCards, OrderPaymentsCard, OrderReceptionCard, OrdersCreateMenu, OrdersFilters, OrdersMobileList, OrdersStatusBadge, OrdersTable, OrdersWorkshopBadge
+orders/: OrderAuditCard, OrderCustomerSelectMenu, OrderExpensesCard, OrderFinancialSummaryCard, OrderFormModal, OrderItemFields, OrderItemsCard, OrderItemsEditor, OrderOverviewCards, OrderPaymentsCard, OrderReceptionCard, OrdersCreateMenu, OrdersFilters, OrdersMobileList, OrdersStatusBadge, OrdersTable, OrdersWorkshopBadge
 payments/: PaymentsMobileList, PaymentsTable
 reports/: BusinessSalesChannels, BusinessSelector, CashFlowChart.client, ConsolidationSummary, Dashboard, InventoryValuation, LoadingCard, LoadingState, ProfitStatement, SummaryCardsAdapter
 settings/: AccessPlan, MemberFormModal

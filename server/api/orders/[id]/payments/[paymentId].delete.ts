@@ -1,3 +1,4 @@
+import { deletionReasonSchema } from '../../../../../shared/audit'
 import { calculatePaymentStatus } from '../../../../../shared/payment-status'
 
 export default defineEventHandler(async (event) => {
@@ -10,6 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Pago inválido.' })
   }
 
+  const { reason } = await readCrmBody(event, deletionReasonSchema)
   const prisma = usePrisma()
   const payment = await prisma.payment.findFirst({
     where: {
@@ -27,6 +29,17 @@ export default defineEventHandler(async (event) => {
   }
 
   return prisma.$transaction(async (transaction) => {
+    const previous = await lockForAudit(transaction, 'payment', payment.id, () => transaction.payment.findUnique({ where: { id: payment.id } }))
+    await recordAudit(transaction, context, {
+      entityType: 'payment',
+      entityId: payment.id,
+      action: 'delete',
+      workshopId: payment.order.workshopId,
+      snapshot: previous,
+      reason,
+      effectiveDate: payment.paidAt,
+      source: { type: 'service_order', id: payment.orderId }
+    })
     const deletedPayment = await transaction.payment.delete({
       where: { id: payment.id }
     })

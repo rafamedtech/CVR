@@ -29,14 +29,25 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró la orden.' })
   }
 
-  const item = await prisma.orderItem.create({
-    data: {
-      orderId: order.id,
-      ...calculateLineItem({
-        ...body,
-        taxRate: getOrderTaxRate(order.requiresInvoice)
-      })
-    }
+  const item = await prisma.$transaction(async (transaction) => {
+    const created = await transaction.orderItem.create({
+      data: {
+        orderId: order.id,
+        ...calculateLineItem({
+          ...body,
+          taxRate: getOrderTaxRate(order.requiresInvoice)
+        })
+      }
+    })
+    await recordAudit(transaction, context, {
+      entityType: 'order_item',
+      entityId: created.id,
+      action: 'create',
+      workshopId: order.workshopId,
+      snapshot: created,
+      source: { type: 'service_order', id: order.id }
+    })
+    return created
   })
   await recalculateOrder(order.id)
 

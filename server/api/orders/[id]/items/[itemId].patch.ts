@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     },
     include: {
       order: {
-        select: { requiresInvoice: true }
+        select: { requiresInvoice: true, workshopId: true }
       }
     }
   })
@@ -37,12 +37,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'No se encontró el concepto.' })
   }
 
-  const updatedItem = await prisma.orderItem.update({
-    where: { id: item.id },
-    data: calculateLineItem({
-      ...body,
-      taxRate: getOrderTaxRate(item.order.requiresInvoice)
+  const { order } = item
+  const updatedItem = await prisma.$transaction(async (transaction) => {
+    const previous = await lockForAudit(transaction, 'order_item', item.id, () => transaction.orderItem.findUnique({ where: { id: item.id } }))
+    const updated = await transaction.orderItem.update({
+      where: { id: item.id },
+      data: calculateLineItem({
+        ...body,
+        taxRate: getOrderTaxRate(order.requiresInvoice)
+      })
     })
+    await recordAudit(transaction, context, {
+      entityType: 'order_item',
+      entityId: item.id,
+      action: 'update',
+      workshopId: order.workshopId,
+      snapshot: previous,
+      changes: updated,
+      source: { type: 'service_order', id: item.orderId }
+    })
+    return updated
   })
   await recalculateOrder(item.orderId)
 
