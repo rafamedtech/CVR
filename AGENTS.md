@@ -30,7 +30,7 @@ Node 24 (`.nvmrc`), pnpm 11. CI (`.github/workflows/ci.yml`) ejecuta `lint` y `t
 - **Validación.** Cuerpos con `readCrmBody(event, zodSchema)` (`server/utils/validation.ts`). Esquemas compartidos cliente/servidor en `shared/`.
 - **Dinero.** Totales con `server/utils/orders.ts` (`calculateLineItem`, `recalculateOrder`), IVA por taller (`shared/order-tax.ts`), conversión `shared/currency.ts`. Política de redondeo binaria de CVR (`roundBinaryMoney`); no la mezcles con la decimal de Pinturas.
 - **Fechas.** Zona horaria del taller (`app/utils/datetime.ts`); claves `YYYY-MM-DD` en API y BD.
-- **Carolina.** `server/utils/carolina-{reports,inventory}.ts` leen la base de Carolina con clave secreta, solo SELECT. Si Carolina falla, el reporte se marca como parcial; nunca se representa como cero. Columnas consumidas en `docs/CODEMAPS/integraciones.md`.
+- **Carolina.** `server/utils/carolina-{reports,inventory}.ts` leen la base de Carolina con clave secreta, solo SELECT. Si Carolina falla, el reporte se marca como parcial; nunca se representa como cero. Tablas, columnas y relaciones consumidas: `shared/carolina-contract.json` (contrato canónico). `tests/carolina-contract.test.ts` exige que las consultas coincidan exactamente con él: si agregas o quitas una columna, actualiza el contrato y su copia en `siigo-pinturas/tests/contracts/cvr-carolina.json` (desde el workspace: `node .claude/scripts/contrato-cvr-carolina.mjs --sync`).
 - **Migraciones.** Prisma Migrate en `prisma/migrations`. Después de migrar en un entorno nuevo, ejecutar `prisma/enable-rls.sql`. El navegador nunca consulta tablas directamente.
 
 ## Frontend

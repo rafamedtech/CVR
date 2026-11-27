@@ -36,3 +36,6 @@ jobs:
 
       - name: Typecheck
         run: pnpm run typecheck
+
+      - name: Carolina read contract
+        run: pnpm exec tsx --test tests/carolina-contract.test.ts
