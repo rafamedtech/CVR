@@ -44,7 +44,7 @@ Node 24 (`.nvmrc`), pnpm 11. CI (`.github/workflows/ci.yml`) ejecuta `lint` y `t
 ## Capa compartida
 
 - Versión exacta de `@rafamedtech/nuxt-shared` en `package.json`. Actualiza con `pnpm add -E @rafamedtech/nuxt-shared@<versión>` en un PR propio (manifiesto, lockfile y migración juntos).
-- `pnpm-workspace.yaml` aplica `patches/@rafamedtech__nuxt-shared@0.11.0.patch` (valor por defecto de `titleIcon` en `DashboardNavbar`). Al subir de versión, comprueba si el parche sigue siendo necesario y elimínalo junto con su entrada en `patchedDependencies`.
+- Si necesitas un arreglo urgente de la capa antes de publicarla, usa `pnpm patch` (`patchedDependencies` en `pnpm-workspace.yaml`) y retíralo al subir a la versión que lo incluya. Las versiones recién publicadas deben figurar en `minimumReleaseAgeExclude`.
 
 ## Seguridad
 
