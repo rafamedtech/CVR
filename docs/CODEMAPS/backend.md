@@ -44,17 +44,20 @@ DELETE /api/orders/[id] → SA → serviceOrder
 POST /api/orders/[id]/items → SA → orderItem (`recalculateOrder`)
 PATCH /api/orders/[id]/items/[itemId] → SA → orderItem
 DELETE /api/orders/[id]/items/[itemId] → SA → orderItem
-POST /api/orders/[id]/payments → SA → payment
-PATCH /api/orders/[id]/payments/[paymentId] → SA → payment
-DELETE /api/orders/[id]/payments/[paymentId] → SA → payment
+POST /api/orders/[id]/payments → SA → payment (+ audit)
+PATCH /api/orders/[id]/payments/[paymentId] → SA → payment (+ audit)
+DELETE /api/orders/[id]/payments/[paymentId] → SA + motivo obligatorio → payment (+ audit)
 
 ### Pagos y gastos
 GET  /api/payments → M,C,R → payment
 GET  /api/expenses → M,C,R → expense (`expenseAccessWhere`)
-POST /api/expenses → user (+ `resolveExpenseWorkshopId`: taller, orden o centro global) → expense
-PATCH /api/expenses/[id] → M,C / SA → expense
-DELETE /api/expenses/[id] → M,C + taller → expense
+POST /api/expenses → user (+ `resolveExpenseWorkshopId`: taller, orden o centro global) → expense (+ audit)
+PATCH /api/expenses/[id] → M,C / SA → expense (+ audit)
+DELETE /api/expenses/[id] → M,C + taller + motivo obligatorio → expense (+ audit)
 GET  /api/expense-order-options → M,C + taller → serviceOrder
+
+### Historial de cambios
+GET  /api/audit?orderId= → global read → auditEvent (orden + conceptos, pagos y gastos ligados)
 
 ### Dashboard y reportes
 GET  /api/dashboard → taller → `workshop-dashboard.getWorkshopDashboard`
@@ -62,7 +65,8 @@ GET  /api/dashboard/overview → taller → `dashboard-overview.getDashboardOver
 GET  /api/reports/summary → global read → `getWorkshopDashboard` + `carolina-reports.readCarolinaReport` + `carolina-inventory` → `business-report.buildBusinessReport` + `shared/combine-reports`
 
 ## server/utils
-auth.ts — guardas y filtros de acceso (arriba)
+auth.ts — guardas y filtros de acceso (arriba). Matriz: `docs/permisos.md`
+audit.ts — `recordAudit(tx, ctx, input)` en la misma transacción; `auditActorRole`
 orders.ts — cálculo de partidas/totales, `recalculateOrder`, select y serialización de listados
 expenses.ts — acceso y asignación de gastos (taller / orden / global)
 customer-address.ts — domicilio Siigo ↔ cliente
@@ -74,7 +78,7 @@ report-pagination.ts — `readReportPages` (páginas de 500)
 prisma.ts — `usePrisma` · validation.ts — `readCrmBody` (Zod) · tax.ts · phone.ts
 
 ## shared/ (cliente + servidor)
-combine-reports · currency (MXN/USD, `roundMoney`) · customer-address (Zod) · customer-type (↔ Siigo) · date · expense (Zod) · order-assignee · order-number (prefijo por taller) · order-tax · payment-status · payment (Zod) · report-period · report-sales-channels · report · siigo-mexico-locations (reexport de la capa)
+audit (motivo de eliminación, `AuditEventView`) · combine-reports · currency (MXN/USD, `roundMoney`) · customer-address (Zod) · customer-type (↔ Siigo) · date · expense (Zod) · order-assignee · order-number (prefijo por taller) · order-tax · payment-status · payment (Zod) · report-period · report-sales-channels · report · siigo-mexico-locations (reexport de la capa)
 
 ## Pruebas
 `tests/*.test.ts` con `tsx --test` (sin BD): auth-pilot, read-only-access, global-expense-access, consolidated-report, carolina-inventory, order-*, payment-status, report*, currency*, date, phone, customer-address, session-workshops, user-switch, workshop-start, expense*, dashboard-overview, crm-session-loading.

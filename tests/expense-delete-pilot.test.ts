@@ -6,12 +6,14 @@ import * as dates from '@internationalized/date'
 import ts from 'typescript'
 import * as vue from 'vue'
 import { compileScript, parse } from 'vue/compiler-sfc'
+import * as auditSchema from '../shared/audit'
 import * as expenseSchema from '../shared/expense'
 import * as dateFormat from '../shared/date'
 
 interface ExpenseSetup {
   deleteConfirmationOpen: vue.Ref<boolean>
   deleteError: vue.Ref<string>
+  deleteReason: vue.Ref<string>
   openDeleteConfirmation: () => void
   removeExpense: () => Promise<void>
   restoreDeleteFocus: () => void
@@ -32,6 +34,7 @@ function fixture(request: () => Promise<unknown>) {
   const modules: Record<string, unknown> = {
     'vue': { ...vue, useModel: () => open },
     '@internationalized/date': dates,
+    '#shared/audit': auditSchema,
     '#shared/date': dateFormat,
     '#shared/expense': expenseSchema,
     '~/utils/datetime': { DEFAULT_WORKSHOP_TIME_ZONE: 'America/Tijuana' },
@@ -60,8 +63,8 @@ function fixture(request: () => Promise<unknown>) {
     expenseCategoryLabels: { OTHER: 'Otro' },
     paymentMethodLabels: { CASH: 'Efectivo' },
     getApiErrorMessage: (error: Error) => error.message,
-    $fetch: (url: string, options: { method: string }) => {
-      calls.push(`${options.method} ${url}`)
+    $fetch: (url: string, options: { method: string, body?: { reason?: string } }) => {
+      calls.push(`${options.method} ${url}${options.body?.reason ? ` · ${options.body.reason}` : ''}`)
       return request()
     }
   })
@@ -93,9 +96,10 @@ test('eliminar bloquea duplicados, conserva el fallo y actualiza al reintentar',
     if (++attempts === 1) await first.promise
   })
   setup.openDeleteConfirmation()
+  setup.deleteReason.value = 'Gasto duplicado'
   const pending = setup.removeExpense()
   await setup.removeExpense()
-  assert.deepEqual(calls, ['DELETE /api/expenses/test-expense'])
+  assert.deepEqual(calls, ['DELETE /api/expenses/test-expense · Gasto duplicado'])
 
   first.reject(new Error('Reintenta la eliminación.'))
   await pending
@@ -108,4 +112,26 @@ test('eliminar bloquea duplicados, conserva el fallo y actualiza al reintentar',
   assert.equal(setup.deleteConfirmationOpen.value, false)
   assert.equal(open.value, false)
   assert.deepEqual(events, ['deleted'])
+})
+
+test('eliminar exige motivo y lo envía al servidor', async () => {
+  const { setup, calls } = fixture(async () => {})
+  setup.openDeleteConfirmation()
+  await setup.removeExpense()
+  setup.deleteReason.value = '  '
+  await setup.removeExpense()
+  assert.deepEqual(calls, [])
+
+  setup.deleteReason.value = 'Capturado en el taller equivocado'
+  await setup.removeExpense()
+  assert.deepEqual(calls, ['DELETE /api/expenses/test-expense · Capturado en el taller equivocado'])
+})
+
+test('abrir la confirmación limpia el motivo anterior', () => {
+  const { setup } = fixture(async () => {})
+  setup.openDeleteConfirmation()
+  setup.deleteReason.value = 'Motivo previo'
+  setup.deleteConfirmationOpen.value = false
+  setup.openDeleteConfirmation()
+  assert.equal(setup.deleteReason.value, '')
 })

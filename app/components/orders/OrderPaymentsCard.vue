@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { deletionReasonSchema } from '#shared/audit'
 import { formatDateOnly } from '#shared/date'
 import { parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
@@ -27,6 +28,8 @@ const deleteConfirmationOpen = shallowRef(false)
 const initializing = shallowRef(false)
 const editingPayment = shallowRef<OrderPayment | null>(null)
 const deleteError = shallowRef('')
+const deleteReason = shallowRef('')
+const deleteReasonValid = computed(() => deletionReasonSchema.safeParse({ reason: deleteReason.value }).success)
 const deleteButton = useTemplateRef<{ $el: HTMLElement }>('deleteButton')
 const timeZone = computed(() => workshopTimeZone(props.workshopId) ?? DEFAULT_WORKSHOP_TIME_ZONE)
 const defaultPaymentDate = today(timeZone.value)
@@ -160,6 +163,7 @@ async function onSubmit(event: FormSubmitEvent<PaymentForm>) {
 
 function openDeleteConfirmation() {
   deleteError.value = ''
+  deleteReason.value = ''
   deleteConfirmationOpen.value = true
 }
 
@@ -168,13 +172,14 @@ function restoreDeleteFocus() {
 }
 
 async function removePayment() {
-  if (!editingPayment.value || loading.value || deleting.value) return
+  if (!editingPayment.value || loading.value || deleting.value || !deleteReasonValid.value) return
 
   deleting.value = true
   deleteError.value = ''
   try {
     await $fetch(`/api/orders/${props.orderId}/payments/${editingPayment.value.id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      body: { reason: deleteReason.value }
     })
     toast.add({ title: 'Pago eliminado', color: 'success', icon: 'i-lucide-check' })
     deleteConfirmationOpen.value = false
@@ -492,10 +497,15 @@ async function removePayment() {
       confirm-icon="i-lucide-trash-2"
       :close="false"
       :dismissible="false"
+      :confirm-disabled="!deleteReasonValid"
       :loading="deleting"
       :error="deleteError"
       @confirm="removePayment"
       @after-close="restoreDeleteFocus"
-    />
+    >
+      <template #reason="{ loading: removing }">
+        <DeletionReasonField v-model="deleteReason" :disabled="removing" />
+      </template>
+    </DestructiveConfirmModal>
   </div>
 </template>

@@ -12,21 +12,33 @@ export default defineEventHandler(async (event) => {
   const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
   const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
-  return prisma.expense.create({
-    data: {
-      workshopId,
-      category: body.category,
-      method: body.method,
-      description: body.description,
-      vendor: body.vendor || null,
-      amount: body.amount,
-      amountMxn,
-      currency: body.currency,
-      exchangeRate,
-      expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
-      notes: body.notes || null,
-      orderId,
-      recordedById: context.profile.id
-    }
+  return prisma.$transaction(async (transaction) => {
+    const expense = await transaction.expense.create({
+      data: {
+        workshopId,
+        category: body.category,
+        method: body.method,
+        description: body.description,
+        vendor: body.vendor || null,
+        amount: body.amount,
+        amountMxn,
+        currency: body.currency,
+        exchangeRate,
+        expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
+        notes: body.notes || null,
+        orderId,
+        recordedById: context.profile.id
+      }
+    })
+    await recordAudit(transaction, context, {
+      entityType: 'expense',
+      entityId: expense.id,
+      action: 'create',
+      workshopId: expense.workshopId,
+      snapshot: expense,
+      effectiveDate: expense.expenseDate,
+      source: expense.orderId ? { type: 'service_order', id: expense.orderId } : null
+    })
+    return expense
   })
 })

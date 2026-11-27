@@ -46,6 +46,7 @@ export default defineEventHandler(async (event) => {
   }
 
   return prisma.$transaction(async (transaction) => {
+    const previous = await lockForAudit(transaction, 'payment', payment.id, () => transaction.payment.findUnique({ where: { id: payment.id } }))
     const updatedPayment = await transaction.payment.update({
       where: { id: payment.id },
       data: {
@@ -58,6 +59,16 @@ export default defineEventHandler(async (event) => {
         notes: body.notes || null,
         paidAt: body.paidAt ? new Date(body.paidAt) : payment.paidAt
       }
+    })
+    await recordAudit(transaction, context, {
+      entityType: 'payment',
+      entityId: payment.id,
+      action: 'update',
+      workshopId: payment.order.workshopId,
+      snapshot: previous,
+      changes: updatedPayment,
+      effectiveDate: updatedPayment.paidAt,
+      source: { type: 'service_order', id: payment.orderId }
     })
     const payments = await transaction.payment.findMany({
       where: { orderId: payment.orderId },

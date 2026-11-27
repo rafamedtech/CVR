@@ -12,8 +12,21 @@ const paymentsOpen = shallowRef(false)
 const expensesOpen = shallowRef(false)
 const deleteOpen = shallowRef(false)
 const deleting = shallowRef(false)
+const deleteReason = shallowRef('')
+const deleteError = shallowRef('')
+watch(deleteOpen, (value) => {
+  if (value) {
+    deleteReason.value = ''
+    deleteError.value = ''
+  }
+})
 const orderId = computed(() => route.params.id as string)
-const { isSuperAdmin, canRecordExpenses } = useCrmSession()
+const { isSuperAdmin, isReadOnly, canRecordExpenses } = useCrmSession()
+const auditCard = useTemplateRef<{ refresh: () => Promise<void> }>('auditCard')
+
+async function refreshOrder() {
+  await Promise.all([refresh(), auditCard.value?.refresh()])
+}
 
 const { data: order, status, error, refresh } = useFetch<OrderDetail>(() => `/api/orders/${orderId.value}`, {
   lazy: true,
@@ -62,7 +75,7 @@ async function updateStatus(value: OrderStatus) {
       title: `Orden marcada como “${orderStatusLabels[value]}”`,
       color: 'success'
     })
-    await refresh()
+    await refreshOrder()
   } catch (error) {
     toast.add({ title: 'No se pudo cambiar el estado', description: getApiErrorMessage(error), color: 'error' })
   } finally {
@@ -71,15 +84,17 @@ async function updateStatus(value: OrderStatus) {
 }
 
 async function deleteOrder() {
-  if (!order.value) return
+  if (!order.value || deleting.value) return
 
   deleting.value = true
+  deleteError.value = ''
   try {
-    await $fetch(`/api/orders/${order.value.id}`, { method: 'DELETE' })
+    await $fetch(`/api/orders/${order.value.id}`, { method: 'DELETE', body: { reason: deleteReason.value.trim() || null } })
     toast.add({ title: 'Orden eliminada', color: 'success', icon: 'i-lucide-check' })
+    deleteOpen.value = false
     await navigateTo(returnTo.value)
   } catch (error) {
-    toast.add({ title: 'No se pudo eliminar la orden', description: getApiErrorMessage(error), color: 'error' })
+    deleteError.value = getApiErrorMessage(error) || 'No se pudo eliminar la orden.'
   } finally {
     deleting.value = false
   }
@@ -249,9 +264,16 @@ async function deleteOrder() {
             :total="order.total"
             :requires-invoice="order.requiresInvoice"
             :can-edit="isSuperAdmin"
-            @updated="refresh"
+            @updated="refreshOrder"
           />
         </section>
+
+        <OrdersOrderAuditCard
+          v-if="isSuperAdmin || isReadOnly"
+          ref="auditCard"
+          :order-id="order.id"
+          :workshop-id="order.workshopId"
+        />
 
         <UModal
           v-model:open="paymentsOpen"
@@ -272,7 +294,7 @@ async function deleteOrder() {
               :balance="order.balance"
               :total="order.total"
               :can-record="isSuperAdmin"
-              @updated="refresh"
+              @updated="refreshOrder"
             />
           </template>
         </UModal>
@@ -299,7 +321,7 @@ async function deleteOrder() {
                 vehicleLabel: order.vehicleLabel
               }"
               :can-record="canRecordExpenses"
-              @updated="refresh"
+              @updated="refreshOrder"
             />
           </template>
         </UModal>
@@ -307,16 +329,20 @@ async function deleteOrder() {
         <OrdersOrderFormModal
           v-model:open="editOpen"
           :order="order"
-          @updated="refresh"
+          @updated="refreshOrder"
         />
 
-        <UModal
+        <DestructiveConfirmModal
           v-model:open="deleteOpen"
           title="Eliminar orden"
-          description="Esta acción eliminará también sus conceptos, pagos y gastos, y no se puede deshacer."
-          :ui="{ footer: 'justify-end' }"
+          description="Esta acción eliminará también sus conceptos y pagos, dejará sus gastos sin orden y no se puede deshacer."
+          confirm-label="Eliminar orden"
+          confirm-icon="i-lucide-trash-2"
+          :loading="deleting"
+          :error="deleteError"
+          @confirm="deleteOrder"
         >
-          <template #body>
+          <template #context>
             <UAlert
               :title="`¿Eliminar definitivamente ${order.orderNumber}?`"
               description="Verifica que no necesites conservar esta orden para el historial del taller."
@@ -325,22 +351,10 @@ async function deleteOrder() {
               variant="subtle"
             />
           </template>
-          <template #footer="{ close }">
-            <UButton
-              label="Cancelar"
-              color="neutral"
-              variant="outline"
-              @click="close"
-            />
-            <UButton
-              label="Eliminar orden"
-              icon="i-lucide-trash-2"
-              color="error"
-              :loading="deleting"
-              @click="deleteOrder"
-            />
+          <template #reason="{ loading: removing }">
+            <DeletionReasonField v-model="deleteReason" :required="false" :disabled="removing" />
           </template>
-        </UModal>
+        </DestructiveConfirmModal>
       </div>
     </template>
   </UDashboardPanel>

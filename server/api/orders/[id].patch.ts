@@ -90,32 +90,47 @@ export default defineEventHandler(async (event) => {
   }))
   const totals = calculatedItems ? calculateOrderTotals(calculatedItems) : undefined
 
-  const updatedOrder = await prisma.serviceOrder.update({
-    where: { id: order.id },
-    data: {
-      ...(body.status ? { status: body.status } : {}),
-      ...(body.priority ? { priority: body.priority } : {}),
-      ...(body.requiresInvoice !== undefined ? { requiresInvoice: body.requiresInvoice } : {}),
-      ...(body.complaint !== undefined ? { complaint: body.complaint } : {}),
-      ...(body.diagnosis !== undefined ? { diagnosis: body.diagnosis || null } : {}),
-      ...(body.intakeNotes !== undefined ? { intakeNotes: body.intakeNotes || null } : {}),
-      ...(body.internalNotes !== undefined ? { internalNotes: body.internalNotes || null } : {}),
-      ...(body.mileageIn !== undefined ? { mileageIn: body.mileageIn } : {}),
-      ...(body.fuelLevelIn !== undefined ? { fuelLevelIn: body.fuelLevelIn } : {}),
-      ...(body.createdAt !== undefined ? { createdAt: new Date(body.createdAt) } : {}),
-      ...(body.promisedAt !== undefined ? { promisedAt: body.promisedAt ? new Date(body.promisedAt) : null } : {}),
-      ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId || null } : {}),
-      ...(calculatedItems && totals
-        ? {
-            ...totals,
-            items: {
-              deleteMany: {},
-              create: calculatedItems
+  const updatedOrder = await prisma.$transaction(async (transaction) => {
+    const previous = await lockForAudit(transaction, 'service_order', order.id, () => transaction.serviceOrder.findUnique({
+      where: { id: order.id },
+      include: { items: true }
+    }))
+    const updated = await transaction.serviceOrder.update({
+      where: { id: order.id },
+      data: {
+        ...(body.status ? { status: body.status } : {}),
+        ...(body.priority ? { priority: body.priority } : {}),
+        ...(body.requiresInvoice !== undefined ? { requiresInvoice: body.requiresInvoice } : {}),
+        ...(body.complaint !== undefined ? { complaint: body.complaint } : {}),
+        ...(body.diagnosis !== undefined ? { diagnosis: body.diagnosis || null } : {}),
+        ...(body.intakeNotes !== undefined ? { intakeNotes: body.intakeNotes || null } : {}),
+        ...(body.internalNotes !== undefined ? { internalNotes: body.internalNotes || null } : {}),
+        ...(body.mileageIn !== undefined ? { mileageIn: body.mileageIn } : {}),
+        ...(body.fuelLevelIn !== undefined ? { fuelLevelIn: body.fuelLevelIn } : {}),
+        ...(body.createdAt !== undefined ? { createdAt: new Date(body.createdAt) } : {}),
+        ...(body.promisedAt !== undefined ? { promisedAt: body.promisedAt ? new Date(body.promisedAt) : null } : {}),
+        ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId || null } : {}),
+        ...(calculatedItems && totals
+          ? {
+              ...totals,
+              items: {
+                deleteMany: {},
+                create: calculatedItems
+              }
             }
-          }
-        : {}),
-      ...statusDates
-    }
+          : {}),
+        ...statusDates
+      }
+    })
+    await recordAudit(transaction, context, {
+      entityType: 'service_order',
+      entityId: order.id,
+      action: 'update',
+      workshopId: order.workshopId,
+      snapshot: previous,
+      changes: body
+    })
+    return updated
   })
 
   return calculatedItems ? recalculateOrder(order.id) : updatedOrder

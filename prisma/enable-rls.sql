@@ -14,6 +14,7 @@ alter table public.service_orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.payments enable row level security;
 alter table public.expenses enable row level security;
+alter table public.audit_events enable row level security;
 
 revoke all on table public.workshops from anon, authenticated;
 revoke all on table public.profiles from anon, authenticated;
@@ -26,3 +27,4 @@ revoke all on table public.service_orders from anon, authenticated;
 revoke all on table public.order_items from anon, authenticated;
 revoke all on table public.payments from anon, authenticated;
 revoke all on table public.expenses from anon, authenticated;
+revoke all on table public.audit_events from anon, authenticated;
