@@ -154,6 +154,8 @@ prisma/
   enable-rls.sql    Protección adicional para Supabase
 ```
 
+Mapas detallados de rutas, páginas, modelos e integraciones: [`docs/CODEMAPS/`](./docs/CODEMAPS/).
+
 ## Decisiones de seguridad
 
 - Supabase gestiona identidad y sesiones SSR mediante cookies.
