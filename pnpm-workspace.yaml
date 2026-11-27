@@ -8,6 +8,4 @@ allowBuilds:
   unrs-resolver: false
   vue-demi: false
 minimumReleaseAgeExclude:
-  - '@rafamedtech/nuxt-shared@0.11.0'
-patchedDependencies:
-  '@rafamedtech/nuxt-shared@0.11.0': patches/@rafamedtech__nuxt-shared@0.11.0.patch
+  - '@rafamedtech/nuxt-shared@0.11.1'
