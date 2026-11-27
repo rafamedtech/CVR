@@ -21,7 +21,7 @@ Consumidor: `GET /api/reports/summary` (guarda `requireGlobalReadAccess`). Falla
 `server/utils/carolina-inventory.ts`:
 - inventory_warehouses: id, code, name
 - inventory_balances: warehouse_id, product_id, quantity → siigo_products.unit_cost, cost_currency
-**Contrato:** renombrar/eliminar estas columnas en `siigo-pinturas` rompe el consolidado. Criterios: `docs/consolidated-reports.md`.
+**Contrato:** `shared/carolina-contract.json` (canónico) + `tests/carolina-contract.test.ts` (consultas = contrato). Copia en `siigo-pinturas/tests/contracts/cvr-carolina.json`, validada contra su esquema. Ambos tests corren en CI. Criterios: `docs/consolidated-reports.md`.
 
 ## Capa `@rafamedtech/nuxt-shared` (versión exacta en package.json)
 Componentes Detail*/List*/Reports*/Auth*/App*, `DashboardShell`, `DashboardNavbar`, utilidades de formato, redondeo y reportes, catálogo Siigo México (`shared/siigo-mexico-locations.ts` reexporta).
