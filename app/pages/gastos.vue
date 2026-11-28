@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { ExpenseCategory, ExpenseListItem, ExpenseOrderOption, WorkshopType } from '~/types/crm'
+import type { ExpenseCategory, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 
 useHead({ title: 'Gastos' })
 
@@ -39,11 +39,7 @@ const { data: orderOptions } = useFetch<ExpenseOrderOption[]>('/api/expense-orde
 })
 
 const workshopFilter = shallowRef('all')
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 const workshopFilterOptions = computed(() => [
   { label: 'Todos los gastos', value: 'all', icon: 'i-lucide-building-2' },
   { label: 'Gastos globales', value: 'global', icon: 'i-lucide-globe' },
@@ -78,6 +74,9 @@ const filteredExpenses = computed(() => {
       expense.order?.orderNumber,
       expense.order?.customerName,
       expense.order?.vehicleLabel,
+      expense.freight?.freightNumber,
+      expense.freight?.customerName,
+      expense.freight?.routeLabel,
       expenseCategoryLabels[expense.category]
     ].some(value => value?.toLocaleLowerCase('es-MX').includes(term))
   })
@@ -94,7 +93,7 @@ const createOptions = computed<DropdownMenuItem[]>(() => {
   const workshopOptions: DropdownMenuItem[] = isAllWorkshops.value
     ? (session.value?.workshops ?? []).map(workshop => ({
         label: workshop.name,
-        icon: workshop.type === 'BODY_SHOP' ? 'i-lucide-paintbrush' : 'i-lucide-wrench',
+        icon: workshopTypeIcons[workshop.type],
         disabled: !isSuperAdmin.value && !['MANAGER', 'CASHIER'].includes(workshop.role ?? ''),
         onSelect: () => selectWorkshop(workshop.id, `/gastos?registrarGasto=${encodeURIComponent(workshop.id)}`)
       }))

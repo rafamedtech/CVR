@@ -15,8 +15,12 @@ const canViewFinancials = computed(() => (
   || selectedRole.value === 'READ_ONLY'
 ))
 
+const isTransport = computed(() => sessionData.value?.selectedWorkshop?.type === 'TRANSPORT')
+// Fletes: negocio Transporte o consulta global (super admin / sólo lectura sin negocio seleccionado).
+const showFreights = computed(() => isTransport.value || (sessionData.value?.canViewAll === true && !sessionData.value.selectedWorkshopId))
+
 const links = computed<NavigationMenuItem[][]>(() => [[
-  ...(!sessionData.value?.profile.isReadOnly
+  ...(!sessionData.value?.profile.isReadOnly && !isTransport.value
     ? [{
         label: 'Resumen',
         icon: 'i-lucide-layout-dashboard',
@@ -39,25 +43,37 @@ const links = computed<NavigationMenuItem[][]>(() => [[
     to: '/clientes',
     onSelect: () => { open.value = false }
   },
-  {
-    label: 'Vehículos',
-    icon: 'i-lucide-car-front',
-    to: '/vehiculos',
-    onSelect: () => { open.value = false }
-  },
-  {
-    label: 'Órdenes',
-    icon: 'i-lucide-clipboard-list',
-    to: '/ordenes',
-    onSelect: () => { open.value = false }
-  },
-  ...(canViewFinancials.value
+  ...(!isTransport.value
+    ? [{
+        label: 'Vehículos',
+        icon: 'i-lucide-car-front',
+        to: '/vehiculos',
+        onSelect: () => { open.value = false }
+      }, {
+        label: 'Órdenes',
+        icon: 'i-lucide-clipboard-list',
+        to: '/ordenes',
+        onSelect: () => { open.value = false }
+      }]
+    : []),
+  ...(showFreights.value
+    ? [{
+        label: 'Fletes',
+        icon: 'i-lucide-truck',
+        to: '/fletes',
+        onSelect: () => { open.value = false }
+      }]
+    : []),
+  ...(canViewFinancials.value && !isTransport.value
     ? [{
         label: 'Pagos',
         icon: 'i-lucide-hand-coins',
         to: '/pagos',
         onSelect: () => { open.value = false }
-      }, {
+      }]
+    : []),
+  ...(canViewFinancials.value
+    ? [{
         label: 'Gastos',
         icon: 'i-lucide-receipt-text',
         to: '/gastos',

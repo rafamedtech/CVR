@@ -11,6 +11,12 @@ defineEmits<{
   select: [workshopId: string]
   signOut: []
 }>()
+
+const workshopDescriptions: Partial<Record<WorkshopSummary['type'], string>> = {
+  BODY_SHOP: 'Carrocería y pintura',
+  MECHANICAL: 'Servicio y reparación mecánica',
+  TRANSPORT: 'Fletes, entregas y costos de viaje'
+}
 </script>
 
 <template>
@@ -35,17 +41,17 @@ defineEmits<{
         >
           <span class="mb-5 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <UIcon
-              :name="pendingId === workshop.id ? 'i-lucide-loader-circle' : workshop.type === 'BODY_SHOP' ? 'i-lucide-paintbrush' : 'i-lucide-wrench'"
+              :name="pendingId === workshop.id ? 'i-lucide-loader-circle' : workshopTypeIcons[workshop.type]"
               class="size-6"
               :class="{ 'animate-spin': pendingId === workshop.id }"
             />
           </span>
           <span class="font-semibold text-highlighted">{{ workshop.name }}</span>
           <span class="mt-1 text-sm text-muted">
-            {{ workshop.type === 'BODY_SHOP' ? 'Carrocería y pintura' : 'Servicio y reparación mecánica' }}
+            {{ workshopDescriptions[workshop.type] }}
           </span>
           <span class="mt-5 inline-flex items-center gap-2 text-sm font-medium text-primary">
-            {{ pendingId === workshop.id ? 'Abriendo taller…' : 'Entrar al taller' }}
+            {{ pendingId === workshop.id ? 'Abriendo…' : workshop.type === 'TRANSPORT' ? 'Entrar a Transporte' : 'Entrar al taller' }}
             <UIcon name="i-lucide-arrow-right" class="size-4" />
           </span>
         </button>

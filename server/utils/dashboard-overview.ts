@@ -47,7 +47,11 @@ export async function getDashboardOverview(context: CrmRequestContext, now = new
       : Promise.resolve([]),
     canViewFinancials
       ? prisma.expense.findMany({
-          where: { ...scope, expenseDate: { gte: new Date(`${activitySinceKey}T00:00:00Z`), lte: new Date(`${today}T23:59:59.999Z`) } },
+          where: {
+            // Vista conjunta: Transporte se incorpora en CVR-15.
+            ...(context.workshopId ? scope : { OR: [{ workshopId: null }, { workshop: { type: { not: 'TRANSPORT' as const } } }] }),
+            expenseDate: { gte: new Date(`${activitySinceKey}T00:00:00Z`), lte: new Date(`${today}T23:59:59.999Z`) }
+          },
           select: {
             id: true, amountMxn: true, expenseDate: true, description: true, vendor: true,
             order: { select: { id: true, orderNumber: true, customer: { select: { fullName: true } }, vehicle: { select: { make: true, model: true, year: true } } } }

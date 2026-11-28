@@ -7,14 +7,9 @@ withDefaults(defineProps<{
 }>(), { label: 'Nueva orden' })
 const emit = defineEmits<{ create: [] }>()
 const { session, isAllWorkshops, isSuperAdmin, selectWorkshop } = useCrmSession()
-const icons = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
-const items = computed<DropdownMenuItem[]>(() => (session.value?.workshops ?? []).map(workshop => ({
+const items = computed<DropdownMenuItem[]>(() => (session.value?.workshops ?? []).filter(workshop => workshop.type !== 'TRANSPORT').map(workshop => ({
   label: workshop.name,
-  icon: icons[workshop.type],
+  icon: workshopTypeIcons[workshop.type],
   disabled: !isSuperAdmin.value && !['MANAGER', 'ADVISOR'].includes(workshop.role ?? ''),
   onSelect: () => selectWorkshop(workshop.id, '/ordenes?create=1')
 })))

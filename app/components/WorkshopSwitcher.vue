@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ButtonProps, DropdownMenuItem } from '@nuxt/ui'
-import type { WorkshopType } from '~/types/crm'
 
 const props = withDefaults(defineProps<{
   size?: ButtonProps['size']
@@ -9,11 +8,7 @@ const props = withDefaults(defineProps<{
 
 const { session, selectWorkshop, isReadOnly } = useCrmSession()
 
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 
 const current = computed(() => session.value?.selectedWorkshop ?? {
   name: props.allowAll === false ? 'Selecciona un taller' : 'Todos los talleres',

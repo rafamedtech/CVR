@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { CustomerListItem, WorkshopType } from '~/types/crm'
+import type { CustomerListItem } from '~/types/crm'
 import { customerTypeLabels, formatPhone } from '~/utils/crm'
 import CustomerMobileList from './CustomersMobileList.vue'
 
@@ -15,11 +15,7 @@ const emit = defineEmits<{
   assignWorkshops: [customer: CustomerListItem]
 }>()
 
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 
 const page = shallowRef(1)
 const pageSize = 10

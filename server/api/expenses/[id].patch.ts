@@ -25,6 +25,9 @@ export default defineEventHandler(async (event) => {
   const orderId = workshopId && body.assignmentType === 'ORDER'
     ? await resolveExpenseOrderId(body.orderId, workshopId)
     : null
+  const freightId = workshopId && body.assignmentType === 'FREIGHT'
+    ? await resolveExpenseFreightId(body.freightId, workshopId)
+    : null
   const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
   const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
@@ -44,7 +47,8 @@ export default defineEventHandler(async (event) => {
         exchangeRate,
         expenseDate: new Date(body.expenseDate),
         notes: body.notes || null,
-        orderId
+        orderId,
+        freightId
       }
     })
     await recordAudit(transaction, context, {
@@ -55,7 +59,7 @@ export default defineEventHandler(async (event) => {
       snapshot: previous,
       changes: updated,
       effectiveDate: updated.expenseDate,
-      source: updated.orderId ? { type: 'service_order', id: updated.orderId } : null
+      source: expenseAuditSource(updated)
     })
     return updated
   })

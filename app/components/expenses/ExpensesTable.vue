@@ -45,7 +45,7 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
   header: 'Importe'
 }, {
   id: 'assignment',
-  accessorFn: row => row.order?.orderNumber ?? (row.workshopId === null ? 'Gasto global' : 'Gasto del taller'),
+  accessorFn: row => row.order?.orderNumber ?? row.freight?.freightNumber ?? (row.workshopId === null ? 'Gasto global' : 'Gasto del taller'),
   header: 'Asignación'
 }, ...(props.showWorkshop
   ? [{
@@ -112,7 +112,7 @@ const columns = computed<TableColumn<ExpenseListItem>[]>(() => [{
       </div>
     </template>
     <template #assignment-cell="{ row }">
-      <ExpensesAssignment :order="row.original.order" :global="row.original.workshopId === null" />
+      <ExpensesAssignment :order="row.original.order" :freight="row.original.freight" :global="row.original.workshopId === null" />
     </template>
     <template #workshopName-cell="{ row }">
       <ExpensesWorkshopBadge :expense="row.original" />

@@ -4,7 +4,7 @@ import { formatDateOnly } from '#shared/date'
 import { parseDate, today, type DateValue } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { expenseMutationSchema, type ExpenseAssignmentType, type ExpenseMutation } from '#shared/expense'
-import type { Currency, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
+import type { Currency, ExpenseFreightOption, ExpenseListItem, ExpenseOrderOption } from '~/types/crm'
 import { DEFAULT_WORKSHOP_TIME_ZONE } from '~/utils/datetime'
 import { currencyOptions } from '~/utils/crm'
 
@@ -14,6 +14,8 @@ const props = defineProps<{
   duplicateExpense?: ExpenseListItem | null
   orders?: ExpenseOrderOption[]
   fixedOrder?: ExpenseOrderOption | null
+  /** Costo directo de un flete (CVR-03). */
+  fixedFreight?: ExpenseFreightOption | null
 }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{
@@ -54,6 +56,8 @@ const orderOptions = computed(() => (props.orders ?? []).map(order => ({
   value: order.id
 })))
 const isEditing = computed(() => Boolean(props.expense))
+// Un gasto de flete conserva su flete al editarlo o duplicarlo.
+const lockedFreight = computed(() => props.fixedFreight ?? (props.expense ?? props.duplicateExpense)?.freight ?? null)
 const modalTitle = computed(() => isEditing.value
   ? 'Editar gasto'
   : props.duplicateExpense ? 'Duplicar gasto' : 'Registrar gasto')
@@ -75,8 +79,9 @@ function emptyExpenseState(): ExpenseMutation {
     currency: 'MXN',
     exchangeRate: 1,
     expenseDate: currentDate.toString(),
-    assignmentType: props.fixedOrder ? 'ORDER' : props.initialScope ?? 'WORKSHOP',
+    assignmentType: props.fixedFreight ? 'FREIGHT' : props.fixedOrder ? 'ORDER' : props.initialScope ?? 'WORKSHOP',
     orderId: props.fixedOrder?.id ?? '',
+    freightId: props.fixedFreight?.id ?? '',
     notes: ''
   }
 }
@@ -89,6 +94,7 @@ const expenseScope = computed({
   set: (value: string) => {
     state.assignmentType = value === 'GLOBAL' ? 'GLOBAL' : 'WORKSHOP'
     state.orderId = ''
+    state.freightId = ''
   }
 })
 
@@ -129,8 +135,11 @@ watch([open, () => props.expense, () => props.duplicateExpense], ([isOpen, editi
         currency: expense.currency ?? 'MXN',
         exchangeRate: expense.exchangeRate ?? 1,
         expenseDate: expense.expenseDate.slice(0, 10),
-        assignmentType: expense.workshopId === null ? 'GLOBAL' as const : expense.order ? 'ORDER' as const : 'WORKSHOP' as const,
+        assignmentType: expense.workshopId === null
+          ? 'GLOBAL' as const
+          : expense.order ? 'ORDER' as const : expense.freight ? 'FREIGHT' as const : 'WORKSHOP' as const,
         orderId: expense.order?.id ?? '',
+        freightId: expense.freight?.id ?? '',
         notes: expense.notes ?? ''
       }
     : emptyExpenseState()
@@ -268,11 +277,19 @@ async function removeExpense() {
 
         <DetailCard
           title="Asignación"
-          :icon="state.assignmentType === 'GLOBAL' ? 'i-lucide-globe' : 'i-lucide-building-2'"
+          :icon="state.assignmentType === 'GLOBAL' ? 'i-lucide-globe' : lockedFreight ? 'i-lucide-truck' : 'i-lucide-building-2'"
           :ui="{ container: 'p-4 sm:p-5 gap-4', title: 'text-sm font-semibold text-primary' }"
         >
           <div class="space-y-4">
-            <UFormField v-if="fixedOrder" label="Orden de trabajo">
+            <UFormField v-if="lockedFreight" label="Flete">
+              <p class="font-medium break-words text-primary">
+                {{ lockedFreight.freightNumber }} · {{ lockedFreight.customerName }}
+              </p>
+              <p class="mt-1 text-xs break-words text-muted">
+                {{ lockedFreight.routeLabel }}
+              </p>
+            </UFormField>
+            <UFormField v-else-if="fixedOrder" label="Orden de trabajo">
               <p class="font-medium break-words text-primary">
                 {{ fixedOrder.orderNumber }} · {{ fixedOrder.customerName }}
               </p>

@@ -2,22 +2,18 @@
 import type { DateValue } from '@internationalized/date'
 import { DEFAULT_WORKSHOP_TIME_ZONE, formatReportMonth } from '~/utils/datetime'
 import type { BusinessReportData } from '~/types/reports'
-import type { WorkshopType } from '~/types/crm'
 
 useHead({ title: 'Reportes' })
 const { query } = useRouter().currentRoute.value
 const { session, canViewReports, workshopTimeZone } = useCrmSession()
 const timeZone = computed(() => workshopTimeZone() ?? DEFAULT_WORKSHOP_TIME_ZONE)
 const { selectedMonth, currentMonth, annual, month, periodQuery, syncPeriod } = useReportPeriod()
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 const businessOptions = computed(() => [
   { label: 'Todos los negocios', value: 'all', icon: 'i-lucide-building-2' },
   { label: 'Carolina Pinturas', value: 'carolina-pinturas', icon: 'i-lucide-palette' },
-  ...(session.value?.workshops ?? []).map(workshop => ({ label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type] }))
+  // Transporte se incorpora al reporte en CVR-15.
+  ...(session.value?.workshops ?? []).filter(workshop => workshop.type !== 'TRANSPORT').map(workshop => ({ label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type] }))
 ])
 const business = shallowRef(typeof query.business === 'string' && businessOptions.value.some(option => option.value === query.business) ? query.business : 'all')
 const { data, status, error, refresh } = useFetch<BusinessReportData>('/api/reports/summary', {

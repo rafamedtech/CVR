@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CustomerListItem, WorkshopType } from '~/types/crm'
+import type { CustomerListItem } from '~/types/crm'
 import { customerTypeLabels } from '~/utils/crm'
 
 defineProps<{
@@ -14,11 +14,7 @@ const emit = defineEmits<{
   assignWorkshops: [customer: CustomerListItem]
 }>()
 
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 </script>
 
 <template>

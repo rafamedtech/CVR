@@ -34,4 +34,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (session.value?.profile.isReadOnly && ['/', '/elegir-taller'].includes(to.path)) {
     return navigateTo('/reportes', { replace: true })
   }
+
+  // Transporte trabaja con fletes; órdenes, vehículos y pagos de orden son de los talleres (CVR-03).
+  const selectedType = session.value?.selectedWorkshop?.type
+  const isWorkshopPath = (path: string) => to.path === path || to.path.startsWith(`${path}/`)
+  if (selectedType === 'TRANSPORT' && (to.path === '/' || ['/ordenes', '/vehiculos', '/pagos'].some(isWorkshopPath))) {
+    return navigateTo('/fletes', { replace: true })
+  }
+  if (selectedType && selectedType !== 'TRANSPORT' && isWorkshopPath('/fletes')) {
+    return navigateTo('/', { replace: true })
+  }
 })

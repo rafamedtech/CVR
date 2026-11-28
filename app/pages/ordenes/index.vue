@@ -112,14 +112,10 @@ function getLocalDateKey(value: string) {
   return calendarDateKeyInTimeZone(new Date(value), getLocalTimeZone())
 }
 
-const workshopIcons = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 const workshopFilterOptions = computed(() => [
   { label: 'Todas las órdenes', value: 'all', icon: 'i-lucide-clipboard-list' },
-  ...(session.value?.workshops ?? []).map(workshop => ({
+  ...(session.value?.workshops ?? []).filter(workshop => workshop.type !== 'TRANSPORT').map(workshop => ({
     label: workshop.name, value: workshop.id, icon: workshopIcons[workshop.type]
   }))
 ])

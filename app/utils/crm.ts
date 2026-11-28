@@ -2,6 +2,8 @@ import type {
   CustomerType,
   ExpenseCategory,
   Currency,
+  FreightSource,
+  FreightStatus,
   LineItemType,
   OrderPriority,
   OrderStatus,
@@ -122,6 +124,7 @@ export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
   MAINTENANCE: 'Mantenimiento',
   MARKETING: 'Marketing',
   TAXES: 'Impuestos',
+  FUEL: 'Diésel / combustible',
   OTHER: 'Otro'
 }
 
@@ -142,7 +145,34 @@ export const workshopRoleLabels: Record<WorkshopRole, string> = {
 export const workshopTypeLabels: Record<WorkshopType, string> = {
   BODY_SHOP: 'Carrocería',
   MECHANICAL: 'Mecánica',
-  PAINT_STORE: 'Tienda de pinturas'
+  PAINT_STORE: 'Tienda de pinturas',
+  TRANSPORT: 'Transporte'
+}
+
+export const workshopTypeIcons: Record<WorkshopType, string> = {
+  BODY_SHOP: 'i-lucide-paintbrush',
+  MECHANICAL: 'i-lucide-wrench',
+  PAINT_STORE: 'i-lucide-palette',
+  TRANSPORT: 'i-lucide-truck'
+}
+
+export const freightStatusLabels: Record<FreightStatus, string> = {
+  SCHEDULED: 'Programado',
+  IN_TRANSIT: 'En tránsito',
+  DELIVERED: 'Entregado',
+  CANCELLED: 'Cancelado'
+}
+
+export const freightStatusColors: Record<FreightStatus, 'neutral' | 'info' | 'success' | 'error'> = {
+  SCHEDULED: 'neutral',
+  IN_TRANSIT: 'info',
+  DELIVERED: 'success',
+  CANCELLED: 'error'
+}
+
+export const freightSourceLabels: Record<FreightSource, string> = {
+  MANUAL: 'Captura directa',
+  NEXO: 'Portal Nexo'
 }
 
 export { formatCurrency } from './format/currency'

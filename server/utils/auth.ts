@@ -36,6 +36,15 @@ async function ensureDefaultWorkshops() {
         name: 'Taller Mecánico',
         type: 'MECHANICAL'
       }
+    }),
+    prisma.workshop.upsert({
+      where: { slug: 'transporte' },
+      update: {},
+      create: {
+        slug: 'transporte',
+        name: 'Transporte',
+        type: 'TRANSPORT'
+      }
     })
   ])
 }

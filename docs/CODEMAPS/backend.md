@@ -51,13 +51,22 @@ DELETE /api/orders/[id]/payments/[paymentId] → SA + motivo obligatorio → pay
 ### Pagos y gastos
 GET  /api/payments → M,C,R → payment
 GET  /api/expenses → M,C,R → expense (`expenseAccessWhere`)
-POST /api/expenses → user (+ `resolveExpenseWorkshopId`: taller, orden o centro global) → expense (+ audit)
+POST /api/expenses → user (+ `resolveExpenseWorkshopId`: taller, orden, flete o centro global) → expense (+ audit)
 PATCH /api/expenses/[id] → M,C / SA → expense (+ audit)
 DELETE /api/expenses/[id] → M,C + taller + motivo obligatorio → expense (+ audit)
 GET  /api/expense-order-options → M,C + taller → serviceOrder
 
+### Fletes de Transporte (CVR-03)
+GET  /api/freights → user (`freightAccessWhere`) → freight (`freightListSelect`, `serializeFreightListItem`)
+POST /api/freights → M + Transporte (`requireTransportWorkshop`) → freight (+ audit; folio con advisory lock; Nexo duplicado 409)
+GET  /api/freights/[id] → user (`freightAccessWhere`; otro negocio 404) → freight + gastos
+PATCH /api/freights/[id] → SA + Transporte → freight (+ audit)
+DELETE /api/freights/[id] → SA + Transporte + motivo obligatorio → freight (+ audit)
+POST /api/freights/[id]/status → M + Transporte → freight (`canTransitionFreight`; 409 si no aplica; + audit `status`)
+
 ### Historial de cambios
 GET  /api/audit?orderId= → global read → auditEvent (orden + conceptos, pagos y gastos ligados)
+GET  /api/audit?freightId= → quien ve el flete → auditEvent (flete + gastos ligados)
 
 ### Dashboard y reportes
 GET  /api/dashboard → taller → `workshop-dashboard.getWorkshopDashboard`
@@ -68,9 +77,10 @@ GET  /api/reports/summary → global read → `getWorkshopDashboard` + `carolina
 auth.ts — guardas y filtros de acceso (arriba). Matriz: `docs/permisos.md`
 audit.ts — `recordAudit(tx, ctx, input)` en la misma transacción; `auditActorRole`
 orders.ts — cálculo de partidas/totales, `recalculateOrder`, select y serialización de listados
-expenses.ts — acceso y asignación de gastos (taller / orden / global)
+expenses.ts — acceso y asignación de gastos (taller / orden / flete / global), `expenseAuditSource`
+freights.ts — `freightAccessWhere`, `requireTransportWorkshop`, `rejectTransportWorkshop` (órdenes y vehículos), `resolveExpenseFreightId`, serialización
 customer-address.ts — domicilio Siigo ↔ cliente
-workshop-dashboard.ts (320 l) — métricas por taller y periodo
+workshop-dashboard.ts (320 l) — métricas por taller y periodo; excluye Transporte de la vista conjunta hasta CVR-15
 dashboard-overview.ts — KPIs, actividad, pendientes de la portada
 business-report.ts — reporte por negocio con base antes de IVA
 carolina-reports.ts / carolina-inventory.ts — lectura de Carolina (ver integraciones.md)
@@ -78,7 +88,7 @@ report-pagination.ts — `readReportPages` (páginas de 500)
 prisma.ts — `usePrisma` · validation.ts — `readCrmBody` (Zod) · tax.ts · phone.ts
 
 ## shared/ (cliente + servidor)
-audit (motivo de eliminación, `AuditEventView`) · combine-reports · currency (MXN/USD, `roundMoney`) · customer-address (Zod) · customer-type (↔ Siigo) · date · expense (Zod) · order-assignee · order-number (prefijo por taller) · order-tax · payment-status · payment (Zod) · report-period · report-sales-channels · report · siigo-mexico-locations (reexport de la capa)
+audit (motivo de eliminación, `AuditEventView`) · combine-reports · currency (MXN/USD, `roundMoney`) · customer-address (Zod) · customer-type (↔ Siigo) · date · expense (Zod) · freight (Zod, transiciones, folio) · order-assignee · order-number (prefijo por taller) · order-tax · payment-status · payment (Zod) · report-period · report-sales-channels · report · siigo-mexico-locations (reexport de la capa)
 
 ## Pruebas
 `tests/*.test.ts` con `tsx --test` (sin BD): auth-pilot, read-only-access, global-expense-access, consolidated-report, carolina-inventory, order-*, payment-status, report*, currency*, date, phone, customer-address, session-workshops, user-switch, workshop-start, expense*, dashboard-overview, crm-session-loading.

@@ -38,3 +38,10 @@ export async function resolveExpenseOrderId(orderId: string, workshopId: string)
 
   return order.id
 }
+
+/** Documento de origen del gasto para la bitácora: su orden o su flete. */
+export function expenseAuditSource(expense: { orderId: string | null, freightId: string | null }) {
+  if (expense.orderId) return { type: 'service_order', id: expense.orderId }
+  if (expense.freightId) return { type: 'freight', id: expense.freightId }
+  return null
+}

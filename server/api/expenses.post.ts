@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
   const orderId = workshopId && body.assignmentType === 'ORDER'
     ? await resolveExpenseOrderId(body.orderId, workshopId)
     : null
+  const freightId = workshopId && body.assignmentType === 'FREIGHT'
+    ? await resolveExpenseFreightId(body.freightId, workshopId)
+    : null
   const exchangeRate = normalizeExchangeRate(body.currency, body.exchangeRate)
   const amountMxn = convertToMxn(body.amount, body.currency, exchangeRate)
 
@@ -27,6 +30,7 @@ export default defineEventHandler(async (event) => {
         expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
         notes: body.notes || null,
         orderId,
+        freightId,
         recordedById: context.profile.id
       }
     })
@@ -37,7 +41,7 @@ export default defineEventHandler(async (event) => {
       workshopId: expense.workshopId,
       snapshot: expense,
       effectiveDate: expense.expenseDate,
-      source: expense.orderId ? { type: 'service_order', id: expense.orderId } : null
+      source: expenseAuditSource(expense)
     })
     return expense
   })

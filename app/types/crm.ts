@@ -1,11 +1,13 @@
 import type { CustomerAddress } from '#shared/customer-address'
 import type { CustomerType } from '#shared/customer-type'
 import type { PaymentStatus } from '#shared/payment-status'
+import type { FreightSource, FreightStatus } from '#shared/freight'
 
 export type { PaymentStatus } from '#shared/payment-status'
 export type { CustomerType } from '#shared/customer-type'
+export type { FreightSource, FreightStatus } from '#shared/freight'
 
-export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE'
+export type WorkshopType = 'BODY_SHOP' | 'MECHANICAL' | 'PAINT_STORE' | 'TRANSPORT'
 export type WorkshopRole = 'MANAGER' | 'ADVISOR' | 'TECHNICIAN' | 'CASHIER' | 'READ_ONLY'
 export type MemberAccessType = 'WORKSHOP' | 'SUPER_ADMIN' | 'READ_ONLY'
 export type TaxRate = 0 | 8 | 16
@@ -14,7 +16,7 @@ export type OrderPriority = 'NORMAL' | 'HIGH' | 'URGENT'
 export type LineItemType = 'SERVICE' | 'PART' | 'LABOR' | 'OTHER'
 export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'CHECK' | 'CREDIT' | 'OTHER'
 export type Currency = 'MXN' | 'USD'
-export type ExpenseCategory = 'RENT' | 'PAYROLL' | 'UTILITIES' | 'SUPPLIES' | 'MAINTENANCE' | 'MARKETING' | 'TAXES' | 'OTHER'
+export type ExpenseCategory = 'RENT' | 'PAYROLL' | 'UTILITIES' | 'SUPPLIES' | 'MAINTENANCE' | 'MARKETING' | 'TAXES' | 'FUEL' | 'OTHER'
 
 export interface WorkshopSummary {
   id: string
@@ -224,6 +226,7 @@ export interface ExpenseListItem {
   notes: string | null
   recordedByName: string
   order: ExpenseOrderOption | null
+  freight: ExpenseFreightOption | null
 }
 
 export interface ExpenseOrderOption {
@@ -231,6 +234,57 @@ export interface ExpenseOrderOption {
   orderNumber: string
   customerName: string
   vehicleLabel: string
+}
+
+export interface ExpenseFreightOption {
+  id: string
+  freightNumber: string
+  customerName: string
+  routeLabel: string
+}
+
+export interface FreightListItem {
+  id: string
+  workshopId: string
+  workshopName: string
+  freightNumber: string
+  source: FreightSource
+  sourceRecordId: string | null
+  sourceFolio: string | null
+  serviceReference: string | null
+  origin: string
+  destination: string
+  amount: number
+  currency: Currency
+  exchangeRate: number
+  amountMxn: number
+  /** null para roles sin acceso a costos. */
+  directCostsMxn: number | null
+  status: FreightStatus
+  serviceDate: string
+  deliveredAt: string | null
+  createdAt: string
+  customerId: string
+  customerName: string
+}
+
+export interface FreightDetail extends FreightListItem {
+  sourceUrl: string | null
+  pickedUpAt: string | null
+  cancelledAt: string | null
+  deliveryTicketRef: string | null
+  invoiceSeries: string | null
+  invoiceFolio: string | null
+  invoiceUuid: string | null
+  notes: string | null
+  updatedAt: string
+  createdByName: string
+  deliveryConfirmedByName: string | null
+  canManage: boolean
+  canEdit: boolean
+  canRecordCosts: boolean
+  canViewCosts: boolean
+  expenses: OrderExpense[]
 }
 
 export interface MemberListItem {

@@ -7,7 +7,8 @@ const workshop = computed(() => session.value?.workshops.find(workshop => worksh
 const indicators = {
   BODY_SHOP: { icon: 'i-lucide-paintbrush', label: 'Carrocería' },
   MECHANICAL: { icon: 'i-lucide-wrench', label: 'Mecánico' },
-  PAINT_STORE: { icon: 'i-lucide-palette', label: 'Pinturas' }
+  PAINT_STORE: { icon: 'i-lucide-palette', label: 'Pinturas' },
+  TRANSPORT: { icon: 'i-lucide-truck', label: 'Transporte' }
 }
 const indicator = computed(() => workshop.value ? indicators[workshop.value.type] : null)
 </script>

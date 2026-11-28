@@ -30,6 +30,7 @@ function fixture(workshopId: string | null, query: Record<string, string> = {}) 
   const expensesData = { value: query.gasto ? [] as Expense[] : [expense] }
   runInNewContext(source, {
     exports, encodeURIComponent,
+    workshopTypeIcons: {},
     useHead: () => {},
     useRoute: () => route,
     useRouter: () => ({ replace: async ({ query: next }: { query: Record<string, string> }) => { route.query = next } }),
