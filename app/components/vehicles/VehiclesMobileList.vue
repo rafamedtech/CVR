@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { VehicleListItem, WorkshopType } from '~/types/crm'
+import type { VehicleListItem } from '~/types/crm'
 
 defineProps<{
   vehicles: VehicleListItem[]
@@ -13,11 +13,7 @@ const emit = defineEmits<{
   assignWorkshops: [vehicle: VehicleListItem]
 }>()
 
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 </script>
 
 <template>

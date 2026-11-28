@@ -99,6 +99,9 @@ function harness(context: Context, body: unknown, rows: { payment?: object | nul
     requireSelectedWorkshop: selected,
     workshopWhere,
     expenseAccessWhere: (ctx: Context) => ctx.isSuperAdmin ? {} : { workshopId: selected(ctx) },
+    expenseAuditSource: (row: { orderId: string | null, freightId?: string | null }) => row.orderId
+      ? { type: 'service_order', id: row.orderId }
+      : row.freightId ? { type: 'freight', id: row.freightId } : null,
     getRouterParam: (_event: object, name: string) => params[name],
     readCrmBody: async (_event: object, schema: { safeParse: (value: unknown) => { success: boolean, data?: unknown } }) => {
       const result = schema.safeParse(body)

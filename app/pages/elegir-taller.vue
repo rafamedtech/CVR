@@ -7,7 +7,7 @@ const supabase = useSupabaseClient()
 const pendingId = shallowRef<string | null>(null)
 const error = shallowRef('')
 const workshops = computed(() => (session.value?.workshops ?? [])
-  .filter(workshop => ['BODY_SHOP', 'MECHANICAL'].includes(workshop.type))
+  .filter(workshop => ['BODY_SHOP', 'MECHANICAL', 'TRANSPORT'].includes(workshop.type))
   .toSorted((a, b) => a.type.localeCompare(b.type)))
 
 async function startWorkshop(workshopId: string) {
@@ -15,7 +15,8 @@ async function startWorkshop(workshopId: string) {
   pendingId.value = workshopId
   error.value = ''
   try {
-    await selectWorkshop(workshopId, '/')
+    const workshop = workshops.value.find(item => item.id === workshopId)
+    await selectWorkshop(workshopId, workshop?.type === 'TRANSPORT' ? '/fletes' : '/')
   } catch {
     error.value = 'Intenta seleccionar el taller nuevamente.'
     pendingId.value = null

@@ -20,6 +20,10 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
   const allBusinesses = options.includeCarolina === true
   if (allBusinesses || options.allWorkshops) requireGlobalReadAccess(context)
   const scopedWorkshopWhere = allBusinesses || options.allWorkshops ? {} : workshopWhere(context)
+  // Transporte se incorpora al reporte en CVR-15; mientras tanto sus gastos no entran a la vista conjunta.
+  const scopedExpenseWhere = context.workshopId && !allBusinesses && !options.allWorkshops
+    ? scopedWorkshopWhere
+    : { OR: [{ workshopId: null }, { workshop: { type: { not: 'TRANSPORT' as const } } }] }
   const timeZone = context.selectedWorkshop?.timezone ?? 'America/Tijuana'
   let bounds: ReturnType<typeof resolveReportPeriod>
   try {
@@ -96,7 +100,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
     canViewFinancials
       ? prisma.expense.findMany({
           where: {
-            ...scopedWorkshopWhere,
+            ...scopedExpenseWhere,
             expenseDate: { gte: expenseFrom, lte: expenseTo }
           },
           select: { workshopId: true, category: true, amountMxn: true, expenseDate: true, vendor: true }
@@ -105,6 +109,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
     prisma.workshop.findMany({
       where: {
         active: allBusinesses || options.allWorkshops ? undefined : true,
+        ...(context.workshopId && !allBusinesses && !options.allWorkshops ? {} : { type: { not: 'TRANSPORT' as const } }),
         ...(!allBusinesses && !options.allWorkshops && context.workshopId ? { id: context.workshopId } : {})
       },
       select: { id: true, name: true },
@@ -118,7 +123,7 @@ export async function getWorkshopDashboard(context: CrmRequestContext, query: Re
       : Promise.resolve([]),
     canViewFinancials
       ? prisma.expense.findMany({
-          where: { ...scopedWorkshopWhere, expenseDate: { gte: previousExpenseFrom, lte: previousExpenseTo } },
+          where: { ...scopedExpenseWhere, expenseDate: { gte: previousExpenseFrom, lte: previousExpenseTo } },
           select: { category: true, amountMxn: true, workshopId: true }
         })
       : Promise.resolve([]),

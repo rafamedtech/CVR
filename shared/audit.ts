@@ -16,7 +16,7 @@ export const optionalReasonSchema = z.object({
   reason: z.string().trim().max(DELETION_REASON_MAX).optional().nullable()
 }).nullish().transform(value => ({ reason: value?.reason || null }))
 
-export type AuditAction = 'create' | 'update' | 'delete'
+export type AuditAction = 'create' | 'update' | 'delete' | 'status'
 
 export interface AuditEventView {
   id: string
@@ -28,5 +28,7 @@ export interface AuditEventView {
   switchedFromId: string | null
   reason: string | null
   effectiveDate: string | null
+  /** Estado nuevo cuando action = 'status' (fletes). */
+  statusTo?: string | null
   createdAt: string
 }

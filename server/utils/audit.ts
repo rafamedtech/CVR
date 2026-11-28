@@ -3,7 +3,7 @@ import type { AuditAction } from '../../shared/audit'
 import type { CrmRequestContext } from './auth'
 
 export interface AuditInput {
-  entityType: 'payment' | 'expense' | 'service_order' | 'order_item'
+  entityType: 'payment' | 'expense' | 'service_order' | 'order_item' | 'freight'
   entityId: string
   action: AuditAction
   workshopId?: string | null
@@ -23,7 +23,8 @@ const AUDITED_TABLES = {
   payment: 'payments',
   expense: 'expenses',
   service_order: 'service_orders',
-  order_item: 'order_items'
+  order_item: 'order_items',
+  freight: 'freights'
 } as const satisfies Record<AuditInput['entityType'], string>
 
 /**

@@ -34,7 +34,8 @@ export default defineEventHandler(async (event): Promise<BusinessReportData> => 
   if (!/^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(business)) {
     throw createError({ statusCode: 400, statusMessage: 'Selecciona un negocio válido.' })
   }
-  const workshop = await usePrisma().workshop.findFirst({ where: { id: business, active: true } })
+  // Transporte se incorpora al reporte en CVR-15.
+  const workshop = await usePrisma().workshop.findFirst({ where: { id: business, active: true, type: { not: 'TRANSPORT' } } })
   if (!workshop) throw createError({ statusCode: 404, statusMessage: 'No se encontró el taller seleccionado.' })
   const dashboard = await getWorkshopDashboard({ ...context, workshopId: workshop.id, selectedWorkshop: workshop }, query, { beforeTax: true, reportOnly: true })
   return { business, businessName: workshop.name, report: dashboard.report, consolidation: null, status: 'connected' }

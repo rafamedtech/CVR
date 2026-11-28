@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
       snapshot: previous,
       reason,
       effectiveDate: previous.expenseDate,
-      source: previous.orderId ? { type: 'service_order', id: previous.orderId } : null
+      source: expenseAuditSource(previous)
     })
     // deleteMany conserva el filtro de acceso aunque el gasto cambie entre lectura y borrado.
     const result = await transaction.expense.deleteMany({

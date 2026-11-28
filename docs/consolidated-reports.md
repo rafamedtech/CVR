@@ -10,6 +10,12 @@ independiente del taller operativo de la sesión. El periodo mensual o anual y
 el negocio se conservan en la URL. Los reportes individuales y la suma usan la
 misma base de ventas antes de IVA.
 
+**Transporte** todavía no entra al reporte (CVR-15). Sus fletes y costos
+directos se consultan en `/fletes`. El selector de Reportes no lo ofrece y la
+vista de **Todos los negocios** excluye sus gastos, para no restar costos sin sus
+ingresos (`server/utils/workshop-dashboard.ts`). Los gastos globales sí se
+siguen descontando.
+
 ## Conexión de Carolina
 
 Configurar exclusivamente en el servidor de CVR, en el entorno que se publique:

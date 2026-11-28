@@ -1128,6 +1128,107 @@ async function main() {
     })
   }
 
+  // Transporte (CVR-03): un cliente, dos fletes (MXN y USD de Nexo) y sus costos directos.
+  const transportWorkshop = await prisma.workshop.upsert({
+    where: { slug: 'transporte' },
+    update: { name: 'Transporte', type: WorkshopType.TRANSPORT },
+    create: { slug: 'transporte', name: 'Transporte', type: WorkshopType.TRANSPORT }
+  })
+  const transportCustomer = {
+    id: '20000000-0000-4000-8000-000000000009',
+    fullName: 'Recicladora del Noroeste, S.A. de C.V.',
+    phone: '6646550190',
+    email: 'logistica@recicladora.example',
+    taxId: 'RNO1203157T1',
+    addressLine: 'Parque Industrial El Florido, Tijuana, B.C.',
+    notes: 'Viajes asignados desde su portal Nexo. Muestra.'
+  }
+  await prisma.customer.upsert({ where: { id: transportCustomer.id }, update: transportCustomer, create: transportCustomer })
+  await prisma.customerWorkshop.createMany({
+    data: [{ customerId: transportCustomer.id, workshopId: transportWorkshop.id }],
+    skipDuplicates: true
+  })
+  const freightYear = new Date().getFullYear()
+  const demoFreights = [
+    {
+      id: '70000000-0000-4000-8000-000000000001',
+      freightNumber: `FLT-${freightYear}-0001`,
+      source: 'NEXO' as const,
+      sourceRecordId: 'demo-expediente-0001',
+      sourceFolio: 'DEMO-66736',
+      origin: 'Tijuana, B.C.',
+      destination: 'Mexicali, B.C.',
+      amount: 700,
+      currency: 'USD' as const,
+      exchangeRate: 17.85,
+      amountMxn: 12495,
+      status: 'DELIVERED' as const,
+      serviceDate: new Date(`${thisMonth(4, 0).toISOString().slice(0, 10)}T00:00:00Z`),
+      pickedUpAt: thisMonth(4, 7),
+      deliveredAt: thisMonth(4, 13),
+      deliveryConfirmedById: superAdmin.id,
+      deliveryTicketRef: 'BOLETA-DEMO-01',
+      invoiceSeries: 'DEMO',
+      invoiceFolio: '17551'
+    },
+    {
+      id: '70000000-0000-4000-8000-000000000002',
+      freightNumber: `FLT-${freightYear}-0002`,
+      source: 'MANUAL' as const,
+      sourceRecordId: null,
+      sourceFolio: null,
+      origin: 'Tijuana, B.C.',
+      destination: 'Ensenada, B.C.',
+      amount: 9800,
+      currency: 'MXN' as const,
+      exchangeRate: 1,
+      amountMxn: 9800,
+      status: 'SCHEDULED' as const,
+      serviceDate: new Date(`${thisMonth(20, 0).toISOString().slice(0, 10)}T00:00:00Z`),
+      pickedUpAt: null,
+      deliveredAt: null,
+      deliveryConfirmedById: null,
+      deliveryTicketRef: null,
+      invoiceSeries: null,
+      invoiceFolio: null
+    }
+  ]
+  for (const freight of demoFreights) {
+    const data = { ...freight, workshopId: transportWorkshop.id, customerId: transportCustomer.id, createdById: superAdmin.id }
+    await prisma.freight.upsert({ where: { id: freight.id }, update: data, create: data })
+  }
+  const freightExpenses = [
+    {
+      id: '60000000-0000-4000-8000-000000000009',
+      workshopId: transportWorkshop.id,
+      freightId: demoFreights[0]!.id,
+      category: ExpenseCategory.FUEL,
+      description: 'Diésel del viaje a Mexicali',
+      vendor: 'Gasolinera Demo',
+      amount: 3150,
+      amountMxn: 3150,
+      expenseDate: thisMonth(4, 6),
+      notes: 'Costo directo de muestra',
+      recordedById: superAdmin.id
+    },
+    {
+      id: '60000000-0000-4000-8000-000000000010',
+      workshopId: transportWorkshop.id,
+      freightId: demoFreights[0]!.id,
+      category: ExpenseCategory.OTHER,
+      description: 'Casetas Tijuana–Mexicali',
+      vendor: null,
+      amount: 640,
+      amountMxn: 640,
+      expenseDate: thisMonth(4, 7),
+      notes: 'Costo directo de muestra',
+      recordedById: superAdmin.id
+    }
+  ]
+  for (const expense of freightExpenses) {
+    await prisma.expense.upsert({ where: { id: expense.id }, update: expense, create: expense })
+  }
+
   const summary = await Promise.all([
     prisma.workshop.count(),
     prisma.profile.count({ where: { email: { endsWith: '@demo.cvr.local' } } }),
@@ -1140,7 +1241,8 @@ async function main() {
     prisma.payment.count({
       where: { order: { id: { in: Object.values(ids.orders) } } }
     }),
-    prisma.expense.count({ where: { id: { in: expenses.map(expense => expense.id) } } })
+    prisma.expense.count({ where: { id: { in: expenses.map(expense => expense.id) } } }),
+    prisma.freight.count({ where: { id: { in: demoFreights.map(freight => freight.id) } } })
   ])
 
   console.log([
@@ -1152,7 +1254,8 @@ async function main() {
     `- ${summary[4]} órdenes`,
     `- ${summary[5]} conceptos`,
     `- ${summary[6]} pagos`,
-    `- ${summary[7]} gastos`
+    `- ${summary[7]} gastos`,
+    `- ${summary[8]} fletes`
   ].join('\n'))
 }
 

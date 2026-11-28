@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { VehicleListItem, WorkshopType } from '~/types/crm'
+import type { VehicleListItem } from '~/types/crm'
 
 defineProps<{
   vehicles: VehicleListItem[]
@@ -16,11 +16,7 @@ const columns: TableColumn<VehicleListItem>[] = [{
   header: 'Taller'
 }]
 
-const workshopIcons: Record<WorkshopType, string> = {
-  BODY_SHOP: 'i-lucide-paintbrush',
-  MECHANICAL: 'i-lucide-wrench',
-  PAINT_STORE: 'i-lucide-palette'
-}
+const workshopIcons = workshopTypeIcons
 </script>
 
 <template>

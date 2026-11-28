@@ -11,6 +11,7 @@ enum WorkshopType {
   BODY_SHOP
   MECHANICAL
   PAINT_STORE
+  TRANSPORT
 }
 
 enum WorkshopRole {
@@ -80,7 +81,20 @@ enum ExpenseCategory {
   MAINTENANCE
   MARKETING
   TAXES
+  FUEL
   OTHER
+}
+
+enum FreightStatus {
+  SCHEDULED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum FreightSource {
+  MANUAL
+  NEXO
 }
 
 model Workshop {
@@ -101,25 +115,28 @@ model Workshop {
   vehicles  VehicleWorkshop[]
   orders    ServiceOrder[]
   expenses  Expense[]
+  freights  Freight[]
 
   @@map("workshops")
 }
 
 model Profile {
-  id               String           @id @db.Uuid
-  email            String           @unique
-  fullName         String
-  phone            String?
-  isSuperAdmin     Boolean          @default(false)
-  isReadOnly       Boolean          @default(false)
-  active           Boolean          @default(true)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  memberships      WorkshopMember[]
-  createdOrders    ServiceOrder[]   @relation("CreatedOrders")
-  assignedOrders   ServiceOrder[]   @relation("AssignedOrders")
-  recordedPayments Payment[]
-  recordedExpenses Expense[]
+  id                String           @id @db.Uuid
+  email             String           @unique
+  fullName          String
+  phone             String?
+  isSuperAdmin      Boolean          @default(false)
+  isReadOnly        Boolean          @default(false)
+  active            Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  memberships       WorkshopMember[]
+  createdOrders     ServiceOrder[]   @relation("CreatedOrders")
+  assignedOrders    ServiceOrder[]   @relation("AssignedOrders")
+  recordedPayments  Payment[]
+  recordedExpenses  Expense[]
+  createdFreights   Freight[]        @relation("CreatedFreights")
+  deliveredFreights Freight[]        @relation("DeliveryConfirmedFreights")
 
   @@map("profiles")
 }
@@ -160,6 +177,7 @@ model Customer {
   workshops             CustomerWorkshop[]
   vehicles              Vehicle[]
   orders                ServiceOrder[]
+  freights              Freight[]
 
   @@index([fullName])
   @@index([phone])
@@ -316,16 +334,66 @@ model Expense {
   expenseDate  DateTime        @default(now())
   notes        String?
   orderId      String?         @db.Uuid
+  freightId    String?         @db.Uuid
   recordedById String          @db.Uuid
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   workshop     Workshop?       @relation(fields: [workshopId], references: [id], onDelete: Restrict)
   order        ServiceOrder?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  freight      Freight?        @relation(fields: [freightId], references: [id], onDelete: SetNull)
   recordedBy   Profile         @relation(fields: [recordedById], references: [id], onDelete: Restrict)
 
   @@index([workshopId, expenseDate])
   @@index([orderId])
+  @@index([freightId])
   @@map("expenses")
+}
+
+// Flete de Transporte (CVR-03). Importe antes de impuestos; IVA y retención se resuelven con la factura (CVR-08).
+model Freight {
+  id                    String        @id @default(uuid()) @db.Uuid
+  workshopId            String        @db.Uuid
+  customerId            String        @db.Uuid
+  freightNumber         String
+  source                FreightSource @default(MANUAL)
+  // Nexo: ID del expediente (clave de importación), folio visible y enlace al expediente.
+  sourceRecordId        String?
+  sourceFolio           String?
+  sourceUrl             String?
+  serviceReference      String?
+  origin                String
+  destination           String
+  amount                Decimal       @db.Decimal(12, 2)
+  currency              Currency      @default(MXN)
+  exchangeRate          Decimal       @default(1) @db.Decimal(12, 6)
+  amountMxn             Decimal       @db.Decimal(12, 2)
+  status                FreightStatus @default(SCHEDULED)
+  serviceDate           DateTime      @db.Date
+  pickedUpAt            DateTime?
+  deliveredAt           DateTime?
+  cancelledAt           DateTime?
+  deliveryConfirmedById String?       @db.Uuid
+  deliveryTicketRef     String?
+  invoiceSeries         String?
+  invoiceFolio          String?
+  invoiceUuid           String?
+  notes                 String?
+  createdById           String        @db.Uuid
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  workshop              Workshop      @relation(fields: [workshopId], references: [id], onDelete: Restrict)
+  customer              Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy             Profile       @relation("CreatedFreights", fields: [createdById], references: [id], onDelete: Restrict)
+  deliveryConfirmedBy   Profile?      @relation("DeliveryConfirmedFreights", fields: [deliveryConfirmedById], references: [id], onDelete: SetNull)
+  expenses              Expense[]
+
+  @@unique([workshopId, freightNumber])
+  @@unique([source, sourceRecordId])
+  @@index([workshopId, status, serviceDate])
+  @@index([customerId])
+  @@index([createdById])
+  @@index([deliveryConfirmedById])
+  @@map("freights")
 }
 
 // Bitácora de solo inserción (CVR-02): foto del registro antes de cambiarlo o eliminarlo.

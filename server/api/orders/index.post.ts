@@ -38,6 +38,7 @@ const orderSchema = z.object({
 export default defineEventHandler(async (event) => {
   const context = await requireCrmUser(event)
   requireWorkshopRole(context, ['MANAGER', 'ADVISOR'])
+  rejectTransportWorkshop(context)
   const workshopId = requireSelectedWorkshop(context)
   const body = await readCrmBody(event, orderSchema)
   const prisma = usePrisma()

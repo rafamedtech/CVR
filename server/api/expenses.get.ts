@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
           customer: { select: { fullName: true } },
           vehicle: { select: { make: true, model: true, year: true } }
         }
+      },
+      freight: {
+        select: { id: true, freightNumber: true, origin: true, destination: true, customer: { select: { fullName: true } } }
       }
     },
     orderBy: { expenseDate: 'desc' }
@@ -44,6 +47,14 @@ export default defineEventHandler(async (event) => {
           orderNumber: expense.order.orderNumber,
           customerName: expense.order.customer.fullName,
           vehicleLabel: `${expense.order.vehicle.make} ${expense.order.vehicle.model} ${expense.order.vehicle.year}`
+        }
+      : null,
+    freight: expense.freight
+      ? {
+          id: expense.freight.id,
+          freightNumber: expense.freight.freightNumber,
+          customerName: expense.freight.customer.fullName,
+          routeLabel: `${expense.freight.origin} → ${expense.freight.destination}`
         }
       : null
   }))
